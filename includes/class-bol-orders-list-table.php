@@ -64,11 +64,13 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         // For now, let's make a few sortable. API might not support sorting, so this would be client-side after fetching all.
         // Or, we might need to implement server-side sorting via API params if possible.
         // For this step, let's assume client-side sorting or no sorting initially to keep it simple.
+
         /**
          * Defines which columns are sortable by the user.
          *
          * @return array An associative array of column slugs => array(column_slug, is_default_sorted).
          */
+
         public function get_sortable_columns() {
             $sortable_columns = array(
                 'orderDate'     => array('orderDate', false),
