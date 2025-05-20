@@ -1,0 +1,57 @@
+/* Dashboard Period Selector */
+.dashboard-period-selector a.current,
+.dashboard-period-selector a.active { /* 'active' class might be added by WP on current page link */
+    font-weight: bold;
+    text-decoration: none;
+    color: black; /* Or your preferred active color */
+}
+
+/* Dashboard Metrics */
+.metrics-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px; /* Added margin for spacing */
+}
+.metric-box {
+    border: 1px solid #ccd0d4; /* WordPress standard border color */
+    padding: 15px;
+    min-width: 150px;
+    text-align: center;
+    background-color: #fff; /* White background */
+    box-shadow: 0 1px 1px rgba(0,0,0,.04); /* Subtle shadow like WP cards */
+}
+.metric-box h4 {
+    margin: 0 0 10px 0; /* Adjust heading margin */
+    font-size: 1em; /* Standard size */
+}
+.metric-box p {
+    font-size: 1.8em; /* Larger font for the number */
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+/* Chart Area */
+.chart-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+.chart-controls {
+    margin-bottom: 20px; /* Increased margin */
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 15px; /* Spacing between control groups */
+    align-items: center;
+}
+.chart-controls div { /* Each control group (label + select) */
+    margin-right: 10px; /* Spacing between items if not using gap effectively */
+}
+.chart-controls label {
+    margin-right: 5px;
+}
+#bol-chart-error-message {
+    color: red;
+    margin-top: 10px;
+}

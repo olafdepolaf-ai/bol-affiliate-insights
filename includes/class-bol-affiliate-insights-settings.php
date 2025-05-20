@@ -1,0 +1,745 @@
+<?php
+/**
+ * Bol_Affiliate_Insights_Settings Class
+ *
+ * Handles the plugin settings page.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly.
+}
+
+if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
+    /**
+     * Bol_Affiliate_Insights_Settings Class
+     *
+     * Handles the plugin's admin settings page, including tabbed navigation,
+     * API credential management, AJAX handlers for testing connections and fetching chart data,
+     * and enqueuing necessary scripts and styles for the settings page.
+     */
+    class Bol_Affiliate_Insights_Settings {
+
+        /**
+         * Stores the hook suffix of the main settings page.
+         * Used to conditionally load scripts and styles only on the plugin's admin page.
+         *
+         * @var string|false
+         */
+        private $settings_page_hook_suffix;
+
+        /**
+         * Constructor for Bol_Affiliate_Insights_Settings.
+         *
+         * Hooks into WordPress actions to add the admin menu, register settings,
+         * set up AJAX handlers, and enqueue admin scripts.
+         */
+        public function __construct() {
+            // Add the main admin menu page for the plugin.
+            add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+            // Register plugin settings with WordPress Settings API.
+            add_action( 'admin_init', array( $this, 'register_settings' ) );
+            // Register AJAX handler for testing API connection.
+            add_action( 'wp_ajax_bol_test_connection', array( $this, 'handle_test_connection_ajax' ) );
+            // Register AJAX handler for fetching chart data for the dashboard.
+            add_action( 'wp_ajax_bol_fetch_chart_data', array( $this, 'handle_fetch_chart_data_ajax' ) );
+            // Enqueue scripts and styles specific to the plugin's admin page.
+            add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+        }
+
+        /**
+         * Handles the AJAX request for fetching chart data for the dashboard.
+         *
+         * Validates the AJAX nonce, retrieves request parameters (metric, period),
+         * and currently returns placeholder data for the chart. Real data fetching
+         * logic is to be implemented.
+         *
+         * @return void Outputs JSON response (success or error) and dies using wp_send_json_*.
+         */
+        public function handle_fetch_chart_data_ajax() {
+            check_ajax_referer( 'bol_chart_data_nonce', 'nonce' ); // Verify the nonce for security.
+
+            // Get parameters from AJAX request.
+            $metric = isset( $_POST['metric'] ) ? sanitize_key( $_POST['metric'] ) : 'orders';
+            $period = isset( $_POST['period'] ) ? sanitize_key( $_POST['period'] ) : 'last_4_weeks';
+            // $site = isset( $_POST['site'] ) ? sanitize_key( $_POST['site'] ) : 'all_sites'; // Site selector not fully used yet
+
+            // Initialize data structure for chart
+            $chart_data = array(
+                'labels' => array(),
+                'datasets' => array(
+                    array(
+                        'label' => ucfirst( str_replace('_', ' ', $metric) ), // e.g., "Conversion Rate"
+                        'data' => array(),
+                        'backgroundColor' => 'rgba(0, 115, 170, 0.5)',
+                        'borderColor' => 'rgba(0, 115, 170, 1)',
+                        'borderWidth' => 1,
+                        'tension' => 0.1 // For line charts if we use them
+                    )
+                )
+            );
+            $error_message = null;
+
+            // Date calculation logic based on $period (similar to metrics display, but needs to generate labels for chart axis)
+            // E.g., for 'last_4_weeks', labels would be 'Week 1', 'Week 2', 'Week 3', 'Week 4' or actual date ranges.
+            // This part can be quite complex depending on desired granularity (daily, weekly, monthly points).
+
+            // Placeholder for actual data fetching and processing logic:
+            // This is where you would call your API client, process the data according to 
+            // the selected $metric and $period, and populate $chart_data['labels'] and $chart_data['datasets'][0]['data'].
+            // For example, if $period is 'last_4_weeks' and $metric is 'orders':
+            // You'd fetch daily or weekly order data for the last 4 weeks.
+            // Aggregate it into 4 data points, with corresponding labels.
+            
+            // START *** SIMPLIFIED PLACEHOLDER DATA LOGIC FOR NOW ***
+            // This needs to be replaced with real data fetching and processing.
+            $api_client = Bol_Affiliate_Insights_Plugin::get_instance()->get_api_client();
+            if (!$api_client) {
+                wp_send_json_error(array('message' => 'API Client not available.'));
+                return;
+            }
+
+            // Example: For 'last_4_weeks', generate 4 weekly labels
+            if ($period === 'last_4_weeks') {
+                for ($i = 3; $i >= 0; $i--) { // Week -3, Week -2, Week -1, Week 0 (current week or last week)
+                    $chart_data['labels'][] = 'Week ' . (date('W') - $i); // Example: "Week 35"
+                    // Fetch data for each week (this is the complex part not fully implemented here)
+                    // For now, random data:
+                    $chart_data['datasets'][0]['data'][] = rand(10, 100); 
+                }
+            } elseif ($period === 'this_month') {
+                // Generate daily labels for current month (simplified)
+                $days_in_month = (int)date('t');
+                for ($d = 1; $d <= $days_in_month; $d++) {
+                    $chart_data['labels'][] = date('M') . ' ' . $d;
+                    $chart_data['datasets'][0]['data'][] = rand(5, 50); // Placeholder
+                }
+            } else { // Fallback for other periods - very basic
+                $chart_data['labels'] = array('Period Point 1', 'Period Point 2', 'Period Point 3');
+                $chart_data['datasets'][0]['data'] = array(rand(20,80), rand(20,80), rand(20,80));
+            }
+            // END *** SIMPLIFIED PLACEHOLDER DATA LOGIC FOR NOW ***
+
+            if ($error_message) {
+                wp_send_json_error( array( 'message' => $error_message ) );
+            } else {
+                wp_send_json_success( $chart_data );
+            }
+        }
+        
+        /**
+         * Handles the AJAX request for testing the API connection.
+         *
+         * Validates the AJAX nonce, attempts to get an access token using
+         * `Bol_API_Auth_Service`, and returns a JSON response indicating
+         * success or failure.
+         *
+         * @return void Outputs JSON response (success or error) and dies using wp_send_json_*.
+         */
+        public function handle_test_connection_ajax() {
+            check_ajax_referer( 'bol_test_connection_nonce', 'nonce' ); // Verify the nonce for security.
+
+            // Instantiate the Auth Service. This is crucial for getting an access token.
+            if ( ! class_exists( 'Bol_API_Auth_Service' ) ) {
+                wp_send_json_error( array( 'message' => 'ERROR: Authentication service class not found.' ), 500 );
+                return; // Important to exit after sending JSON.
+            }
+            $auth_service = new Bol_API_Auth_Service();
+            $token_data = $auth_service->get_access_token(); // Attempt to get the access token.
+
+            // Check the result of getting the token.
+            if ( is_wp_error( $token_data ) ) {
+                // If WP_Error, send the error message back to the client.
+                wp_send_json_error( array(
+                    'message' => 'Connection Failed: ' . $token_data->get_error_message(),
+                    'code' => $token_data->get_error_code()
+                ) );
+            } elseif ( $token_data ) {
+                // If token data is truthy (i.e., token string was returned).
+                wp_send_json_success( array( 'message' => 'Connection Successful! Access token obtained.' ) );
+            } else {
+                // If token data is false or other non-WP_Error falsy value.
+                wp_send_json_error( array( 'message' => 'Connection Failed: Unknown error retrieving access token.' ) );
+            }
+            // wp_send_json_* functions include wp_die().
+        }
+
+        /**
+         * Enqueues scripts and styles needed for the plugin's admin settings page.
+         *
+         * This method ensures that necessary JavaScript libraries (jQuery, Chart.js, jQuery UI Datepicker)
+         * and custom CSS/JS are loaded only on the plugin's settings page.
+         *
+         * @param string $hook_suffix The hook suffix of the current admin page.
+         * @return void
+         */
+        public function enqueue_admin_scripts( $hook_suffix ) {
+            // Only load scripts on our plugin's settings page.
+            if ( $hook_suffix !== $this->settings_page_hook_suffix ) {
+                return;
+            }
+
+            // Enqueue Chart.js from CDN for displaying charts.
+            wp_enqueue_script(
+                'chart-js',
+                'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js',
+                array(), // No dependencies for Chart.js itself.
+                '3.9.1', // Version number.
+                true     // Load in footer.
+            );
+
+            // Enqueue WordPress jQuery UI Datepicker for date range selection.
+            wp_enqueue_script('jquery-ui-datepicker');
+            // Enqueue default WordPress jQuery UI styles.
+            wp_enqueue_style('jquery-ui-style', admin_url('/css/jquery-ui-fresh.min.css'));
+
+            // Enqueue custom admin styles for the plugin.
+            wp_enqueue_style(
+                'bol-admin-styles',
+                plugins_url( '../assets/css/admin-styles.css', __FILE__ ),
+                array(), // No dependencies for this stylesheet.
+                '0.1.0'  // Plugin version or file version.
+            );
+
+            // Enqueue custom admin JavaScript for handling AJAX, chart updates, etc.
+            wp_enqueue_script(
+                'bol-admin-settings-js',
+                plugins_url( '../assets/js/admin-settings.js', __FILE__ ),
+                array( 'jquery', 'chart-js', 'jquery-ui-datepicker' ), // Dependencies.
+                '0.1.0', // Plugin version or file version.
+                true     // Load in footer.
+            );
+
+            // Localize script to pass PHP variables (like nonces) to JavaScript.
+            wp_localize_script( 'bol-admin-settings-js', 'bol_settings_params', array(
+                'nonce' => wp_create_nonce( 'bol_test_connection_nonce' ), // Nonce for testing API connection.
+                'chart_nonce' => wp_create_nonce( 'bol_chart_data_nonce' ) // Nonce for fetching chart data.
+            ) );
+        }
+        
+        /**
+         * Registers plugin settings using the WordPress Settings API.
+         *
+         * This method defines the settings group, option name, and registers
+         * the settings fields and sections for API credentials.
+         *
+         * @return void
+         */
+        public function register_settings() {
+            $options_group_name = 'bol_affiliate_insights_options_group'; // Group name for settings_fields().
+            $option_name = 'bol_affiliate_insights_credentials'; // Name of the option in wp_options table.
+
+            // Register the setting.
+            register_setting(
+                $options_group_name,
+                $option_name,
+                array( $this, 'sanitize_credentials' ) // Sanitization callback.
+            );
+
+            // Add a settings section for API credentials.
+            add_settings_section(
+                'bol_api_credentials_section', // ID of the section.
+                'API Credentials',             // Title of the section.
+                array( $this, 'render_api_credentials_section_text' ), // Callback to render section description.
+                'bol-affiliate-insights'       // Page slug where this section will be displayed.
+            );
+
+            // Add settings field for Client ID.
+            add_settings_field(
+                'bol_client_id',                  // ID of the field.
+                'Client ID',                      // Title of the field.
+                array( $this, 'render_client_id_field' ), // Callback to render the field.
+                'bol-affiliate-insights',         // Page slug.
+                'bol_api_credentials_section',    // Section ID.
+                array( 'label_for' => 'bol_client_id_field' ) // Associates label with input field.
+            );
+
+            // Add settings field for Client Secret.
+            add_settings_field(
+                'bol_client_secret',              // ID of the field.
+                'Client Secret',                  // Title of the field.
+                array( $this, 'render_client_secret_field' ), // Callback to render the field.
+                'bol-affiliate-insights',         // Page slug.
+                'bol_api_credentials_section',    // Section ID.
+                array( 'label_for' => 'bol_client_secret_field' ) // Associates label with input field.
+            );
+        }
+
+        /**
+         * Renders descriptive text for the API credentials settings section.
+         *
+         * @return void
+         */
+        public function render_api_credentials_section_text() {
+            echo '<p>Enter your Bol.com API Client ID and Client Secret below.</p>';
+        }
+
+        /**
+         * Renders the input field for the API Client ID.
+         *
+         * Retrieves the current value from options and displays it in a text input.
+         *
+         * @return void
+         */
+        public function render_client_id_field() {
+            $options = get_option( 'bol_affiliate_insights_credentials' );
+            $value = isset( $options['client_id'] ) ? $options['client_id'] : '';
+            echo "<input type='text' id='bol_client_id_field' name='bol_affiliate_insights_credentials[client_id]' value='" . esc_attr( $value ) . "' class='regular-text'>";
+        }
+
+        /**
+         * Renders the input field for the API Client Secret.
+         *
+         * Retrieves the current value from options and displays it in a password input.
+         *
+         * @return void
+         */
+        public function render_client_secret_field() {
+            $options = get_option( 'bol_affiliate_insights_credentials' );
+            $value = isset( $options['client_secret'] ) ? $options['client_secret'] : '';
+            echo "<input type='password' id='bol_client_secret_field' name='bol_affiliate_insights_credentials[client_secret]' value='" . esc_attr( $value ) . "' class='regular-text'>";
+        }
+
+        /**
+         * Sanitizes the API credentials input before saving to the database.
+         *
+         * Ensures that the Client ID and Client Secret are plain text.
+         *
+         * @param array $input The raw input array from the settings form.
+         * @return array The sanitized input array.
+         */
+        public function sanitize_credentials( $input ) {
+            $sanitized_input = array();
+            // Sanitize Client ID.
+            $sanitized_input['client_id'] = isset( $input['client_id'] ) ? sanitize_text_field( $input['client_id'] ) : '';
+            // Sanitize Client Secret.
+            $sanitized_input['client_secret'] = isset( $input['client_secret'] ) ? sanitize_text_field( $input['client_secret'] ) : '';
+            return $sanitized_input;
+        }
+
+        /**
+         * Adds the main admin menu page for the plugin.
+         *
+         * Registers a top-level menu item in the WordPress admin sidebar.
+         * The page displays various reports and settings for the plugin.
+         * Stores the page hook suffix in $this->settings_page_hook_suffix for conditional script loading.
+         *
+         * @return void
+         */
+        public function add_admin_menu() {
+            // Add top-level menu page.
+            $this->settings_page_hook_suffix = add_menu_page(
+                'Bol Affiliate Insights',                           // Page title (appears in browser tab).
+                'Bol Insights',                                     // Menu title (appears in sidebar).
+                'manage_options',                                   // Capability required to access.
+                'bol-affiliate-insights',                           // Menu slug (unique identifier).
+                array( $this, 'render_settings_page' ),            // Callback function to render page content.
+                plugins_url( '../assets/images/bol-logo.png', BOL_AFFILIATE_INSIGHTS_FILE ), // Icon URL.
+                25                                                  // Position in menu order.
+            );
+        }
+
+        /**
+         * Renders the main settings page for the plugin.
+         *
+         * This method handles the display of different content based on the active tab
+         * selected by the user (e.g., Dashboard, Orders, Settings). It also initializes
+         * the API client for use by the various tabs.
+         *
+         * @return void
+         */
+        public function render_settings_page() {
+            // Determine the active tab from the URL, default to 'dashboard'.
+            $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'dashboard';
+
+            // Initialize API client once for all tabs, if needed.
+            $plugin_instance = Bol_Affiliate_Insights_Plugin::get_instance();
+            $api_client = $plugin_instance->get_api_client();
+            ?>
+            <div class="wrap">
+                <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+                <!-- Tab Navigation -->
+                <h2 class="nav-tab-wrapper">
+                    <a href="?page=bol-affiliate-insights&tab=dashboard" class="nav-tab <?php echo $active_tab === 'dashboard' ? 'nav-tab-active' : ''; ?>">Dashboard</a>
+                    <a href="?page=bol-affiliate-insights&tab=orders" class="nav-tab <?php echo $active_tab === 'orders' ? 'nav-tab-active' : ''; ?>">Orders</a>
+                    <a href="?page=bol-affiliate-insights&tab=commission_revenue" class="nav-tab <?php echo $active_tab === 'commission_revenue' ? 'nav-tab-active' : ''; ?>">Commission & Revenue</a>
+                    <a href="?page=bol-affiliate-insights&tab=promotion_methods" class="nav-tab <?php echo $active_tab === 'promotion_methods' ? 'nav-tab-active' : ''; ?>">Promotion Methods</a>
+                    <a href="?page=bol-affiliate-insights&tab=settings" class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
+                </h2>
+
+                <?php
+                // Display content based on the active tab.
+                if ( $active_tab === 'dashboard' ) {
+                    // --- Dashboard Tab Content ---
+                    // Determine Selected Period & Calculate Dates for metrics.
+                    $current_period = isset( $_GET['period'] ) ? sanitize_key( $_GET['period'] ) : 'last_7_days';
+
+                    $today_date_str = current_time('Y-m-d');
+                    $end_date_obj = date_create($today_date_str, wp_timezone());
+                    $start_date_obj = date_create($today_date_str, wp_timezone());
+
+                    if ($current_period === 'last_7_days') {
+                        $end_date_obj->modify('-1 day'); // End date is yesterday
+                        $start_date_obj = clone $end_date_obj;
+                        $start_date_obj->modify('-6 days'); 
+                    } elseif ($current_period === 'last_30_days') {
+                        $end_date_obj->modify('-1 day'); // End date is yesterday
+                        $start_date_obj = clone $end_date_obj;
+                        $start_date_obj->modify('-29 days');
+                    }
+                    // For 'today', $start_date_obj and $end_date_obj are already set to today.
+
+                    $start_date = $start_date_obj->format('Y-m-d');
+                    $end_date = $end_date_obj->format('Y-m-d');
+
+                    // Display Period Selector UI
+                    ?>
+                    <h3>Dashboard Metrics</h3>
+                    <div class="dashboard-period-selector">
+                        Time range:
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=today" class="<?php echo $current_period === 'today' ? 'current active' : ''; ?>">Today</a> |
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_7_days" class="<?php echo $current_period === 'last_7_days' ? 'current active' : ''; ?>">Last 7 Days</a> |
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_30_days" class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a>
+                    </div>
+                    <hr>
+                    <?php
+
+                    // Initialize Metrics & Fetch/Process Data
+                    $total_orders = 0;
+                    $total_clicks = 0;
+                    $total_revenue = 0.0;
+                    $total_commission = 0.0;
+                    $conversion_rate = 0.0;
+                    $error_messages = array();
+
+                    // $api_client is already initialized above
+                    if (!$api_client) {
+                        $error_messages[] = "API Client could not be initialized. Check plugin configuration.";
+                    } else {
+                    // Fetch Promotion Report Data for metrics.
+                        $promo_data = $api_client->get_promotion_methods_report( $start_date, $end_date );
+                        if ( is_wp_error( $promo_data ) ) {
+                            $error_messages[] = "Error fetching promotion data: " . esc_html( $promo_data->get_error_message() );
+                        } elseif ( isset($promo_data['items']) && !empty( $promo_data['items'] ) ) {
+                        // Aggregate clicks, orders, and revenue from promotion data.
+                            foreach ( $promo_data['items'] as $item ) {
+                                $total_clicks += isset($item['clicks']) ? (int)$item['clicks'] : 0;
+                                $total_orders += isset($item['orders']) ? (int)$item['orders'] : 0;
+                                $total_revenue += isset($item['revenueInclVat']) ? (float)$item['revenueInclVat'] : 0.0;
+                            }
+                        } elseif (isset($promo_data['items']) && empty($promo_data['items'])) {
+                        // No promotion items found for this period, which is not an error.
+                        } elseif (!isset($promo_data['items']) && !is_wp_error($promo_data)) {
+                         // Response format is unexpected if 'items' key is missing and not a WP_Error.
+                             $error_messages[] = "Promotion data response is not in the expected format.";
+                        }
+
+                    // Fetch Commission Report Data for metrics.
+                        $commission_data = $api_client->get_commission_revenue_report( $start_date, $end_date );
+                        if ( is_wp_error( $commission_data ) ) {
+                            $error_messages[] = "Error fetching commission data: " . esc_html( $commission_data->get_error_message() );
+                        } elseif ( isset($commission_data['items']) && !empty( $commission_data['items'] ) ) {
+                        // Aggregate commission from commission data.
+                            foreach ( $commission_data['items'] as $item ) {
+                                $total_commission += isset($item['commissionApproved']) ? (float)$item['commissionApproved'] : 0.0;
+                            }
+                        } elseif (isset($commission_data['items']) && empty($commission_data['items'])) {
+                        // No commission items found for this period, not an error.
+                        } elseif (!isset($commission_data['items']) && !is_wp_error($commission_data)) {
+                        // Response format is unexpected.
+                             $error_messages[] = "Commission data response is not in the expected format.";
+                        }
+                    }
+
+                // Calculate conversion rate if there are clicks to avoid division by zero.
+                    if ( $total_clicks > 0 ) {
+                        $conversion_rate = ( $total_orders / $total_clicks ) * 100;
+                    }
+
+                // Display any accumulated error messages.
+                    if ( !empty($error_messages) ) {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . implode( '</p><p>', $error_messages ) . '</p></div>';
+                    }
+
+                // Display the calculated metrics in their respective boxes.
+                    ?>
+                    <div class="metrics-container" style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
+                        <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Orders</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $total_orders ); ?></p></div>
+                        <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Clicks</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $total_clicks ); ?></p></div>
+                        <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Revenue</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
+                        <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Commission</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
+                        <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Conversion Rate</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
+                    </div>
+                    <hr style="margin-top:30px;">
+                    <p>Chart display will go here.</p>
+                    <?php
+                    // Display Metrics UI
+                    ?>
+                    <div class="metrics-container">
+                        <div class="metric-box"><h4>Orders</h4><p><?php echo number_format_i18n( $total_orders ); ?></p></div>
+                        <div class="metric-box"><h4>Clicks</h4><p><?php echo number_format_i18n( $total_clicks ); ?></p></div>
+                        <div class="metric-box"><h4>Revenue</h4><p><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
+                        <div class="metric-box"><h4>Commission</h4><p><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
+                        <div class="metric-box"><h4>Conversion Rate</h4><p><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
+                    </div>
+                    <?php
+                    // Fetch available sites for the dropdown
+                    $available_sites_for_dropdown = array(); 
+                    if ($api_client) {
+                        $fetched_sites = $api_client->get_available_sites(); 
+                        // get_available_sites() returns an array, empty if error or no sites.
+                        if (!empty($fetched_sites)) {
+                            $available_sites_for_dropdown = $fetched_sites;
+                        }
+                        // If $api_client->get_available_sites() could return WP_Error, handle it:
+                        // $result = $api_client->get_available_sites();
+                        // if (is_wp_error($result)) { $error_messages[] = "Could not retrieve site list: " . esc_html($result->get_error_message()); } 
+                        // else { $available_sites_for_dropdown = $result; }
+                    }
+                    ?>
+                    <div class="chart-container">
+                        <h3>Performance Chart</h3>
+                        <div class="chart-controls">
+                            <div>
+                                <label for="chart-metric-selector">Metric:</label>
+                                <select id="chart-metric-selector">
+                                    <option value="orders" selected>Orders</option>
+                                    <option value="clicks">Clicks</option>
+                                    <option value="revenue">Revenue</option>
+                                    <option value="commission">Commission</option>
+                                    <option value="conversion">Conversion Rate</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="chart-period-selector">Period:</label>
+                                <select id="chart-period-selector">
+                                    <option value="last_4_weeks" selected>Last 4 Weeks</option>
+                                    <option value="this_month">This Month</option>
+                                    <option value="this_year">This Year</option>
+                                    <option value="last_year">Last Year</option>
+                                    <option value="entire_period">Entire Period</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="chart-site-selector">Site:</label>
+                                <select id="chart-site-selector">
+                                    <option value="all_sites" selected>All Sites</option>
+                                    <?php if ( ! empty( $available_sites_for_dropdown ) ) : ?>
+                                        <?php foreach ( $available_sites_for_dropdown as $site_code => $site_name ) : ?>
+                                            <option value="<?php echo esc_attr( $site_code ); ?>">
+                                                <?php echo esc_html( $site_name ); ?> (<?php echo esc_html($site_code); ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <button type="button" id="bol-update-chart-button" class="button button-secondary">Update Chart</button>
+                        </div>
+                        <div style="max-width: 800px; margin: auto;">
+                            <canvas id="bolPerformanceChart"></canvas>
+                        </div>
+                        <div id="bol-chart-error-message"></div>
+                    </div>
+                    <?php
+                } elseif ( $active_tab === 'orders' ) {
+                    // Inside 'orders' tab
+                    echo '<h3>Orders Report</h3>';
+
+                    // Get current date values or defaults
+                    $current_start_date = isset( $_GET['start_date'] ) ? sanitize_text_field( $_GET['start_date'] ) : date_create('now', wp_timezone())->modify('-30 days')->format('Y-m-d');
+                    $current_end_date = isset( $_GET['end_date'] ) ? sanitize_text_field( $_GET['end_date'] ) : current_time('Y-m-d');
+                    ?>
+                    <form method="GET" action="">
+                        <input type="hidden" name="page" value="bol-affiliate-insights">
+                        <input type="hidden" name="tab" value="orders">
+                        
+                        <label for="orders-start-date">From:</label>
+                        <input type="text" id="orders-start-date" name="start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
+                        
+                        <label for="orders-end-date">To:</label>
+                        <input type="text" id="orders-end-date" name="end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
+                        
+                        <input type="submit" value="Fetch Orders" class="button button-secondary">
+                    </form>
+                    <hr>
+
+                    <div id="orders-data-container">
+                        <?php
+                        echo '<h4>Orders from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+
+                        // $api_client is already initialized above
+                        if (!$api_client) {
+                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
+                        } else {
+                            $orders_data_response = $api_client->get_orders_report($current_start_date, $current_end_date);
+
+                            if (is_wp_error($orders_data_response)) {
+                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching orders: ' . esc_html($orders_data_response->get_error_message()) . '</p></div>';
+                            } elseif (!isset($orders_data_response['items'])) { // Check if 'items' key exists
+                                echo '<div class="notice notice-error is-dismissible"><p>Orders data response is not in the expected format.</p></div>';
+                            } elseif (empty($orders_data_response['items'])) {
+                                $orders_list_table = new Bol_Orders_List_Table();
+                                $orders_list_table->prepare_items( array() ); 
+                                echo '<h3>Orders Data</h3>';
+                                $orders_list_table->display();
+                                // Optional: echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected period.</p></div>';
+                            } else {
+                                // We have items, prepare and display the table
+                                $orders_list_table = new Bol_Orders_List_Table();
+                                $orders_list_table->prepare_items( $orders_data_response['items'] );
+                                
+                                echo '<h3>Orders Data</h3>';
+                                // Optional: Display a count of items
+                                // echo '<p>' . sprintf( _n( '%s order found.', '%s orders found.', count($orders_data_response['items']), 'bol-affiliate-insights' ), count($orders_data_response['items']) ) . '</p>';
+                                
+                                $orders_list_table->display();
+                            }
+                        }
+                        ?>
+                    </div>
+                    <?php
+                } elseif ( $active_tab === 'commission_revenue' ) {
+                    // Inside 'commission_revenue' tab
+                    echo '<h3>Commission & Revenue Report</h3>';
+
+                    // Default dates: Jan 1st of current year to today
+                    $default_start_date = date_create(current_time('Y') . '-01-01', wp_timezone())->format('Y-m-d');
+                    $default_end_date = current_time('Y-m-d');
+
+                    $current_start_date = isset( $_GET['cr_start_date'] ) ? sanitize_text_field( $_GET['cr_start_date'] ) : $default_start_date;
+                    $current_end_date = isset( $_GET['cr_end_date'] ) ? sanitize_text_field( $_GET['cr_end_date'] ) : $default_end_date;
+                    ?>
+                    <form method="GET" action="">
+                        <input type="hidden" name="page" value="bol-affiliate-insights">
+                        <input type="hidden" name="tab" value="commission_revenue">
+                        
+                        <label for="cr-start-date">From:</label>
+                        <input type="text" id="cr-start-date" name="cr_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
+                        
+                        <label for="cr-end-date">To:</label>
+                        <input type="text" id="cr-end-date" name="cr_end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
+                        
+                        <input type="submit" value="Fetch Report" class="button button-secondary">
+                    </form>
+                    <hr>
+
+                    <div id="commission-revenue-data-container">
+                        <?php
+                        echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+                        
+                        // $api_client is already initialized at the top of render_settings_page()
+                        if (!$api_client) {
+                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
+                        } else {
+                            $report_data = $api_client->get_commission_revenue_report($current_start_date, $current_end_date);
+
+                            if (is_wp_error($report_data)) {
+                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data->get_error_message()) . '</p></div>';
+                            } elseif (!isset($report_data['items'])) { // Check if 'items' key exists before checking if empty
+                                echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                            } elseif (empty($report_data['items'])) {
+                                $cr_list_table = new Bol_Commission_Revenue_List_Table();
+                                $cr_list_table->prepare_items( array() );
+                                echo '<h3>Commission & Revenue Data</h3>';
+                                $cr_list_table->display();
+                            } else { // Data found and 'items' key exists
+                                $cr_list_table = new Bol_Commission_Revenue_List_Table();
+                                $cr_list_table->prepare_items( $report_data['items'] );
+                                echo '<h3>Commission & Revenue Data</h3>';
+                                $cr_list_table->display();
+                            }
+                        }
+                        ?>
+                    </div>
+                    <?php
+                } elseif ( $active_tab === 'promotion_methods' ) {
+                    // Inside 'promotion_methods' tab
+                    echo '<h3>Promotion Methods Report</h3>';
+
+                    // Default dates: Jan 1st of current year to today
+                    $default_start_date = date_create(current_time('Y') . '-01-01', wp_timezone())->format('Y-m-d');
+                    $default_end_date = current_time('Y-m-d');
+
+                    $current_start_date = isset( $_GET['pm_start_date'] ) ? sanitize_text_field( $_GET['pm_start_date'] ) : $default_start_date;
+                    $current_end_date = isset( $_GET['pm_end_date'] ) ? sanitize_text_field( $_GET['pm_end_date'] ) : $default_end_date;
+                    ?>
+                    <form method="GET" action="">
+                        <input type="hidden" name="page" value="bol-affiliate-insights">
+                        <input type="hidden" name="tab" value="promotion_methods">
+                        
+                        <label for="pm-start-date">From:</label>
+                        <input type="text" id="pm-start-date" name="pm_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
+                        
+                        <label for="pm-end-date">To:</label>
+                        <input type="text" id="pm-end-date" name="pm_end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
+                        
+                        <input type="submit" value="Fetch Report" class="button button-secondary">
+                    </form>
+                    <hr>
+
+                    <div id="promotion-methods-data-container">
+                        <?php
+                        echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+                        
+                        // $api_client is already initialized at the top of render_settings_page()
+                        if (!$api_client) {
+                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
+                        } else {
+                            $report_data = $api_client->get_promotion_methods_report($current_start_date, $current_end_date);
+
+                            if (is_wp_error($report_data)) {
+                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data->get_error_message()) . '</p></div>';
+                            } elseif (!isset($report_data['items'])) { // Check if 'items' key exists before checking if empty
+                                echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                            } elseif (empty($report_data['items'])) {
+                                $pm_list_table = new Bol_Promotion_Methods_List_Table();
+                                $pm_list_table->prepare_items( array() );
+                                echo '<h3>Promotion Methods Data</h3>';
+                                $pm_list_table->display();
+                            } else { // Data found and 'items' key exists
+                                $pm_list_table = new Bol_Promotion_Methods_List_Table();
+                                $pm_list_table->prepare_items( $report_data['items'] );
+                                echo '<h3>Promotion Methods Data</h3>';
+                                $pm_list_table->display();
+                            }
+                        }
+                        ?>
+                    </div>
+                    <?php
+                } elseif ( $active_tab === 'settings' ) {
+                    ?>
+                    <form action="options.php" method="post">
+                        <?php
+                        settings_fields( 'bol_affiliate_insights_options_group' );
+                        do_settings_sections( 'bol-affiliate-insights' );
+                        submit_button( 'Save Settings' );
+                        ?>
+                    </form>
+                    <hr/>
+                    <h2>Test API Connection</h2>
+                    <button type="button" id="bol-test-connection-button" class="button">Test Connection</button>
+                    <div id="bol-test-connection-results"></div>
+                    <hr/>
+                    <h2>Getting Your API Credentials</h2>
+                    <p>To obtain your Bol.com Client ID and Client Secret:</p>
+                    <ol>
+                        <li>Log in to your <a href="https://partner.bol.com/" target="_blank">Bol.com Partner Program account</a>.</li>
+                        <li>Navigate to 'Account'.</li>
+                        <li>Scroll down to the 'Open API' section.</li>
+                        <li>Click 'Toevoegen' (Add) to create new credentials if you don't have them.</li>
+                        <li>Enter a name for your credentials and save.</li>
+                        <li>Your Client ID will be visible. Click 'Toon secret' (Show secret) to view and copy your Client Secret.</li>
+                    </ol>
+                    <p><strong>Important:</strong> Keep your Client Secret confidential. Do not share it.</p>
+                    <?php
+                } else {
+                    // Default to dashboard if tab is unknown
+                    echo '<h3>Dashboard</h3><p>Dashboard content will go here (default).</p>';
+                }
+                ?>
+            </div>
+            <?php
+        }
+    }
+}
+?>
