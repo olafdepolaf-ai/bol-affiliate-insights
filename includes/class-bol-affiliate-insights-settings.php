@@ -62,18 +62,29 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
 
             // Get parameters from AJAX request.
             $metric = isset( $_POST['metric'] ) ? sanitize_key( $_POST['metric'] ) : 'orders';
-            $period = isset( $_POST['period'] ) ? sanitize_key( $_POST['period'] ) : 'last_4_weeks';
-            $chart_specific_site_filter = isset( $_POST['site'] ) ? sanitize_key( $_POST['site'] ) : 'all_sites'; // Site selector from chart controls
+            $period = isset( $_POST['period'] ) ? sanitize_key( $_POST['period'] ) : 'last_4_weeks'; // Default, will be used by date range calculation
+            $granularity = isset( $_POST['granularity'] ) ? sanitize_key( $_POST['granularity'] ) : 'auto';
+            $chart_specific_site_filter = isset( $_POST['site'] ) ? sanitize_key( $_POST['site'] ) : 'all_sites';
 
             // Get global site filter
             $global_selected_site = get_option('bol_affiliate_insights_selected_website', 'all_sites');
+
+            // Determine effective site filter: global takes precedence
+            $effective_site_filter = $global_selected_site !== 'all_sites' ? $global_selected_site : $chart_specific_site_filter;
+
+            // Dynamic dataset label based on metric
+            $dataset_label = ucfirst( str_replace( '_', ' ', $metric ) );
+            if ($metric === 'conversion') { // Specific case for 'conversion_rate' often displayed as 'Conversion'
+                $dataset_label = 'Conversion Rate';
+            }
+
 
             // Initialize data structure for chart
             $chart_data = array(
                 'labels' => array(),
                 'datasets' => array(
                     array(
-                        'label' => ucfirst( str_replace('_', ' ', $metric) ), // e.g., "Conversion Rate"
+                        'label' => $dataset_label,
                         'data' => array(),
                         'backgroundColor' => 'rgba(0, 115, 170, 0.5)',
                         'borderColor' => 'rgba(0, 115, 170, 1)',
@@ -83,106 +94,392 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 )
             );
             $error_message = null;
+            $api_data_items = array(); // To store items from API calls
 
-            // Date calculation logic based on $period (similar to metrics display, but needs to generate labels for chart axis)
-            // E.g., for 'last_4_weeks', labels would be 'Week 1', 'Week 2', 'Week 3', 'Week 4' or actual date ranges.
-            // This part can be quite complex depending on desired granularity (daily, weekly, monthly points).
-
-            // Placeholder for actual data fetching and processing logic:
-            // This is where you would call your API client, process the data according to 
-            // the selected $metric and $period, and populate $chart_data['labels'] and $chart_data['datasets'][0]['data'].
-            // For example, if $period is 'last_4_weeks' and $metric is 'orders':
-            // You'd fetch daily or weekly order data for the last 4 weeks.
-            // Aggregate it into 4 data points, with corresponding labels.
-            
-            // START *** SIMPLIFIED PLACEHOLDER DATA LOGIC FOR NOW ***
-            // This needs to be replaced with real data fetching and processing.
+            // API Client
             $api_client = Bol_Affiliate_Insights_Plugin::get_instance()->get_api_client();
             if (!$api_client) {
-                wp_send_json_error(array('message' => 'API Client not available.'));
+                wp_send_json_error(array('message' => 'API Client not available. Please configure API credentials.'));
                 return;
             }
 
-            // Determine effective site filter: global takes precedence
-            $effective_site_filter = $global_selected_site !== 'all_sites' ? $global_selected_site : $chart_specific_site_filter;
+            // Core logic for date range, granularity, labels, data fetching & aggregation will go here.
+            // This will replace the placeholder logic below.
 
-            // Placeholder: Fetch actual data based on $metric, $period, and $effective_site_filter
-            // This part would involve calls to $api_client->get_promotion_methods_report() or similar,
-            // and then potentially client-side filtering if $effective_site_filter is not 'all_sites'.
+            // START: New Date Range, Granularity, Label, and Data Aggregation Logic
+            $start_date_obj = new DateTimeImmutable('now', wp_timezone()); // Default to today
+            $end_date_obj = new DateTimeImmutable('now', wp_timezone());   // Default to today
+            $effective_granularity = $granularity; // Will be adjusted if 'auto' or overridden
 
-            // Example: (Simplified - actual data fetching based on metric and period needed)
-            $report_data_items = array(); // This should be populated by API calls based on $metric & $period
-
-            // SIMULATED DATA FETCHING AND FILTERING
-            // In a real scenario, you'd fetch data for the given $period and $metric.
-            // For example, if metric is 'orders', you might fetch promotion_methods_report
-            // to get order counts, or orders_report if it's more direct.
-            // Let's simulate fetching some generic items that include 'siteCode'
-            $simulated_api_response_items = array();
-            if ($period === 'last_4_weeks') {
-                for ($i = 3; $i >= 0; $i--) {
-                    $chart_data['labels'][] = 'Week ' . (date('W') - $i);
-                    // Simulate items having a 'siteCode' and a value for the metric
-                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(10,30));
-                    $simulated_api_response_items[] = array('siteCode' => 'site2', $metric => rand(5,25));
-                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(12,35));
+            try {
+                // Date Range Calculation
+                switch ($period) {
+                    case 'this_year':
+                        $start_date_obj = new DateTimeImmutable(date('Y-01-01'), wp_timezone());
+                        $end_date_obj = new DateTimeImmutable(date('Y-12-31'), wp_timezone());
+                        break;
+                    case 'last_year':
+                        $last_year = (int)date('Y') - 1;
+                        $start_date_obj = new DateTimeImmutable($last_year . '-01-01', wp_timezone());
+                        $end_date_obj = new DateTimeImmutable($last_year . '-12-31', wp_timezone());
+                        break;
+                    case 'this_month':
+                        $start_date_obj = new DateTimeImmutable('first day of this month', wp_timezone());
+                        $end_date_obj = new DateTimeImmutable('last day of this month', wp_timezone());
+                        break;
+                    case 'last_month':
+                        $start_date_obj = new DateTimeImmutable('first day of last month', wp_timezone());
+                        $end_date_obj = new DateTimeImmutable('last day of last month', wp_timezone());
+                        break;
+                    case 'last_30_days':
+                        // Bol API typically uses end date as yesterday if 'today' is the reference for 'last X days'
+                        $end_date_obj = new DateTimeImmutable('yesterday', wp_timezone());
+                        $start_date_obj = $end_date_obj->modify('-29 days'); // 29 days prior to yesterday = 30 days total
+                        break;
+                    case 'last_7_days':
+                        $end_date_obj = new DateTimeImmutable('yesterday', wp_timezone());
+                        $start_date_obj = $end_date_obj->modify('-6 days'); // 6 days prior to yesterday = 7 days total
+                        break;
+                    case 'today':
+                        // $start_date_obj and $end_date_obj are already today by default
+                        break;
+                    case 'entire_period': // Fallback for 'entire_period' - defaults to 'this_year'
+                    default: // Default to 'this_year' or a sensible range if period is unknown
+                        $start_date_obj = new DateTimeImmutable(date('Y-01-01'), wp_timezone());
+                        $end_date_obj = new DateTimeImmutable(date('Y-12-31'), wp_timezone());
+                        $period = 'this_year'; // Ensure period variable reflects the change
+                        break;
                 }
-            } elseif ($period === 'this_month') {
-                $days_in_month = (int)date('t');
-                for ($d = 1; $d <= $days_in_month; $d++) {
-                    $chart_data['labels'][] = date('M') . ' ' . $d;
-                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(2,10));
-                    $simulated_api_response_items[] = array('siteCode' => 'site2', $metric => rand(1,8));
-                }
-            } else {
-                 $chart_data['labels'] = array('Point 1', 'Point 2', 'Point 3');
-                 $simulated_api_response_items = array(
-                    array('siteCode' => 'site1', $metric => rand(20,80)),
-                    array('siteCode' => 'site2', $metric => rand(20,80)),
-                    array('siteCode' => 'site1', $metric => rand(20,80)),
-                 );
+            } catch (Exception $e) {
+                $error_message = 'Error calculating date range: ' . $e->getMessage();
+                wp_send_json_error(array('message' => $error_message));
+                return;
             }
 
-            // Apply effective site filter (client-side)
-            if ($effective_site_filter !== 'all_sites' && !empty($simulated_api_response_items)) {
-                $report_data_items = array_filter($simulated_api_response_items, function ($item) use ($effective_site_filter) {
-                    return isset($item['siteCode']) && $item['siteCode'] == $effective_site_filter;
-                });
-            } else {
-                $report_data_items = $simulated_api_response_items;
+            // Effective Granularity Calculation
+            $diff_days = $end_date_obj->diff($start_date_obj)->days;
+
+            if ($granularity === 'auto') {
+                if ($period === 'this_year' || $period === 'last_year') {
+                    $effective_granularity = 'month';
+                } elseif ($diff_days <= 42) {
+                    $effective_granularity = 'day';
+                } elseif ($diff_days <= 365) {
+                    $effective_granularity = 'week';
+                } else {
+                    $effective_granularity = 'month';
+                }
+            } else { // Explicit granularity selected, apply validation and overrides
+                if ($granularity === 'day' && $diff_days > 90) {
+                    $effective_granularity = 'week'; // Override 'day' to 'week' if range is too long
+                } elseif ($granularity === 'week' && $diff_days > 730) { // Approx 2 years
+                    $effective_granularity = 'month'; // Override 'week' to 'month' if range is too long
+                }
+                // No override needed if conditions are not met, explicit granularity stands
+            }
+
+            // Initialize labels and data array
+            $chart_data['labels'] = array();
+            $chart_data['datasets'][0]['data'] = array();
+            $date_format_label = ''; // Not currently used, but kept for potential future use
+            $week_periods_for_lookup = array(); // For robust week lookups
+
+            // Label Generation
+            $current_loop_date = clone $start_date_obj; // Use a clone for manipulation
+
+            switch ($effective_granularity) {
+                case 'month':
+                    $interval = new DateInterval('P1M');
+                    $period_start_iterate_month = $current_loop_date->modify('first day of this month');
+                    // Adjust end_date_obj to be the first day of the month AFTER the actual end date's month to ensure full inclusion in DatePeriod
+                    $period_end_iterate = (clone $end_date_obj)->modify('first day of this month next month'); 
+                    
+                    $date_period_iterator = new DatePeriod($period_start_iterate_month, $interval, $period_end_iterate);
+                    $year_of_start = $start_date_obj->format('Y');
+                    $year_of_end = $end_date_obj->format('Y');
+
+                    foreach ($date_period_iterator as $date_point) {
+                        if ($year_of_start === $year_of_end) {
+                            $chart_data['labels'][] = $date_point->format('M'); // e.g., "Jan"
+                        } else {
+                            $chart_data['labels'][] = $date_point->format('M Y'); // e.g., "Jan 2023"
+                        }
+                    }
+                    break;
+                case 'week':
+                    $interval = new DateInterval('P1W');
+                    $period_start_iterate_week = $current_loop_date->modify('monday this week');
+                    // Adjust end_date_obj to ensure the period covers the last week.
+                    // We want to go to the Monday *after* the $end_date_obj's week ends.
+                    $period_end_iterate = (clone $end_date_obj)->modify('monday next week');
+
+                    $date_period_iterator = new DatePeriod($period_start_iterate_week, $interval, $period_end_iterate);
+                    
+                    foreach ($date_period_iterator as $date_point) {
+                        $week_start_dt = clone $date_point; // This is Monday 00:00:00
+                        $week_end_dt = (clone $date_point)->modify('+6 days')->setTime(23,59,59); // Sunday 23:59:59
+
+                        // Ensure the generated week period does not exceed the overall $start_date_obj and $end_date_obj
+                        $actual_week_start_dt = ($week_start_dt < $start_date_obj) ? $start_date_obj->setTime(0,0,0) : $week_start_dt;
+                        $actual_week_end_dt = ($week_end_dt > $end_date_obj) ? $end_date_obj->setTime(23,59,59) : $week_end_dt;
+                        
+                        // Only add the week if it's within the original date range (handles partial weeks at start/end)
+                        if ($actual_week_start_dt <= $actual_week_end_dt) {
+                            $week_start_label = $actual_week_start_dt->format('M d');
+                            $week_end_label = $actual_week_end_dt->format('M d Y');
+                            $label_str = $week_start_label . ' - ' . $week_end_label;
+                            $chart_data['labels'][] = $label_str; 
+                            $week_periods_for_lookup[] = array(
+                                'start_dt' => $actual_week_start_dt, 
+                                'end_dt' => $actual_week_end_dt 
+                            );
+                        }
+                    }
+                    break;
+                case 'day':
+                    $interval = new DateInterval('P1D');
+                    $period_end_iterate = (clone $end_date_obj)->modify('+1 day'); // Include the end day
+                    $date_period_iterator = new DatePeriod($current_loop_date, $interval, $period_end_iterate);
+                    $show_year = ($start_date_obj->format('Y') !== $end_date_obj->format('Y'));
+
+                    foreach ($date_period_iterator as $date_point) {
+                        if ($show_year) {
+                             $chart_data['labels'][] = $date_point->format('M d Y'); // e.g., "Jan 01 2023"
+                        } else {
+                             $chart_data['labels'][] = $date_point->format('M d'); // e.g., "Jan 01"
+                        }
+                    }
+                    break;
             }
             
-            // Aggregate data for chart (this is highly simplified, actual aggregation depends on metric and labels)
-            // For this placeholder, we'll just sum up the metric for the (filtered) items for each label point.
-            // This assumes labels and data points correspond one-to-one for simplicity here.
-            foreach ($chart_data['labels'] as $index => $label) {
-                $sum_for_label = 0;
-                // This is a very naive aggregation. Real aggregation would depend on how API data maps to chart labels.
-                // For instance, if labels are weeks, you'd sum items within each week.
-                // Here, we just take a slice of items per label for simplicity.
-                $items_per_label = count($report_data_items) / count($chart_data['labels']);
-                $offset = $index * $items_per_label;
-                $items_for_this_label = array_slice($report_data_items, $offset, $items_per_label);
-
-                foreach($items_for_this_label as $item) {
-                    $sum_for_label += isset($item[$metric]) ? (float)$item[$metric] : 0;
-                }
-                $chart_data['datasets'][0]['data'][] = $sum_for_label;
-
-                // If data runs out due to filtering, fill with 0
-                if (empty($chart_data['datasets'][0]['data'][$index]) && count($report_data_items) < count($simulated_api_response_items) ) {
-                    $chart_data['datasets'][0]['data'][$index] = 0;
-                }
-            }
-            // Ensure data array has values even if all were filtered out or no data
-            if (empty($chart_data['datasets'][0]['data']) && !empty($chart_data['labels'])) {
+            // Pre-fill data with zeros
+            if (!empty($chart_data['labels'])) {
                 $chart_data['datasets'][0]['data'] = array_fill(0, count($chart_data['labels']), 0);
             }
+            
+            // API Data Fetching and Aggregation
+            $start_date_str = $start_date_obj->format('Y-m-d');
+            $end_date_str = $end_date_obj->format('Y-m-d');
+            $raw_api_items = array();
 
-
-            // END *** SIMPLIFIED PLACEHOLDER DATA LOGIC WITH FILTERING ***
+            if ($metric === 'commission') {
+                $response = $api_client->get_orders_report($start_date_str, $end_date_str);
+                if (is_wp_error($response)) {
+                    $error_message = 'Error fetching orders report: ' . $response->get_error_message();
+                } elseif (isset($response['items'])) {
+                    $raw_api_items = $response['items'];
+                } else {
+                    $error_message = 'Orders report data is not in the expected format.';
+                }
+            } elseif (in_array($metric, array('orders', 'clicks', 'revenue', 'conversion'))) {
+                $response = $api_client->get_promotion_methods_report($start_date_str, $end_date_str);
+                if (is_wp_error($response)) {
+                    $error_message = 'Error fetching promotion methods report: ' . $response->get_error_message();
+                } elseif (isset($response['items'])) {
+                    $raw_api_items = $response['items'];
+                    // Apply site filtering for promotion methods report
+                    if ($effective_site_filter !== 'all_sites' && !empty($raw_api_items)) {
+                        $raw_api_items = array_filter($raw_api_items, function ($item) use ($effective_site_filter) {
+                            return isset($item['siteCode']) && $item['siteCode'] == $effective_site_filter;
+                        });
+                    }
+                } else {
+                    $error_message = 'Promotion methods report data is not in the expected format.';
+                }
+            } else {
+                $error_message = 'Invalid metric selected for chart data.';
+            }
 
             if ($error_message) {
+                wp_send_json_error(array('message' => $error_message));
+                return;
+            }
+            
+            // Data Aggregation
+            if (!empty($raw_api_items) && !empty($chart_data['labels'])) {
+                foreach ($raw_api_items as $item) {
+                    try {
+                        $item_date_str = '';
+                        if ($metric === 'commission' && isset($item['dateTimeOrder'])) {
+                            $item_date_str = $item['dateTimeOrder'];
+                        } elseif (in_array($metric, array('orders', 'clicks', 'revenue', 'conversion')) && isset($item['eventDate'])) {
+                            $item_date_str = $item['eventDate'];
+                        }
+
+                        if (empty($item_date_str)) continue;
+
+                        $item_datetime = new DateTimeImmutable($item_date_str, wp_timezone());
+
+                        $label_index = -1;
+
+                        switch ($effective_granularity) {
+                            case 'month':
+                                $item_month_year_label = $item_datetime->format('M Y');
+                                $item_month_label = $item_datetime->format('M');
+                                // Check if labels are "M" or "M Y"
+                                if (in_array($item_month_year_label, $chart_data['labels'])) {
+                                    $label_index = array_search($item_month_year_label, $chart_data['labels']);
+                                } elseif (in_array($item_month_label, $chart_data['labels'])) {
+                                     $label_index = array_search($item_month_label, $chart_data['labels']);
+                                }
+                                break;
+                            case 'week':
+                                // Find which week label the item_datetime falls into using $week_periods_for_lookup
+                                foreach ($week_periods_for_lookup as $idx => $week_period) {
+                                    if ($item_datetime >= $week_period['start_dt'] && $item_datetime <= $week_period['end_dt']) {
+                                        $label_index = $idx;
+                                        break;
+                                    }
+                                }
+                                break;
+                            case 'day':
+                                $item_day_label_my = $item_datetime->format('M d Y');
+                                $item_day_label_md = $item_datetime->format('M d');
+                                if (in_array($item_day_label_my, $chart_data['labels'])) {
+                                   $label_index = array_search($item_day_label_my, $chart_data['labels']);
+                                } elseif (in_array($item_day_label_md, $chart_data['labels'])) {
+                                   $label_index = array_search($item_day_label_md, $chart_data['labels']);
+                                }
+                                break;
+                        }
+
+                        if ($label_index !== -1) {
+                            if ($metric === 'commission' && isset($item['commission'])) {
+                                $chart_data['datasets'][0]['data'][$label_index] += (float)$item['commission'];
+                            } elseif ($metric === 'orders' && isset($item['orders'])) {
+                                $chart_data['datasets'][0]['data'][$label_index] += (int)$item['orders'];
+                            } elseif ($metric === 'clicks' && isset($item['clicks'])) {
+                                $chart_data['datasets'][0]['data'][$label_index] += (int)$item['clicks'];
+                            } elseif ($metric === 'revenue' && isset($item['revenueInclVat'])) {
+                                $chart_data['datasets'][0]['data'][$label_index] += (float)$item['revenueInclVat'];
+                            } elseif ($metric === 'conversion') {
+                                // For conversion, we need to aggregate orders and clicks separately first, then calculate.
+                                // This will be handled after this loop. For now, we can store intermediate sums if needed.
+                                // Or, fetch orders and clicks into $chart_data['datasets'][0]['data'] and $chart_data['datasets'][1]['data'] respectively.
+                                // For simplicity, this part will be handled in a separate step for conversion.
+                            }
+                        }
+                    } catch (Exception $e) {
+                        // Log or handle date parsing errors for individual items if necessary
+                        // error_log('Could not parse date for item: ' . print_r($item, true) . ' Error: ' . $e->getMessage());
+                        continue; 
+                    }
+                }
+                
+                // Special handling for 'conversion' metric
+                if ($metric === 'conversion') {
+                    // We need total orders and total clicks for each period label.
+                    // The current loop sums one metric. A different approach is needed for conversion.
+                    // Option 1: Re-fetch or re-process for clicks and orders.
+                    // Option 2: During the loop, if metric is conversion, store clicks and orders in temp arrays.
+                    // Let's assume for now that the JS will make separate requests for orders and clicks
+                    // if it needs to calculate conversion, or this PHP should return both datasets.
+                    // For this PHP script, if $metric is 'conversion', it should calculate it.
+                    // This requires having both orders and clicks data. The current structure fetches one or the other.
+                    // This part needs further refinement based on how conversion is supposed to be derived.
+                    // For now, if metric is conversion, data array will be empty.
+                    // A proper solution would be to fetch both 'orders' and 'clicks' if metric is 'conversion'.
+                    // This is a significant change to the data fetching logic.
+                    // Let's leave it as is for now, and it can be a follow-up improvement.
+                    // The requirement stated "calculating it after aggregating orders and clicks for each period".
+                    // This means we need both.
+                    // To simplify for now: if metric is 'conversion', we will return empty data.
+                    // A more robust solution would involve fetching both orders and clicks data if metric is 'conversion'.
+                     if ($metric === 'conversion') {
+                        // This section is for the 'conversion' metric.
+                        // It requires 'orders' and 'clicks' from the 'promotion_methods_report'.
+                        // The $raw_api_items should already contain these if $metric was 'conversion'.
+                        $aggregated_orders = array_fill(0, count($chart_data['labels']), 0);
+                        $aggregated_clicks = array_fill(0, count($chart_data['labels']), 0);
+
+                        foreach ($raw_api_items as $item) { // Items are from promotion_methods_report
+                             try {
+                                $item_date_str = isset($item['eventDate']) ? $item['eventDate'] : '';
+                                if (empty($item_date_str)) continue;
+                                $item_datetime = new DateTimeImmutable($item_date_str, wp_timezone());
+                                $label_index = -1;
+
+                                // Determine label_index (same logic as above)
+                                switch ($effective_granularity) {
+                                    case 'month':
+                                        $item_month_year_label = $item_datetime->format('M Y');
+                                        $item_month_label = $item_datetime->format('M');
+                                        if (in_array($item_month_year_label, $chart_data['labels'])) {
+                                            $label_index = array_search($item_month_year_label, $chart_data['labels']);
+                                        } elseif (in_array($item_month_label, $chart_data['labels'])) {
+                                            $label_index = array_search($item_month_label, $chart_data['labels']);
+                                        }
+                                        break;
+                                    case 'week':
+                                        foreach ($week_periods_for_lookup as $idx => $week_period) {
+                                            if ($item_datetime >= $week_period['start_dt'] && $item_datetime <= $week_period['end_dt']) {
+                                                $label_index = $idx;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case 'day':
+                                        $item_day_label_my = $item_datetime->format('M d Y');
+                                        $item_day_label_md = $item_datetime->format('M d');
+                                        if (in_array($item_day_label_my, $chart_data['labels'])) {
+                                        $label_index = array_search($item_day_label_my, $chart_data['labels']);
+                                        } elseif (in_array($item_day_label_md, $chart_data['labels'])) {
+                                        $label_index = array_search($item_day_label_md, $chart_data['labels']);
+                                        }
+                                        break;
+                                }
+
+                                if ($label_index !== -1) {
+                                    $aggregated_orders[$label_index] += isset($item['orders']) ? (int)$item['orders'] : 0;
+                                    $aggregated_clicks[$label_index] += isset($item['clicks']) ? (int)$item['clicks'] : 0;
+                                }
+                            } catch (Exception $e) {
+                                // error_log('Error processing item for conversion: ' . print_r($item, true) . ' Error: ' . $e->getMessage());
+                                continue;
+                            }
+                        }
+
+                        // Calculate conversion rate
+                        for ($i = 0; $i < count($chart_data['labels']); $i++) {
+                            if ($aggregated_clicks[$i] > 0) {
+                                $chart_data['datasets'][0]['data'][$i] = round(($aggregated_orders[$i] / $aggregated_clicks[$i]) * 100, 2);
+                            } else {
+                                $chart_data['datasets'][0]['data'][$i] = 0; // Avoid division by zero
+                            }
+                        }
+                        $error_message = null; // Clear placeholder error message if conversion logic ran.
+                    }
+                }
+
+            } elseif (empty($raw_api_items) && !$error_message) {
+                // No data from API, labels are generated, data should be all zeros (already initialized as per pre-fill)
+                // This is a valid state, e.g. no sales in a period.
+            }
+
+
+            // END: New Date Range, Granularity, Label, and Data Aggregation Logic
+
+
+            // Fallback for now - if new logic isn't complete, send empty success to avoid breaking chart JS
+            // if (empty($chart_data['labels']) && !$error_message) { 
+            //      $chart_data['labels'] = array('Finalizing...'); 
+            //      $chart_data['datasets'][0]['data'] = array(0);
+            // }
+
+            // If after all processing, labels are empty (e.g. date range resulted in no periods for the granularity)
+            // and no actual error message was set, provide a generic message.
+            if (empty($chart_data['labels']) && !$error_message) {
+                 $chart_data['labels'] = array('No data points for the selected period and granularity.');
+                 $chart_data['datasets'][0]['data'] = array(0);
+                 // Optionally, set a notice if this state is unexpected.
+                 // $chart_data['notice'] = 'No data points could be generated for the chart.';
+            }
+
+            // Final check for error messages before sending response
+            if ($error_message) {
+                // If $error_message was set by conversion placeholder, but conversion is now handled,
+                // it might have been cleared. If it's some other error, send it.
+                // The conversion logic now clears $error_message if it runs.
                 wp_send_json_error( array( 'message' => $error_message ) );
             } else {
                 wp_send_json_success( $chart_data );
@@ -679,6 +976,15 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                                     <option value="this_year">This Year</option>
                                     <option value="last_year">Last Year</option>
                                     <option value="entire_period">Entire Period</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="chart-granularity-selector">Granularity:</label>
+                                <select id="chart-granularity-selector">
+                                    <option value="auto" selected>Auto</option>
+                                    <option value="month">Month</option>
+                                    <option value="week">Week</option>
+                                    <option value="day">Day</option>
                                 </select>
                             </div>
                             <div>
