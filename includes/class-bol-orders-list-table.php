@@ -89,31 +89,38 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
             $hidden = array(); // Array of hidden columns.
-            // $sortable = $this->get_sortable_columns(); // If using sortable columns.
-            $this->_column_headers = array( $columns, $hidden, array() /*$sortable*/ ); // Set column headers.
+            // $sortable = $this->get_sortable_columns(); // Still commented out
+            $this->_column_headers = array( $columns, $hidden, array() /*$sortable*/ );
             
-            // Process data for display.
-            // If actual data is empty, use sample data for testing the table structure.
+            // Assign data to items property
             if (empty($data)) {
-                $this->items = array(
-                    array('orderDate' => '2023-01-01 10:00:00', 'orderId' => '123', 'orderItemId' => 'A1', 'productTitle' => 'Sample Product 1', 'quantity' => 1, 'priceInclVat' => 19.99, 'commission' => 1.50, 'status' => 'Open'),
-                    array('orderDate' => '2023-01-02 11:00:00', 'orderId' => '124', 'orderItemId' => 'B2', 'productTitle' => 'Another Thing', 'quantity' => 2, 'priceInclVat' => 9.99, 'commission' => 0.75, 'status' => 'Geaccepteerd'),
-                );
+                // Sample data for testing structure (ensure enough items to test pagination if possible)
+                $sample_item = array('orderDate' => '2023-01-01 10:00:00', 'orderId' => '123', 'orderItemId' => 'A1', 'productTitle' => 'Sample Product 1', 'quantity' => 1, 'priceInclVat' => 19.99, 'commission' => 1.50, 'status' => 'Open');
+                $this->items = array();
+                for ($i = 1; $i <= 50; $i++) { // Create 50 sample items
+                    $item = $sample_item;
+                    $item['orderId'] = 123 + $i;
+                    $item['orderItemId'] = 'A' . $i;
+                    $item['productTitle'] = 'Sample Product ' . $i;
+                    $this->items[] = $item;
+                }
             } else {
-                $this->items = $data; // Assign provided data to items.
+                $this->items = $data;
             }
 
-            // Pagination logic (currently commented out).
-            // Assumes all items for the selected date range are fetched and passed.
-            // If pagination is needed, this section would slice the array and set pagination args.
-            // $per_page = 20;
-            // $current_page = $this->get_pagenum();
-            // $total_items = count( $this->items );
-            // $this->items = array_slice( $this->items, ( ( $current_page - 1 ) * $per_page ), $per_page );
-            // $this->set_pagination_args( array(
-            //     'total_items' => $total_items,
-            //     'per_page'    => $per_page 
-            // ) );
+            // Pagination logic
+            $per_page = 20; // Or make this a class property/constant
+            $current_page = $this->get_pagenum();
+            $total_items = count( $this->items );
+
+            // Slice the data for the current page
+            $this->items = array_slice( $this->items, ( ( $current_page - 1 ) * $per_page ), $per_page );
+
+            $this->set_pagination_args( array(
+                'total_items' => $total_items,
+                'per_page'    => $per_page,
+                'total_pages' => ceil( $total_items / $per_page )
+            ) );
         }
 
         /**

@@ -80,17 +80,41 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
             $hidden = array(); // Array of hidden columns.
-            $this->_column_headers = array( $columns, $hidden, array() ); // Set column headers (no sortable columns for now).
+            $this->_column_headers = array( $columns, $hidden, array() ); // No sortable for now
 
-            // If actual data is empty, use sample data for testing the table structure.
             if (empty($data)) {
-                $this->items = array(
-                    array('date' => '2023-01-01', 'siteName' => 'My Site', 'frameType' => 'Productlink', 'name' => 'Product XYZ', 'subId' => 'sidebar', 'clicks' => 150, 'impressions' => 10000, 'clickThroughRate' => 1.5, 'earningsPerClick' => 0.25, 'orders' => 5, 'conversion' => 3.33, 'revenueInclVat' => 250.75, 'averageOrderValue' => 50.15),
-                );
+                // Updated sample data logic as above
+                $sample_item = array('date' => '2023-01-01', 'siteName' => 'My Site', 'frameType' => 'Productlink', 'name' => 'Product XYZ', 'subId' => 'sidebar', 'clicks' => 150, 'impressions' => 10000, 'clickThroughRate' => 1.5, 'earningsPerClick' => 0.25, 'orders' => 5, 'conversion' => 3.33, 'revenueInclVat' => 250.75, 'averageOrderValue' => 50.15);
+                $this->items = array();
+                for ($i = 1; $i <= 50; $i++) {
+                    $item = $sample_item;
+                    $item['date'] = date('Y-m-d', strtotime("-$i days"));
+                    $item['name'] = 'Promotion ' . $i;
+                    $item['clicks'] = 150 + ($i * 5); // Vary some data
+                    $item['orders'] = 5 + $i;
+                    $item['revenueInclVat'] = 250.75 + ($i * 10);
+                    // Note: CTR, EPC, Conversion, AOV would ideally be recalculated based on varied data
+                    // For sample data, keeping them static from sample_item is okay for now, or set to 0.
+                    // To be more realistic, only keep raw data like clicks, impressions, orders, revenue.
+                    // For simplicity of sample data, we are not recalculating derived metrics here.
+                    $this->items[] = $item;
+                }
             } else {
-                $this->items = $data; // Assign provided data to items.
+                $this->items = $data;
             }
-            // Note: Pagination logic would go here if needed.
+
+            // Pagination logic
+            $per_page = 20;
+            $current_page = $this->get_pagenum();
+            $total_items = count( $this->items );
+
+            $this->items = array_slice( $this->items, ( ( $current_page - 1 ) * $per_page ), $per_page );
+
+            $this->set_pagination_args( array(
+                'total_items' => $total_items,
+                'per_page'    => $per_page,
+                'total_pages' => ceil( $total_items / $per_page )
+            ) );
         }
 
         /**

@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name:       Bol Affiliate Insights
- * Plugin URI:        https://example.com/bol-affiliate-insights
+ * Plugin URI:        https://www.tuinenbalkon.nl
  * Description:       Connects Bol.com Partner Insights with your WordPress environment. Fetches and displays commission, click, and revenue data from the Bol.com Affiliate Reporting API.
  * Version:           0.1.0
- * Author:            Plugin Developer
- * Author URI:        https://example.com/author
+ * Author:            Olaf Lemmers
+ * Author URI:        https://www.tuinenbalkon.nl
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       bol-affiliate-insights

@@ -80,17 +80,36 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
             $hidden = array(); // Array of hidden columns.
-            $this->_column_headers = array( $columns, $hidden, array() ); // Set column headers (no sortable columns for now).
+            $this->_column_headers = array( $columns, $hidden, array() ); // No sortable for now
 
-            // If actual data is empty, use sample data for testing the table structure.
             if (empty($data)) {
-                $this->items = array(
-                    array('orderDate' => '2023-01-01', 'siteName' => 'My Blog', 'frameType' => 'Tekstlink', 'name' => 'Spring Sale', 'subId' => 'promo1', 'commissionPercentage' => 8.0, 'commissionOriginal' => 10.00, 'commissionApproved' => 8.00, 'commissionOpen' => 2.00, 'revenueOriginalInclVat' => 125.00, 'revenueApprovedInclVat' => 100.00, 'quantityPayable' => 5),
-                );
+                // Updated sample data logic as above
+                $sample_item = array('orderDate' => '2023-01-01', 'siteName' => 'My Blog', 'frameType' => 'Tekstlink', 'name' => 'Spring Sale', 'subId' => 'promo1', 'commissionPercentage' => 8.0, 'commissionOriginal' => 10.00, 'commissionApproved' => 8.00, 'commissionOpen' => 2.00, 'revenueOriginalInclVat' => 125.00, 'revenueApprovedInclVat' => 100.00, 'quantityPayable' => 5);
+                $this->items = array();
+                for ($i = 1; $i <= 50; $i++) {
+                    $item = $sample_item;
+                    $item['orderDate'] = date('Y-m-d', strtotime("-$i days"));
+                    $item['name'] = 'Campaign ' . $i;
+                    $item['commissionApproved'] = 8.00 + $i; // Vary some data
+                    $item['revenueApprovedInclVat'] = 100.00 + ($i * 10);
+                    $this->items[] = $item;
+                }
             } else {
-                $this->items = $data; // Assign provided data to items.
+                $this->items = $data;
             }
-            // Note: Pagination logic would go here if needed.
+
+            // Pagination logic
+            $per_page = 20;
+            $current_page = $this->get_pagenum();
+            $total_items = count( $this->items );
+
+            $this->items = array_slice( $this->items, ( ( $current_page - 1 ) * $per_page ), $per_page );
+
+            $this->set_pagination_args( array(
+                'total_items' => $total_items,
+                'per_page'    => $per_page,
+                'total_pages' => ceil( $total_items / $per_page )
+            ) );
         }
 
         /**

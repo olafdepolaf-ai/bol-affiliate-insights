@@ -1,6 +1,5 @@
 === Bol Affiliate Insights ===
-Contributors: Plugin Developer
-Donate link:
+Contributors: Olaf Lemmers
 Tags: bol, bol.com, affiliate, insights, reports, sales, api, dashboard, woocommerce, marketing
 Requires at least: 5.0
 Tested up to: 6.5
