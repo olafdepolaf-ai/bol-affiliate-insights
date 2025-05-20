@@ -42,6 +42,8 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             add_action( 'wp_ajax_bol_test_connection', array( $this, 'handle_test_connection_ajax' ) );
             // Register AJAX handler for fetching chart data for the dashboard.
             add_action( 'wp_ajax_bol_fetch_chart_data', array( $this, 'handle_fetch_chart_data_ajax' ) );
+            // AJAX handler for fetching available sites for settings page
+            add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
             // Enqueue scripts and styles specific to the plugin's admin page.
             add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
         }
@@ -61,7 +63,10 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             // Get parameters from AJAX request.
             $metric = isset( $_POST['metric'] ) ? sanitize_key( $_POST['metric'] ) : 'orders';
             $period = isset( $_POST['period'] ) ? sanitize_key( $_POST['period'] ) : 'last_4_weeks';
-            // $site = isset( $_POST['site'] ) ? sanitize_key( $_POST['site'] ) : 'all_sites'; // Site selector not fully used yet
+            $chart_specific_site_filter = isset( $_POST['site'] ) ? sanitize_key( $_POST['site'] ) : 'all_sites'; // Site selector from chart controls
+
+            // Get global site filter
+            $global_selected_site = get_option('bol_affiliate_insights_selected_website', 'all_sites');
 
             // Initialize data structure for chart
             $chart_data = array(
@@ -98,26 +103,84 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 return;
             }
 
-            // Example: For 'last_4_weeks', generate 4 weekly labels
+            // Determine effective site filter: global takes precedence
+            $effective_site_filter = $global_selected_site !== 'all_sites' ? $global_selected_site : $chart_specific_site_filter;
+
+            // Placeholder: Fetch actual data based on $metric, $period, and $effective_site_filter
+            // This part would involve calls to $api_client->get_promotion_methods_report() or similar,
+            // and then potentially client-side filtering if $effective_site_filter is not 'all_sites'.
+
+            // Example: (Simplified - actual data fetching based on metric and period needed)
+            $report_data_items = array(); // This should be populated by API calls based on $metric & $period
+
+            // SIMULATED DATA FETCHING AND FILTERING
+            // In a real scenario, you'd fetch data for the given $period and $metric.
+            // For example, if metric is 'orders', you might fetch promotion_methods_report
+            // to get order counts, or orders_report if it's more direct.
+            // Let's simulate fetching some generic items that include 'siteCode'
+            $simulated_api_response_items = array();
             if ($period === 'last_4_weeks') {
-                for ($i = 3; $i >= 0; $i--) { // Week -3, Week -2, Week -1, Week 0 (current week or last week)
-                    $chart_data['labels'][] = 'Week ' . (date('W') - $i); // Example: "Week 35"
-                    // Fetch data for each week (this is the complex part not fully implemented here)
-                    // For now, random data:
-                    $chart_data['datasets'][0]['data'][] = rand(10, 100); 
+                for ($i = 3; $i >= 0; $i--) {
+                    $chart_data['labels'][] = 'Week ' . (date('W') - $i);
+                    // Simulate items having a 'siteCode' and a value for the metric
+                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(10,30));
+                    $simulated_api_response_items[] = array('siteCode' => 'site2', $metric => rand(5,25));
+                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(12,35));
                 }
             } elseif ($period === 'this_month') {
-                // Generate daily labels for current month (simplified)
                 $days_in_month = (int)date('t');
                 for ($d = 1; $d <= $days_in_month; $d++) {
                     $chart_data['labels'][] = date('M') . ' ' . $d;
-                    $chart_data['datasets'][0]['data'][] = rand(5, 50); // Placeholder
+                    $simulated_api_response_items[] = array('siteCode' => 'site1', $metric => rand(2,10));
+                    $simulated_api_response_items[] = array('siteCode' => 'site2', $metric => rand(1,8));
                 }
-            } else { // Fallback for other periods - very basic
-                $chart_data['labels'] = array('Period Point 1', 'Period Point 2', 'Period Point 3');
-                $chart_data['datasets'][0]['data'] = array(rand(20,80), rand(20,80), rand(20,80));
+            } else {
+                 $chart_data['labels'] = array('Point 1', 'Point 2', 'Point 3');
+                 $simulated_api_response_items = array(
+                    array('siteCode' => 'site1', $metric => rand(20,80)),
+                    array('siteCode' => 'site2', $metric => rand(20,80)),
+                    array('siteCode' => 'site1', $metric => rand(20,80)),
+                 );
             }
-            // END *** SIMPLIFIED PLACEHOLDER DATA LOGIC FOR NOW ***
+
+            // Apply effective site filter (client-side)
+            if ($effective_site_filter !== 'all_sites' && !empty($simulated_api_response_items)) {
+                $report_data_items = array_filter($simulated_api_response_items, function ($item) use ($effective_site_filter) {
+                    return isset($item['siteCode']) && $item['siteCode'] == $effective_site_filter;
+                });
+            } else {
+                $report_data_items = $simulated_api_response_items;
+            }
+            
+            // Aggregate data for chart (this is highly simplified, actual aggregation depends on metric and labels)
+            // For this placeholder, we'll just sum up the metric for the (filtered) items for each label point.
+            // This assumes labels and data points correspond one-to-one for simplicity here.
+            foreach ($chart_data['labels'] as $index => $label) {
+                $sum_for_label = 0;
+                // This is a very naive aggregation. Real aggregation would depend on how API data maps to chart labels.
+                // For instance, if labels are weeks, you'd sum items within each week.
+                // Here, we just take a slice of items per label for simplicity.
+                $items_per_label = count($report_data_items) / count($chart_data['labels']);
+                $offset = $index * $items_per_label;
+                $items_for_this_label = array_slice($report_data_items, $offset, $items_per_label);
+
+                foreach($items_for_this_label as $item) {
+                    $sum_for_label += isset($item[$metric]) ? (float)$item[$metric] : 0;
+                }
+                $chart_data['datasets'][0]['data'][] = $sum_for_label;
+
+                // If data runs out due to filtering, fill with 0
+                if (empty($chart_data['datasets'][0]['data'][$index]) && count($report_data_items) < count($simulated_api_response_items) ) {
+                    $chart_data['datasets'][0]['data'][$index] = 0;
+                }
+            }
+            // Ensure data array has values even if all were filtered out or no data
+            if (empty($chart_data['datasets'][0]['data']) && !empty($chart_data['labels'])) {
+                $chart_data['datasets'][0]['data'] = array_fill(0, count($chart_data['labels']), 0);
+            }
+
+
+            // END *** SIMPLIFIED PLACEHOLDER DATA LOGIC WITH FILTERING ***
 
             if ($error_message) {
                 wp_send_json_error( array( 'message' => $error_message ) );
@@ -212,8 +275,32 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             // Localize script to pass PHP variables (like nonces) to JavaScript.
             wp_localize_script( 'bol-admin-settings-js', 'bol_settings_params', array(
                 'nonce' => wp_create_nonce( 'bol_test_connection_nonce' ), // Nonce for testing API connection.
-                'chart_nonce' => wp_create_nonce( 'bol_chart_data_nonce' ) // Nonce for fetching chart data.
+                'chart_nonce' => wp_create_nonce( 'bol_chart_data_nonce' ), // Nonce for fetching chart data.
+                'fetch_sites_nonce' => wp_create_nonce( 'bol_fetch_sites_nonce' ) // Nonce for fetching sites
             ) );
+        }
+
+        /**
+         * Handles AJAX request to fetch available sites.
+         * Used to dynamically populate the site filter dropdown on the settings page.
+         */
+        public function handle_fetch_available_sites_ajax() {
+            check_ajax_referer( 'bol_fetch_sites_nonce', 'nonce' );
+
+            $api_client = Bol_Affiliate_Insights_Plugin::get_instance()->get_api_client();
+            if ( ! $api_client ) {
+                wp_send_json_error( array( 'message' => 'API Client not available.' ) );
+                return;
+            }
+
+            $sites = $api_client->get_available_sites();
+            if ( is_wp_error( $sites ) ) {
+                wp_send_json_error( array( 'message' => 'Error fetching sites: ' . $sites->get_error_message() ) );
+            } elseif ( empty( $sites ) ) {
+                wp_send_json_success( array( 'sites' => array(), 'message' => 'No sites found or API access issue for sites.' ) );
+            } else {
+                wp_send_json_success( array( 'sites' => $sites ) );
+            }
         }
         
         /**
@@ -235,12 +322,19 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 array( $this, 'sanitize_credentials' ) // Sanitization callback.
             );
 
+            // Register the setting for selected website.
+            register_setting(
+                $options_group_name, // Same group name as credentials
+                'bol_affiliate_insights_selected_website',
+                'sanitize_text_field' // Standard sanitization for a site code/ID.
+            );
+
             // Add a settings section for API credentials.
             add_settings_section(
                 'bol_api_credentials_section', // ID of the section.
                 'API Credentials',             // Title of the section.
                 array( $this, 'render_api_credentials_section_text' ), // Callback to render section description.
-                'bol-affiliate-insights'       // Page slug where this section will be displayed.
+                'bol-affiliate-insights-settings' // Page slug for this section. Changed to be more specific.
             );
 
             // Add settings field for Client ID.
@@ -248,7 +342,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 'bol_client_id',                  // ID of the field.
                 'Client ID',                      // Title of the field.
                 array( $this, 'render_client_id_field' ), // Callback to render the field.
-                'bol-affiliate-insights',         // Page slug.
+                'bol-affiliate-insights-settings',         // Page slug.
                 'bol_api_credentials_section',    // Section ID.
                 array( 'label_for' => 'bol_client_id_field' ) // Associates label with input field.
             );
@@ -258,11 +352,72 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 'bol_client_secret',              // ID of the field.
                 'Client Secret',                  // Title of the field.
                 array( $this, 'render_client_secret_field' ), // Callback to render the field.
-                'bol-affiliate-insights',         // Page slug.
+                'bol-affiliate-insights-settings',         // Page slug.
                 'bol_api_credentials_section',    // Section ID.
                 array( 'label_for' => 'bol_client_secret_field' ) // Associates label with input field.
             );
+
+            // Add a settings section for Data Filters.
+            add_settings_section(
+                'bol_data_filters_section',
+                'Data Filters',
+                array( $this, 'render_data_filters_section_text' ),
+                'bol-affiliate-insights-settings' // Same page slug
+            );
+
+            // Add settings field for Website Selector.
+            add_settings_field(
+                'bol_selected_website',
+                'Filter data by Website',
+                array( $this, 'render_selected_website_field' ),
+                'bol-affiliate-insights-settings',
+                'bol_data_filters_section',
+                array( 'label_for' => 'bol_selected_website_field' )
+            );
         }
+
+        /**
+         * Renders descriptive text for the Data Filters settings section.
+         */
+        public function render_data_filters_section_text() {
+            echo '<p>Select a website to filter the displayed report data across the plugin. This filter applies to the dashboard, report tabs, and charts.</p>';
+        }
+        
+        /**
+         * Renders the dropdown field for selecting the website to filter by.
+         */
+        public function render_selected_website_field() {
+            $current_value = get_option( 'bol_affiliate_insights_selected_website', 'all_sites' );
+            $api_client = Bol_Affiliate_Insights_Plugin::get_instance()->get_api_client();
+            $sites = array(); // Default to empty array
+
+            if ($api_client) {
+                $fetched_sites = $api_client->get_available_sites();
+                // Ensure $fetched_sites is an array and not WP_Error before using
+                if (is_array($fetched_sites)) {
+                    $sites = $fetched_sites;
+                } else {
+                     echo '<p class="notice notice-warning">Could not fetch available sites. API client might not be configured or there was an error.</p>';
+                }
+            } else {
+                echo '<p class="notice notice-warning">API Client not available. Please configure API credentials first.</p>';
+            }
+
+            echo "<select id='bol_selected_website_field' name='bol_affiliate_insights_selected_website'>";
+            echo "<option value='all_sites'" . selected( $current_value, 'all_sites', false ) . ">All Sites</option>";
+
+            if ( ! empty( $sites ) ) {
+                foreach ( $sites as $site_code => $site_name ) {
+                    echo "<option value='" . esc_attr( $site_code ) . "'" . selected( $current_value, $site_code, false ) . ">" . esc_html( $site_name ) . " (" . esc_html($site_code) . ")</option>";
+                }
+            } elseif (empty($sites) && $api_client && is_array($fetched_sites)) { // Check if $fetched_sites was an empty array from a successful call
+                 echo "<option value='' disabled>No individual sites found.</option>";
+            }
+            // If sites could not be fetched at all (e.g. API client error), the error message above is shown.
+            echo "</select>";
+            echo "<p class='description'>If 'All Sites' is selected, data from all your registered websites will be shown.</p>";
+        }
+
 
         /**
          * Renders descriptive text for the API credentials settings section.
@@ -354,6 +509,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             // Initialize API client once for all tabs, if needed.
             $plugin_instance = Bol_Affiliate_Insights_Plugin::get_instance();
             $api_client = $plugin_instance->get_api_client();
+            
+            // Get the globally selected site filter
+            $global_selected_site_filter = get_option('bol_affiliate_insights_selected_website', 'all_sites');
             ?>
             <div class="wrap">
                 <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
@@ -416,39 +574,42 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     if (!$api_client) {
                         $error_messages[] = "API Client could not be initialized. Check plugin configuration.";
                     } else {
-                    // Fetch Promotion Report Data for metrics.
-                        $promo_data = $api_client->get_promotion_methods_report( $start_date, $end_date );
-                        if ( is_wp_error( $promo_data ) ) {
-                            $error_messages[] = "Error fetching promotion data: " . esc_html( $promo_data->get_error_message() );
-                        } elseif ( isset($promo_data['items']) && !empty( $promo_data['items'] ) ) {
-                        // Aggregate clicks, orders, and revenue from promotion data.
-                            foreach ( $promo_data['items'] as $item ) {
+                        // Fetch Promotion Report Data for metrics.
+                        $promo_data_response = $api_client->get_promotion_methods_report( $start_date, $end_date ); // API call
+                        $promo_items = array();
+                        if ( is_wp_error( $promo_data_response ) ) {
+                            $error_messages[] = "Error fetching promotion data: " . esc_html( $promo_data_response->get_error_message() );
+                        } elseif ( isset($promo_data_response['items']) ) {
+                            $promo_items = $promo_data_response['items'];
+                            // Apply global site filter if set
+                            if ($global_selected_site_filter !== 'all_sites' && !empty($promo_items)) {
+                                $promo_items = array_filter($promo_items, function($item) use ($global_selected_site_filter) {
+                                    return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                });
+                            }
+                            // Aggregate clicks, orders, and revenue from (filtered) promotion data.
+                            foreach ( $promo_items as $item ) {
                                 $total_clicks += isset($item['clicks']) ? (int)$item['clicks'] : 0;
                                 $total_orders += isset($item['orders']) ? (int)$item['orders'] : 0;
                                 $total_revenue += isset($item['revenueInclVat']) ? (float)$item['revenueInclVat'] : 0.0;
                             }
-                        } elseif (isset($promo_data['items']) && empty($promo_data['items'])) {
-                        // No promotion items found for this period, which is not an error.
-                        } elseif (!isset($promo_data['items']) && !is_wp_error($promo_data)) {
-                         // Response format is unexpected if 'items' key is missing and not a WP_Error.
+                        } elseif (!isset($promo_data_response['items']) && !is_wp_error($promo_data_response)) {
                              $error_messages[] = "Promotion data response is not in the expected format.";
                         }
 
-                    // Fetch Commission Report Data for metrics.
-                        $commission_data = $api_client->get_commission_revenue_report( $start_date, $end_date );
-                        if ( is_wp_error( $commission_data ) ) {
-                            $error_messages[] = "Error fetching commission data: " . esc_html( $commission_data->get_error_message() );
-                        } elseif ( isset($commission_data['items']) && !empty( $commission_data['items'] ) ) {
-                        // Aggregate commission from commission data.
-                            foreach ( $commission_data['items'] as $item ) {
-                                $total_commission += isset($item['commissionApproved']) ? (float)$item['commissionApproved'] : 0.0;
+                        // Fetch Orders Report Data for commission.
+                        $orders_report_data = $api_client->get_orders_report( $start_date, $end_date );
+                        if ( is_wp_error( $orders_report_data ) ) {
+                            $error_messages[] = "Error fetching orders report for commission: " . esc_html( $orders_report_data->get_error_message() );
+                        } elseif ( isset( $orders_report_data['items'] ) && !empty( $orders_report_data['items'] ) ) {
+                            foreach ( $orders_report_data['items'] as $order_item ) {
+                                // The global site filter is NOT applied here as order items don't have siteCode.
+                                $total_commission += isset( $order_item['commission'] ) ? (float)$order_item['commission'] : 0.0;
                             }
-                        } elseif (isset($commission_data['items']) && empty($commission_data['items'])) {
-                        // No commission items found for this period, not an error.
-                        } elseif (!isset($commission_data['items']) && !is_wp_error($commission_data)) {
-                        // Response format is unexpected.
-                             $error_messages[] = "Commission data response is not in the expected format.";
+                        } elseif (!isset($orders_report_data['items']) && !is_wp_error($orders_report_data)) {
+                             $error_messages[] = "Orders report data for commission is not in the expected format.";
                         }
+                        // If $orders_report_data['items'] is empty, $total_commission remains 0.0, which is correct.
                     }
 
                 // Calculate conversion rate if there are clicks to avoid division by zero.
@@ -572,27 +733,36 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                             echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                         } else {
                             $orders_data_response = $api_client->get_orders_report($current_start_date, $current_end_date);
+                            $order_items_to_display = array();
 
                             if (is_wp_error($orders_data_response)) {
                                 echo '<div class="notice notice-error is-dismissible"><p>Error fetching orders: ' . esc_html($orders_data_response->get_error_message()) . '</p></div>';
-                            } elseif (!isset($orders_data_response['items'])) { // Check if 'items' key exists
+                            } elseif (!isset($orders_data_response['items'])) {
                                 echo '<div class="notice notice-error is-dismissible"><p>Orders data response is not in the expected format.</p></div>';
-                            } elseif (empty($orders_data_response['items'])) {
-                                $orders_list_table = new Bol_Orders_List_Table();
-                                $orders_list_table->prepare_items( array() ); 
-                                echo '<h3>Orders Data</h3>';
-                                $orders_list_table->display();
-                                // Optional: echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected period.</p></div>';
                             } else {
-                                // We have items, prepare and display the table
+                                $order_items_to_display = $orders_data_response['items'];
+                                // Apply global site filter if set
+                                if ($global_selected_site_filter !== 'all_sites' && !empty($order_items_to_display)) {
+                                    $order_items_to_display = array_filter($order_items_to_display, function($item) use ($global_selected_site_filter) {
+                                        // Assuming 'siteCode' is present in order items; this needs verification
+                                        // If not present, orders report might not be filterable this way client-side
+                                        return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                    });
+                                }
+                                
                                 $orders_list_table = new Bol_Orders_List_Table();
-                                $orders_list_table->prepare_items( $orders_data_response['items'] );
-                                
+                                $orders_list_table->prepare_items( $order_items_to_display );
                                 echo '<h3>Orders Data</h3>';
-                                // Optional: Display a count of items
-                                // echo '<p>' . sprintf( _n( '%s order found.', '%s orders found.', count($orders_data_response['items']), 'bol-affiliate-insights' ), count($orders_data_response['items']) ) . '</p>';
-                                
+                                if ($global_selected_site_filter !== 'all_sites') {
+                                    $site_name = $global_selected_site_filter; // Ideally fetch site name for display
+                                    echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name) . '</em></p>';
+                                }
                                 $orders_list_table->display();
+                                if (empty($order_items_to_display) && !empty($orders_data_response['items'])) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected site and period.</p></div>';
+                                } elseif (empty($order_items_to_display)) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected period.</p></div>';
+                                }
                             }
                         }
                         ?>
@@ -631,22 +801,35 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         if (!$api_client) {
                             echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                         } else {
-                            $report_data = $api_client->get_commission_revenue_report($current_start_date, $current_end_date);
+                            $report_data_response = $api_client->get_commission_revenue_report($current_start_date, $current_end_date);
+                            $cr_items_to_display = array();
 
-                            if (is_wp_error($report_data)) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data->get_error_message()) . '</p></div>';
-                            } elseif (!isset($report_data['items'])) { // Check if 'items' key exists before checking if empty
+                            if (is_wp_error($report_data_response)) {
+                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
+                            } elseif (!isset($report_data_response['items'])) {
                                 echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
-                            } elseif (empty($report_data['items'])) {
+                            } else {
+                                $cr_items_to_display = $report_data_response['items'];
+                                // Apply global site filter if set
+                                if ($global_selected_site_filter !== 'all_sites' && !empty($cr_items_to_display)) {
+                                    $cr_items_to_display = array_filter($cr_items_to_display, function($item) use ($global_selected_site_filter) {
+                                        return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                    });
+                                }
+
                                 $cr_list_table = new Bol_Commission_Revenue_List_Table();
-                                $cr_list_table->prepare_items( array() );
+                                $cr_list_table->prepare_items( $cr_items_to_display );
                                 echo '<h3>Commission & Revenue Data</h3>';
+                                if ($global_selected_site_filter !== 'all_sites') {
+                                    $site_name = $global_selected_site_filter; // Ideally fetch site name
+                                    echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name) . '</em></p>';
+                                }
                                 $cr_list_table->display();
-                            } else { // Data found and 'items' key exists
-                                $cr_list_table = new Bol_Commission_Revenue_List_Table();
-                                $cr_list_table->prepare_items( $report_data['items'] );
-                                echo '<h3>Commission & Revenue Data</h3>';
-                                $cr_list_table->display();
+                                if (empty($cr_items_to_display) && !empty($report_data_response['items'])) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
+                                } elseif (empty($cr_items_to_display)) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+                                }
                             }
                         }
                         ?>
@@ -685,22 +868,35 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         if (!$api_client) {
                             echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                         } else {
-                            $report_data = $api_client->get_promotion_methods_report($current_start_date, $current_end_date);
+                            $report_data_response = $api_client->get_promotion_methods_report($current_start_date, $current_end_date);
+                            $pm_items_to_display = array();
 
-                            if (is_wp_error($report_data)) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data->get_error_message()) . '</p></div>';
-                            } elseif (!isset($report_data['items'])) { // Check if 'items' key exists before checking if empty
+                            if (is_wp_error($report_data_response)) {
+                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
+                            } elseif (!isset($report_data_response['items'])) {
                                 echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
-                            } elseif (empty($report_data['items'])) {
+                            } else {
+                                $pm_items_to_display = $report_data_response['items'];
+                                // Apply global site filter if set
+                                if ($global_selected_site_filter !== 'all_sites' && !empty($pm_items_to_display)) {
+                                    $pm_items_to_display = array_filter($pm_items_to_display, function($item) use ($global_selected_site_filter) {
+                                        return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                    });
+                                }
+                                
                                 $pm_list_table = new Bol_Promotion_Methods_List_Table();
-                                $pm_list_table->prepare_items( array() );
+                                $pm_list_table->prepare_items( $pm_items_to_display );
                                 echo '<h3>Promotion Methods Data</h3>';
+                                 if ($global_selected_site_filter !== 'all_sites') {
+                                    $site_name = $global_selected_site_filter; // Ideally fetch site name
+                                    echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name) . '</em></p>';
+                                }
                                 $pm_list_table->display();
-                            } else { // Data found and 'items' key exists
-                                $pm_list_table = new Bol_Promotion_Methods_List_Table();
-                                $pm_list_table->prepare_items( $report_data['items'] );
-                                echo '<h3>Promotion Methods Data</h3>';
-                                $pm_list_table->display();
+                                if (empty($pm_items_to_display) && !empty($report_data_response['items'])) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
+                                } elseif (empty($pm_items_to_display)) {
+                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+                                }
                             }
                         }
                         ?>
@@ -710,8 +906,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     ?>
                     <form action="options.php" method="post">
                         <?php
-                        settings_fields( 'bol_affiliate_insights_options_group' );
-                        do_settings_sections( 'bol-affiliate-insights' );
+                        // Use the specific page slug for settings sections related to credentials
+                        settings_fields( 'bol_affiliate_insights_options_group' ); // This group is for all options.
+                        do_settings_sections( 'bol-affiliate-insights-settings' ); // Page slug for these sections.
                         submit_button( 'Save Settings' );
                         ?>
                     </form>

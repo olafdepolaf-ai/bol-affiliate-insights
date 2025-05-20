@@ -55,3 +55,58 @@
     color: red;
     margin-top: 10px;
 }
+
+/* Table Header Styling */
+.wp-list-table th.manage-column {
+    font-weight: bold;
+}
+
+/* Sorting Arrows Styling */
+.wp-list-table th.sortable a .dashicons { /* Hide by default */
+    display: none;
+}
+
+.wp-list-table th.sorted .dashicons,
+.wp-list-table th.sortable a:focus .dashicons { /* Keep visible on focus, though WP handles this with .sorted */
+    display: inline-block;
+}
+
+/* Specific icons for active sort direction */
+.wp-list-table th.sorted.asc .dashicons-arrow-up,
+.wp-list-table th.sorted.desc .dashicons-arrow-down {
+    display: inline-block;
+}
+
+/* Lighter arrows for hover/potential sort direction (often handled by WP itself by swapping classes) */
+/* These might show the OTHER direction arrow lightly if WP adds both and hides one */
+.wp-list-table th.sortable.asc .dashicons-arrow-up-alt2,
+.wp-list-table th.sortable.desc .dashicons-arrow-down-alt2 {
+     display: inline-block;
+     color: #aaa; /* Lighter color */
+}
+
+/* Alternative: If WordPress uses ::after for sorting indicators on th.sorted */
+.wp-list-table thead th.sorted.asc::after {
+    content: "\25B2"; /* Up arrow Unicode */
+    padding-left: 5px;
+    font-size: smaller; /* Adjust size if needed */
+}
+.wp-list-table thead th.sorted.desc::after {
+    content: "\25BC"; /* Down arrow Unicode */
+    padding-left: 5px;
+    font-size: smaller; /* Adjust size if needed */
+}
+
+/* Ensure sorting indicators within links are visible - WP default */
+.wp-list-table .manage-column.sorted a .sorting-indicator,
+.wp-list-table .manage-column.sortable a .sorting-indicator {
+    visibility: visible;
+}
+
+/* Hide the one that is not active if both up/down are present in markup */
+.wp-list-table .manage-column.sorted.asc .dashicons-arrow-down,
+.wp-list-table .manage-column.sorted.desc .dashicons-arrow-up,
+.wp-list-table .manage-column.sortable.asc .dashicons-arrow-down-alt2, /* if using alt2 for inactive */
+.wp-list-table .manage-column.sortable.desc .dashicons-arrow-up-alt2 {  /* if using alt2 for inactive */
+    display: none;
+}
