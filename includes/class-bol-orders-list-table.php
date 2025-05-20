@@ -66,14 +66,19 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         // For now, let's make a few sortable. API might not support sorting, so this would be client-side after fetching all.
         // Or, we might need to implement server-side sorting via API params if possible.
         // For this step, let's assume client-side sorting or no sorting initially to keep it simple.
-        // public function get_sortable_columns() {
-        //     $sortable_columns = array(
-        //         'orderDate'  => array('orderDate', false), //true for already sorted
-        //         'priceInclVat' => array('priceInclVat', false),
-        //         'commission' => array('commission', false)
-        //     );
-        //     return $sortable_columns;
-        // }
+        public function get_sortable_columns() {
+            $sortable_columns = array(
+                'orderDate'     => array('orderDate', false),
+                'orderId'       => array('orderId', false),
+                'orderItemId'   => array('orderItemId', false),
+                'productTitle'  => array('productTitle', false),
+                'quantity'      => array('quantity', false),
+                'priceInclVat'  => array('priceInclVat', false),
+                'commission'    => array('commission', false),
+                'status'        => array('status', false)
+            );
+            return $sortable_columns;
+        }
 
         /**
          * Prepares the items for display in the table.
@@ -89,8 +94,14 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
             $hidden = array(); // Array of hidden columns.
-            // $sortable = $this->get_sortable_columns(); // Still commented out
-            $this->_column_headers = array( $columns, $hidden, array() /*$sortable*/ );
+            $sortable = $this->get_sortable_columns();
+            $this->_column_headers = array( $columns, $hidden, $sortable );
+
+            // Default sort order
+            if ( empty( $_REQUEST['orderby'] ) ) {
+                $_REQUEST['orderby'] = 'orderDate';
+                $_REQUEST['order']   = 'desc';
+            }
             
             // Assign data to items property
             if (empty($data)) {
@@ -106,6 +117,35 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
                 }
             } else {
                 $this->items = $data;
+            }
+
+            // Sorting logic
+            $orderby = ( ! empty( $_REQUEST['orderby'] ) ) ? sanitize_text_field( $_REQUEST['orderby'] ) : 'orderDate';
+            $order   = ( ! empty( $_REQUEST['order'] ) ) ? sanitize_text_field( $_REQUEST['order'] ) : 'desc';
+
+            if ( ! empty( $orderby ) ) {
+                usort( $this->items, function( $a, $b ) use ( $orderby, $order ) {
+                    $val_a = $a[ $orderby ];
+                    $val_b = $b[ $orderby ];
+
+                    if ( in_array( $orderby, ['quantity', 'priceInclVat', 'commission'] ) ) {
+                        $val_a = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_a) ) );
+                        $val_b = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_b) ) );
+                    } elseif ( $orderby === 'orderDate' ) {
+                        $time_a = strtotime( $val_a );
+                        $time_b = strtotime( $val_b );
+                        if ($time_a === $time_b) return 0;
+                        return ( $order === 'asc' ) ? ( $time_a < $time_b ? -1 : 1 ) : ( $time_a > $time_b ? -1 : 1 );
+                    } else {
+                        $val_a = strtolower( (string) $val_a );
+                        $val_b = strtolower( (string) $val_b );
+                    }
+
+                    if ( $val_a == $val_b ) {
+                        return 0;
+                    }
+                    return ( $order === 'asc' ) ? ( $val_a < $val_b ? -1 : 1 ) : ( $val_a > $val_b ? -1 : 1 );
+                } );
             }
 
             // Pagination logic
@@ -140,17 +180,21 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
                     if ( !empty($item[ $column_name ]) && is_string($item[ $column_name ]) ) {
                          try {
                             // Create a DateTime object with WordPress timezone and format it.
-                            return esc_html( date_format(date_create($item[ $column_name ], wp_timezone()), 'Y-m-d H:i:s') );
+                            $date = date_create($item[ $column_name ], wp_timezone());
+                            if ($date) {
+                                return esc_html( date_format($date, 'Y-m-d') );
+                            }
+                            return esc_html( $item[ $column_name ] ) . ' (Invalid Date Format)';
                         } catch (Exception $e) {
                             // Fallback for invalid date format from API.
-                            return esc_html( $item[ $column_name ] ) . ' (Invalid Date)'; 
+                            return esc_html( $item[ $column_name ] ) . ' (Error Parsing Date)'; 
                         }
                     }
                     return 'N/A'; // Placeholder if date is missing or invalid.
                 case 'priceInclVat':
                 case 'commission':
                     // Format currency values.
-                    return '€' . number_format_i18n( (float)$item[ $column_name ], 2 );
+                    return '€' . number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 2 );
                 case 'quantity':
                     // Format quantity as an integer.
                     return number_format_i18n( (int)$item[ $column_name ] );

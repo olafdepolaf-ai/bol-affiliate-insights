@@ -77,10 +77,46 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
          * @param array $data An array of promotion methods data from the API.
          * @return void
          */
+        public function get_sortable_columns() {
+            $sortable_columns = array(
+                'date'              => array('date', false),
+                'siteName'          => array('siteName', false),
+                'frameType'         => array('frameType', false),
+                'name'              => array('name', false),
+                'subId'             => array('subId', false),
+                'clicks'            => array('clicks', false),
+                'impressions'       => array('impressions', false),
+                'clickThroughRate'  => array('clickThroughRate', false),
+                'earningsPerClick'  => array('earningsPerClick', false),
+                'orders'            => array('orders', false),
+                'conversion'        => array('conversion', false),
+                'revenueInclVat'    => array('revenueInclVat', false),
+                'averageOrderValue' => array('averageOrderValue', false)
+            );
+            return $sortable_columns;
+        }
+
+        /**
+         * Prepares the items for display in the table.
+         *
+         * This method takes the raw data from the API, sets up column headers,
+         * and assigns the data to `$this->items`. If no data is provided,
+         * it populates `$this->items` with sample data for structural testing.
+         *
+         * @param array $data An array of promotion methods data from the API.
+         * @return void
+         */
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
             $hidden = array(); // Array of hidden columns.
-            $this->_column_headers = array( $columns, $hidden, array() ); // No sortable for now
+            $sortable = $this->get_sortable_columns();
+            $this->_column_headers = array( $columns, $hidden, $sortable );
+
+            // Default sort order
+            if ( empty( $_REQUEST['orderby'] ) ) {
+                $_REQUEST['orderby'] = 'date';
+                $_REQUEST['order']   = 'desc';
+            }
 
             if (empty($data)) {
                 // Updated sample data logic as above
@@ -101,6 +137,37 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
                 }
             } else {
                 $this->items = $data;
+            }
+
+            // Sorting logic
+            $orderby = ( ! empty( $_REQUEST['orderby'] ) ) ? sanitize_text_field( $_REQUEST['orderby'] ) : 'date';
+            $order   = ( ! empty( $_REQUEST['order'] ) ) ? sanitize_text_field( $_REQUEST['order'] ) : 'desc';
+
+            if ( ! empty( $orderby ) ) {
+                usort( $this->items, function( $a, $b ) use ( $orderby, $order ) {
+                    $val_a = $a[ $orderby ];
+                    $val_b = $b[ $orderby ];
+
+                    if ( in_array( $orderby, ['clicks', 'impressions', 'clickThroughRate', 'earningsPerClick', 'orders', 'conversion', 'revenueInclVat', 'averageOrderValue'] ) ) {
+                        $val_a = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_a) ) );
+                        $val_b = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_b) ) );
+                    } elseif ( $orderby === 'date' ) {
+                        // Assuming YYYY-MM-DD format
+                        $time_a = strtotime( $val_a );
+                        $time_b = strtotime( $val_b );
+                        if ($time_a === $time_b) return 0;
+                        return ( $order === 'asc' ) ? ( $time_a < $time_b ? -1 : 1 ) : ( $time_a > $time_b ? -1 : 1 );
+                    } else {
+                        // String comparison
+                        $val_a = strtolower( (string) $val_a );
+                        $val_b = strtolower( (string) $val_b );
+                    }
+
+                    if ( $val_a == $val_b ) {
+                        return 0;
+                    }
+                    return ( $order === 'asc' ) ? ( $val_a < $val_b ? -1 : 1 ) : ( $val_a > $val_b ? -1 : 1 );
+                } );
             }
 
             // Pagination logic
@@ -130,8 +197,19 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
         protected function column_default( $item, $column_name ) {
             switch ( $column_name ) {
                 case 'date':
-                    // Assuming date format YYYY-MM-DD from API, display as is.
-                    return esc_html( $item[ $column_name ] ); 
+                    // Assuming date format YYYY-MM-DD from API.
+                    if ( !empty($item[ $column_name ]) && is_string($item[ $column_name ]) ) {
+                        try {
+                           $date_obj = date_create($item[ $column_name ]);
+                           if ($date_obj) {
+                               return esc_html( date_format($date_obj, 'Y-m-d') );
+                           }
+                           return esc_html( $item[ $column_name ] ) . ' (Invalid Date Format)';
+                       } catch (Exception $e) {
+                           return esc_html( $item[ $column_name ] ) . ' (Error Parsing Date)';
+                       }
+                   }
+                   return 'N/A';
                 case 'clicks':
                 case 'impressions':
                 case 'orders':
@@ -140,12 +218,12 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
                 case 'clickThroughRate':
                 case 'conversion':
                     // Format percentage values with two decimal places.
-                    return number_format_i18n( (float)$item[ $column_name ], 2 ) . '%';
+                    return number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 2 ) . '%';
                 case 'earningsPerClick':
                 case 'revenueInclVat':
                 case 'averageOrderValue':
                     // Format currency values.
-                    return '€' . number_format_i18n( (float)$item[ $column_name ], 2 );
+                    return '€' . number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 2 );
                 case 'siteName':
                 case 'frameType':
                 case 'name':
