@@ -12,6 +12,14 @@
  * Domain Path:       /languages
  */
 
+/**
+ * Main plugin file for Bol Affiliate Insights.
+ *
+ * This file is responsible for initializing the plugin, loading necessary files,
+ * and setting up hooks for WordPress actions and filters. It acts as the central
+ * point for the plugin's functionality.
+ */
+
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -162,6 +170,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Plugin' ) ) {
     }
 
     // Instantiate the plugin to get it running.
+    // This ensures that the plugin's functionality is initialized and hooks are registered.
     Bol_Affiliate_Insights_Plugin::get_instance();
 }
 ?>

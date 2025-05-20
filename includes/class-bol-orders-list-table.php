@@ -16,11 +16,11 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 
 if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
     /**
-     * List table class for displaying Bol.com Orders.
+     * Bol_Orders_List_Table Class.
      *
-     * This class extends WP_List_Table to generate a table display for order data
-     * retrieved from the Bol.com Affiliate API. It defines columns, handles data
-     * preparation, and formats cell content for display.
+     * Extends WP_List_Table to display order data from the Bol.com API in a sortable
+     * and paginated table within the WordPress admin area. This class handles
+     * defining columns, fetching and preparing data, and rendering individual cells.
      */
     class Bol_Orders_List_Table extends WP_List_Table {
 
@@ -41,9 +41,7 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         }
 
         /**
-         * Defines the columns for the orders table.
-         *
-         * These columns correspond to the data fields available in the Bol.com Order Report.
+         * Defines the columns that will be displayed in the table.
          *
          * @return array An associative array of column slugs => titles.
          */
@@ -66,6 +64,13 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         // For now, let's make a few sortable. API might not support sorting, so this would be client-side after fetching all.
         // Or, we might need to implement server-side sorting via API params if possible.
         // For this step, let's assume client-side sorting or no sorting initially to keep it simple.
+
+        /**
+         * Defines which columns are sortable by the user.
+         *
+         * @return array An associative array of column slugs => array(column_slug, is_default_sorted).
+         */
+
         public function get_sortable_columns() {
             $sortable_columns = array(
                 'orderDate'     => array('orderDate', false),
@@ -83,13 +88,8 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         /**
          * Prepares the items for display in the table.
          *
-         * This method takes the raw data from the API, sets up column headers,
-         * and assigns the data to `$this->items`. If no data is provided,
-         * it populates `$this->items` with sample data for structural testing.
-         * Pagination logic is currently commented out, assuming all relevant data is passed.
-         *
-         * @param array $data An array of order data from the API.
-         * @return void
+         * This method fetches and processes data from the API, handles sorting,
+         * and sets up pagination for the table.
          */
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
@@ -164,14 +164,10 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
         }
 
         /**
-         * Defines the default rendering for each column.
+         * Defines the default rendering for each column in the table.
          *
-         * This method is called for each cell in the table. It formats data
-         * such as dates, currency, and numbers for display.
-         *
-         * @param array  $item        A singular item (one row's data).
-         * @param string $column_name The name/slug of the column to be displayed.
-         * @return string Text or HTML to be displayed in the cell.
+         * This method is called for each cell and formats the output based on the
+         * column name (e.g., date formatting, currency formatting).
          */
         protected function column_default( $item, $column_name ) {
             switch ( $column_name ) {
