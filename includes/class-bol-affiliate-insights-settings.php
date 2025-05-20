@@ -597,26 +597,19 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                              $error_messages[] = "Promotion data response is not in the expected format.";
                         }
 
-                        // Fetch Commission Report Data for metrics.
-                        $commission_data_response = $api_client->get_commission_revenue_report( $start_date, $end_date ); // API call
-                        $commission_items = array();
-                        if ( is_wp_error( $commission_data_response ) ) {
-                            $error_messages[] = "Error fetching commission data: " . esc_html( $commission_data_response->get_error_message() );
-                        } elseif ( isset($commission_data_response['items']) ) {
-                            $commission_items = $commission_data_response['items'];
-                            // Apply global site filter if set
-                            if ($global_selected_site_filter !== 'all_sites' && !empty($commission_items)) {
-                                $commission_items = array_filter($commission_items, function($item) use ($global_selected_site_filter) {
-                                    return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
-                                });
+                        // Fetch Orders Report Data for commission.
+                        $orders_report_data = $api_client->get_orders_report( $start_date, $end_date );
+                        if ( is_wp_error( $orders_report_data ) ) {
+                            $error_messages[] = "Error fetching orders report for commission: " . esc_html( $orders_report_data->get_error_message() );
+                        } elseif ( isset( $orders_report_data['items'] ) && !empty( $orders_report_data['items'] ) ) {
+                            foreach ( $orders_report_data['items'] as $order_item ) {
+                                // The global site filter is NOT applied here as order items don't have siteCode.
+                                $total_commission += isset( $order_item['commission'] ) ? (float)$order_item['commission'] : 0.0;
                             }
-                            // Aggregate commission from (filtered) commission data.
-                            foreach ( $commission_items as $item ) {
-                                $total_commission += isset($item['commissionApproved']) ? (float)$item['commissionApproved'] : 0.0;
-                            }
-                        } elseif (!isset($commission_data_response['items']) && !is_wp_error($commission_data_response)) {
-                             $error_messages[] = "Commission data response is not in the expected format.";
+                        } elseif (!isset($orders_report_data['items']) && !is_wp_error($orders_report_data)) {
+                             $error_messages[] = "Orders report data for commission is not in the expected format.";
                         }
+                        // If $orders_report_data['items'] is empty, $total_commission remains 0.0, which is correct.
                     }
 
                 // Calculate conversion rate if there are clicks to avoid division by zero.
