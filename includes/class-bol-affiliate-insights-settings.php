@@ -301,16 +301,18 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             
             // Data Aggregation
             if (!empty($raw_api_items) && !empty($chart_data['labels'])) {
-                foreach ($raw_api_items as $item) {
+                foreach ($raw_api_items as $item_index => $item) {
                     try {
                         $item_date_str = '';
-                        if ($metric === 'commission' && isset($item['dateTimeOrder'])) {
-                            $item_date_str = $item['dateTimeOrder'];
+                        if ($metric === 'commission' && isset($item['orderDateTime'])) { // Changed 'dateTimeOrder' to 'orderDateTime'
+                            $item_date_str = $item['orderDateTime']; // Changed 'dateTimeOrder' to 'orderDateTime'
                         } elseif (in_array($metric, array('orders', 'clicks', 'revenue', 'conversion')) && isset($item['eventDate'])) {
                             $item_date_str = $item['eventDate'];
                         }
 
-                        if (empty($item_date_str)) continue;
+                        if (empty($item_date_str)) {
+                            continue;
+                        }
 
                         $item_datetime = new DateTimeImmutable($item_date_str, wp_timezone());
 
@@ -362,11 +364,12 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                                 // Or, fetch orders and clicks into $chart_data['datasets'][0]['data'] and $chart_data['datasets'][1]['data'] respectively.
                                 // For simplicity, this part will be handled in a separate step for conversion.
                             }
+                        } else { // This is the 'else' for 'if ($label_index !== -1)'
                         }
                     } catch (Exception $e) {
                         // Log or handle date parsing errors for individual items if necessary
                         // error_log('Could not parse date for item: ' . print_r($item, true) . ' Error: ' . $e->getMessage());
-                        continue; 
+                        continue;
                     }
                 }
                 
@@ -458,6 +461,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             } elseif (empty($raw_api_items) && !$error_message) {
                 // No data from API, labels are generated, data should be all zeros (already initialized as per pre-fill)
                 // This is a valid state, e.g. no sales in a period.
+            } elseif (empty($chart_data['labels'])) { // Added this elseif
             }
 
 
