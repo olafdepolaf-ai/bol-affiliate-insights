@@ -77,6 +77,12 @@
     display: inline-block;
 }
 
+/* Hide default WordPress sorting indicator when our Dashicons are active in sorted columns */
+.wp-list-table th.sorted a .sorting-indicator {
+    display: none;
+    visibility: hidden; /* Belt and suspenders */
+}
+
 /* Lighter arrows for hover/potential sort direction (often handled by WP itself by swapping classes) */
 /* These might show the OTHER direction arrow lightly if WP adds both and hides one */
 .wp-list-table th.sortable.asc .dashicons-arrow-up-alt2,
@@ -110,3 +116,87 @@
 .wp-list-table .manage-column.sortable.desc .dashicons-arrow-up-alt2 {  /* if using alt2 for inactive */
     display: none;
 }
+
+/* Chart Data Table Container */
+#bol-chart-data-table-container {
+    margin-top: 20px; /* Reinforce top margin */
+    margin-bottom: 30px; /* Add bottom margin for spacing */
+    clear: both; /* Ensure it doesn't overlap floated elements if any */
+}
+
+/* Optional: If table headers need specific styling beyond wp-list-table */
+#bol-chart-data-table-container .wp-list-table th {
+    /* Example: text-align: left; */
+}
+
+#bol-chart-data-table-container .wp-list-table td {
+    /* Example: vertical-align: middle; */
+}
+
+/* Tabbed Table Layout Adjustments */
+
+/* General WP_List_Table Column Width Adjustments */
+
+/* Apply to all WP_List_Table instances within the plugin's specific containers, if needed for specificity */
+/* #orders-data-container .wp-list-table, */
+/* #commission-revenue-data-container .wp-list-table, */
+/* #promotion-methods-data-container .wp-list-table { */
+    /* table-layout: auto; /* Default, but ensures content influences layout */
+/* } */
+
+/* Make all columns generally try to fit content, but allow wrapping. */
+.wp-list-table td, .wp-list-table th {
+    /* width: auto; /* Let browser decide based on content and available space */
+    /* Forcing some columns to be narrower if they typically have short content. */
+    /* WordPress uses .column-{column_name} for specific columns. */
+    /* Examples (actual column names might differ based on WP_List_Table setup): */
+}
+
+/* Columns that often contain IDs, dates, or short numbers can be narrower. */
+/* Users will need to identify the specific column classes if these general ones aren't enough. */
+.wp-list-table .column-id,
+.wp-list-table .column-date,
+.wp-list-table .column-order_id, /* Common key for order ID in WP_List_Table */
+.wp-list-table .column-commission_id, /* Hypothetical */
+.wp-list-table .column-clicks,
+.wp-list-table .column-orders,
+.wp-list-table .column-quantity {
+    width: 8%; /* Suggestion: try a small percentage */
+    /* max-width: 100px; /* Or a max-width */
+    /* white-space: nowrap; /* If no wrapping is desired for these */
+    /* text-overflow: ellipsis; /* If content is too long and nowrap is on */
+    /* overflow: hidden; */
+}
+
+/* Columns with potentially long text (like product titles or descriptions) */
+.wp-list-table .column-product_title, /* Hypothetical */
+.wp-list-table .column-title, /* Common WP column name */
+.wp-list-table .column-name,
+.wp-list-table .column-description {
+    width: auto; /* Allow them to take remaining space */
+    min-width: 150px; /* Ensure they have a minimum reasonable width */
+}
+
+/* Columns for monetary values */
+.wp-list-table .column-commission,
+.wp-list-table .column-revenue,
+.wp-list-table .column-amount {
+    width: 10%;
+    /* white-space: nowrap; */
+}
+
+/* Adjust table header (th) text alignment if needed */
+.wp-list-table th {
+    text-align: left; /* WordPress default */
+}
+
+/* Ensure table cells don't have excessive padding if space is tight */
+/* .wp-list-table td, .wp-list-table th { */
+    /* padding: 8px; /* Default is often around this */
+/* } */
+
+/* Add this to ensure the table doesn't become wider than its container, enabling horizontal scroll if necessary */
+/* Note: This might be better on the container div if one exists per table. */
+/* .wp-list-table-wrap { */ /* Assuming a wrapper div might be needed if not present */
+    /* overflow-x: auto; */
+/* } */

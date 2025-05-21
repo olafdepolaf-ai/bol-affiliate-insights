@@ -5,7 +5,8 @@ jQuery(document).ready(function($) {
     // Default selector values
     $('#chart-metric-selector').val('commission');
     $('#chart-period-selector').val('this_year');
-    $('#chart-granularity-selector').val('auto');
+    $('#chart-granularity-selector').val('month'); // Changed from 'auto' to 'month'
+    $('#chart-site-selector').val('all_sites');    // Added for site default
 
     // Helper function for Y-axis title
     function getYAxisTitle(metric) {
@@ -131,12 +132,18 @@ jQuery(document).ready(function($) {
                             maintainAspectRatio: true
                         }
                     });
+
+                    // Add this line, passing selectedMetric as well for context in table formatting
+                    populateChartDataTable(chartData, selectedMetric);
+
                      // Handle notices from backend (e.g. conversion calculation note)
                     if (chartData.notice) {
                         resultsDiv.html('<p class="notice notice-info">' + chartData.notice + '</p>');
                     }
                 } else {
                     resultsDiv.html('<p>Error loading chart data: ' + response.data.message + '</p>');
+                    // Clear the table if there's an error
+                    populateChartDataTable(null, selectedMetric); // Pass null to clear
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -161,6 +168,66 @@ jQuery(document).ready(function($) {
 
     // Trigger initial chart load with defaults
     $('#bol-update-chart-button').trigger('click');
+
+    // Function to populate the data table under the chart
+    function populateChartDataTable(chartData, metric) {
+        var tableContainer = $('#bol-chart-data-table-container');
+        tableContainer.html(''); // Clear previous content
+
+        if (!chartData || !chartData.labels || chartData.labels.length === 0 || 
+            !chartData.datasets || chartData.datasets.length === 0 || 
+            !chartData.datasets[0].data || chartData.datasets[0].data.length === 0) {
+            tableContainer.html('<p>No data to display in table.</p>');
+            return;
+        }
+
+        var table = $('<table>').addClass('wp-list-table widefat striped');
+        var thead = $('<thead>').appendTo(table);
+        var tbody = $('<tbody>').appendTo(table);
+        var headerRow = $('<tr>').appendTo(thead);
+
+        // Determine header names
+        var xLabel = 'Period'; // Default X-axis label for table
+        var selectedGranularity = $('#chart-granularity-selector').val();
+        var selectedPeriod = $('#chart-period-selector').val();
+
+        // Simplified version of getXAxisTitle for table header:
+        if (selectedGranularity === 'month' || (selectedGranularity === 'auto' && (selectedPeriod === 'this_year' || selectedPeriod === 'last_year'))) {
+            xLabel = 'Month';
+        } else if (selectedGranularity === 'week' || (selectedGranularity === 'auto' && selectedPeriod === 'last_4_weeks')) {
+            xLabel = 'Week';
+        } else if (selectedGranularity === 'day') {
+            xLabel = 'Date';
+        }
+        // Fallback to selectedGranularity if it's not 'auto' and not caught above.
+        else if (selectedGranularity !== 'auto') {
+            xLabel = selectedGranularity.charAt(0).toUpperCase() + selectedGranularity.slice(1);
+        }
+
+
+        $('<th>').text(xLabel).appendTo(headerRow);
+        $('<th>').text(chartData.datasets[0].label || getYAxisTitle(metric) || 'Value').appendTo(headerRow);
+
+        // Populate table rows
+        for (var i = 0; i < chartData.labels.length; i++) {
+            var dataRow = $('<tr>').appendTo(tbody);
+            $('<td>').text(chartData.labels[i]).appendTo(dataRow);
+            
+            var val = chartData.datasets[0].data[i];
+            if (typeof val === 'number') {
+                if (metric === 'commission' || metric === 'revenue') {
+                    val = '€' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } else if (metric === 'conversion') {
+                    val = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+                } else { // For orders, clicks
+                    val = val.toLocaleString();
+                }
+            }
+            $('<td>').text(val).appendTo(dataRow);
+        }
+
+        tableContainer.append(table);
+    }
 
     // Initialize datepickers
     $('.datepicker').each(function(){

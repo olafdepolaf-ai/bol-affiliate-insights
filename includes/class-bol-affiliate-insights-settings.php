@@ -71,6 +71,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
 
             // Determine effective site filter: global takes precedence
             $effective_site_filter = $global_selected_site !== 'all_sites' ? $global_selected_site : $chart_specific_site_filter;
+            error_log('[BAI_Chart_Debug] Request Params: Metric=' . $metric . ', Period=' . $period . ', Granularity=' . $granularity . ', SiteFilter=' . $effective_site_filter);
 
             // Dynamic dataset label based on metric
             $dataset_label = ucfirst( str_replace( '_', ' ', $metric ) );
@@ -261,29 +262,43 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             $start_date_str = $start_date_obj->format('Y-m-d');
             $end_date_str = $end_date_obj->format('Y-m-d');
             $raw_api_items = array();
+            error_log('[BAI_Chart_Debug] Date Range for API: Start=' . $start_date_str . ', End=' . $end_date_str . ', EffectiveGranularity=' . $effective_granularity);
 
             if ($metric === 'commission') {
                 $response = $api_client->get_orders_report($start_date_str, $end_date_str);
                 if (is_wp_error($response)) {
+                    error_log('[BAI_Chart_Debug] Commission API Error: ' . $response->get_error_message());
                     $error_message = 'Error fetching orders report: ' . $response->get_error_message();
                 } elseif (isset($response['items'])) {
+                    error_log('[BAI_Chart_Debug] Commission API Success: Items count = ' . count($response['items']));
                     $raw_api_items = $response['items'];
+                    // if (count($response['items']) < 5 && count($response['items']) > 0) { // Log first few items if few
+                    //     error_log('[BAI_Chart_Debug] Commission API Sample Items: ' . print_r(array_slice($response['items'], 0, 5), true));
+                    // }
                 } else {
+                    error_log('[BAI_Chart_Debug] Commission API Response format unexpected: ' . print_r($response, true));
                     $error_message = 'Orders report data is not in the expected format.';
                 }
             } elseif (in_array($metric, array('orders', 'clicks', 'revenue', 'conversion'))) {
                 $response = $api_client->get_promotion_methods_report($start_date_str, $end_date_str);
                 if (is_wp_error($response)) {
+                    error_log('[BAI_Chart_Debug] Promo API Error: ' . $response->get_error_message());
                     $error_message = 'Error fetching promotion methods report: ' . $response->get_error_message();
                 } elseif (isset($response['items'])) {
+                    error_log('[BAI_Chart_Debug] Promo API Success (pre-filter): Items count = ' . count($response['items']));
                     $raw_api_items = $response['items'];
                     // Apply site filtering for promotion methods report
                     if ($effective_site_filter !== 'all_sites' && !empty($raw_api_items)) {
                         $raw_api_items = array_filter($raw_api_items, function ($item) use ($effective_site_filter) {
                             return isset($item['siteCode']) && $item['siteCode'] == $effective_site_filter;
                         });
+                        error_log('[BAI_Chart_Debug] Promo API Success (post-filter): Items count = ' . count($raw_api_items));
                     }
+                    // if (count($raw_api_items) < 5 && count($raw_api_items) > 0) { // Log first few items if few
+                    //    error_log('[BAI_Chart_Debug] Promo API Sample Items (post-filter): ' . print_r(array_slice($raw_api_items, 0, 5), true));
+                    // }
                 } else {
+                    error_log('[BAI_Chart_Debug] Promo API Response format unexpected: ' . print_r($response, true));
                     $error_message = 'Promotion methods report data is not in the expected format.';
                 }
             } else {
@@ -482,8 +497,11 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 // The conversion logic now clears $error_message if it runs.
                 wp_send_json_error( array( 'message' => $error_message ) );
             } else {
+                error_log('[BAI_Chart_Debug] Final chart_data labels: ' . print_r($chart_data['labels'], true));
+                error_log('[BAI_Chart_Debug] Final chart_data dataset[0] data: ' . print_r($chart_data['datasets'][0]['data'], true));
                 wp_send_json_success( $chart_data );
             }
+            // Minor comment for republishing purposes - 2025-05-21 07:36:05 UTC
         }
         
         /**
@@ -841,6 +859,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         $end_date_obj->modify('-1 day'); // End date is yesterday
                         $start_date_obj = clone $end_date_obj;
                         $start_date_obj->modify('-29 days');
+                    } elseif ($current_period === 'this_year') {
+                        $start_date_obj = date_create(date('Y-01-01'), wp_timezone()); // First day of current year
+                        $end_date_obj = date_create(date('Y-12-31'), wp_timezone());   // Last day of current year
                     }
                     // For 'today', $start_date_obj and $end_date_obj are already set to today.
 
@@ -854,7 +875,8 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         Time range:
                         <a href="?page=bol-affiliate-insights&tab=dashboard&period=today" class="<?php echo $current_period === 'today' ? 'current active' : ''; ?>">Today</a> |
                         <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_7_days" class="<?php echo $current_period === 'last_7_days' ? 'current active' : ''; ?>">Last 7 Days</a> |
-                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_30_days" class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a>
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_30_days" class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a> |
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=this_year" class="<?php echo $current_period === 'this_year' ? 'current active' : ''; ?>">This Year</a>
                     </div>
                     <hr>
                     <?php
@@ -929,17 +951,6 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Conversion Rate</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
                     </div>
                     <hr style="margin-top:30px;">
-                    <p>Chart display will go here.</p>
-                    <?php
-                    // Display Metrics UI
-                    ?>
-                    <div class="metrics-container">
-                        <div class="metric-box"><h4>Orders</h4><p><?php echo number_format_i18n( $total_orders ); ?></p></div>
-                        <div class="metric-box"><h4>Clicks</h4><p><?php echo number_format_i18n( $total_clicks ); ?></p></div>
-                        <div class="metric-box"><h4>Revenue</h4><p><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
-                        <div class="metric-box"><h4>Commission</h4><p><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
-                        <div class="metric-box"><h4>Conversion Rate</h4><p><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
-                    </div>
                     <?php
                     // Fetch available sites for the dropdown
                     $available_sites_for_dropdown = array(); 
@@ -1006,6 +1017,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                             <canvas id="bolPerformanceChart"></canvas>
                         </div>
                         <div id="bol-chart-error-message"></div>
+                        <div id="bol-chart-data-table-container" style="margin-top: 20px;">
+                            <!-- Data table will be rendered here by JavaScript -->
+                        </div>
                     </div>
                     <?php
                 } elseif ( $active_tab === 'orders' ) {
