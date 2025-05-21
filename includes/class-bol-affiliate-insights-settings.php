@@ -841,6 +841,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         $end_date_obj->modify('-1 day'); // End date is yesterday
                         $start_date_obj = clone $end_date_obj;
                         $start_date_obj->modify('-29 days');
+                    } elseif ($current_period === 'this_year') {
+                        $start_date_obj = date_create(date('Y-01-01'), wp_timezone()); // First day of current year
+                        $end_date_obj = date_create(date('Y-12-31'), wp_timezone());   // Last day of current year
                     }
                     // For 'today', $start_date_obj and $end_date_obj are already set to today.
 
@@ -854,7 +857,8 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         Time range:
                         <a href="?page=bol-affiliate-insights&tab=dashboard&period=today" class="<?php echo $current_period === 'today' ? 'current active' : ''; ?>">Today</a> |
                         <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_7_days" class="<?php echo $current_period === 'last_7_days' ? 'current active' : ''; ?>">Last 7 Days</a> |
-                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_30_days" class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a>
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=last_30_days" class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a> |
+                        <a href="?page=bol-affiliate-insights&tab=dashboard&period=this_year" class="<?php echo $current_period === 'this_year' ? 'current active' : ''; ?>">This Year</a>
                     </div>
                     <hr>
                     <?php
@@ -929,17 +933,6 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Conversion Rate</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
                     </div>
                     <hr style="margin-top:30px;">
-                    <p>Chart display will go here.</p>
-                    <?php
-                    // Display Metrics UI
-                    ?>
-                    <div class="metrics-container">
-                        <div class="metric-box"><h4>Orders</h4><p><?php echo number_format_i18n( $total_orders ); ?></p></div>
-                        <div class="metric-box"><h4>Clicks</h4><p><?php echo number_format_i18n( $total_clicks ); ?></p></div>
-                        <div class="metric-box"><h4>Revenue</h4><p><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
-                        <div class="metric-box"><h4>Commission</h4><p><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
-                        <div class="metric-box"><h4>Conversion Rate</h4><p><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
-                    </div>
                     <?php
                     // Fetch available sites for the dropdown
                     $available_sites_for_dropdown = array(); 
@@ -1006,6 +999,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                             <canvas id="bolPerformanceChart"></canvas>
                         </div>
                         <div id="bol-chart-error-message"></div>
+                        <div id="bol-chart-data-table-container" style="margin-top: 20px;">
+                            <!-- Data table will be rendered here by JavaScript -->
+                        </div>
                     </div>
                     <?php
                 } elseif ( $active_tab === 'orders' ) {

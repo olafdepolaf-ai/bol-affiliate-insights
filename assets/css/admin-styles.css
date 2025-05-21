@@ -110,3 +110,19 @@
 .wp-list-table .manage-column.sortable.desc .dashicons-arrow-up-alt2 {  /* if using alt2 for inactive */
     display: none;
 }
+
+/* Chart Data Table Container */
+#bol-chart-data-table-container {
+    margin-top: 20px; /* Reinforce top margin */
+    margin-bottom: 30px; /* Add bottom margin for spacing */
+    clear: both; /* Ensure it doesn't overlap floated elements if any */
+}
+
+/* Optional: If table headers need specific styling beyond wp-list-table */
+#bol-chart-data-table-container .wp-list-table th {
+    /* Example: text-align: left; */
+}
+
+#bol-chart-data-table-container .wp-list-table td {
+    /* Example: vertical-align: middle; */
+}
