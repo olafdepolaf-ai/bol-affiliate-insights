@@ -131,6 +131,10 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         $start_date_obj = new DateTimeImmutable('first day of last month', wp_timezone());
                         $end_date_obj = new DateTimeImmutable('last day of last month', wp_timezone());
                         break;
+                    case 'last_4_weeks':
+                        $end_date_obj = new DateTimeImmutable('yesterday', wp_timezone());
+                        $start_date_obj = $end_date_obj->modify('-27 days'); // 28 days total
+                        break;
                     case 'last_30_days':
                         // Bol API typically uses end date as yesterday if 'today' is the reference for 'last X days'
                         $end_date_obj = new DateTimeImmutable('yesterday', wp_timezone());
@@ -551,7 +555,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             // Enqueue WordPress jQuery UI Datepicker for date range selection.
             wp_enqueue_script('jquery-ui-datepicker');
             // Enqueue default WordPress jQuery UI styles.
-            wp_enqueue_style('jquery-ui-style', admin_url('/css/jquery-ui-fresh.min.css'));
+            // wp_enqueue_style('jquery-ui-style', admin_url('/css/jquery-ui-fresh.min.css'));
 
             // Enqueue custom admin styles for the plugin.
             wp_enqueue_style(
@@ -934,21 +938,6 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         <div class="metric-box" style="border: 1px solid #ccc; padding: 15px; min-width: 150px; text-align: center;"><h4>Conversion Rate</h4><p style="font-size: 1.5em; margin: 5px 0;"><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
                     </div>
                     <hr style="margin-top:30px;">
-                    <?php
-                    // Fetch available sites for the dropdown
-                    $available_sites_for_dropdown = array(); 
-                    if ($api_client) {
-                        $fetched_sites = $api_client->get_available_sites(); 
-                        // get_available_sites() returns an array, empty if error or no sites.
-                        if (!empty($fetched_sites)) {
-                            $available_sites_for_dropdown = $fetched_sites;
-                        }
-                        // If $api_client->get_available_sites() could return WP_Error, handle it:
-                        // $result = $api_client->get_available_sites();
-                        // if (is_wp_error($result)) { $error_messages[] = "Could not retrieve site list: " . esc_html($result->get_error_message()); } 
-                        // else { $available_sites_for_dropdown = $result; }
-                    }
-                    ?>
                     <div class="chart-container">
                         <h3>Performance Chart</h3>
                         <div class="chart-controls">
@@ -983,6 +972,21 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                             </div>
                             <div>
                                 <label for="chart-site-selector">Site:</label>
+                                <?php
+                                // Fetch available sites for the dropdown
+                                $available_sites_for_dropdown = array(); 
+                                if ($api_client) {
+                                    $fetched_sites = $api_client->get_available_sites(); 
+                                    // get_available_sites() returns an array, empty if error or no sites.
+                                    if (!empty($fetched_sites)) {
+                                        $available_sites_for_dropdown = $fetched_sites;
+                                    }
+                                    // If $api_client->get_available_sites() could return WP_Error, handle it:
+                                    // $result = $api_client->get_available_sites();
+                                    // if (is_wp_error($result)) { $error_messages[] = "Could not retrieve site list: " . esc_html($result->get_error_message()); } 
+                                    // else { $available_sites_for_dropdown = $result; }
+                                }
+                                ?>
                                 <select id="chart-site-selector">
                                     <option value="all_sites" selected>All Sites</option>
                                     <?php if ( ! empty( $available_sites_for_dropdown ) ) : ?>
