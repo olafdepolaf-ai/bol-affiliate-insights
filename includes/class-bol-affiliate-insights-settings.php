@@ -484,6 +484,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             } else {
                 wp_send_json_success( $chart_data );
             }
+            // Minor comment for republishing purposes - 2025-05-21 07:36:05 UTC
         }
         
         /**
