@@ -61,164 +61,148 @@
     font-weight: bold;
 }
 
-/* === Final Revised Table Header & Sorting Arrows Styling === */
+/* === WP_List_Table Sorting Arrow Fix (Based on provided HTML) === */
 
-/* Style for the link within sortable/sorted table headers */
+/* --- General Link Styling --- */
 .wp-list-table th.manage-column.sortable a,
 .wp-list-table th.manage-column.sorted a {
     display: inline-flex;
     align-items: center;
-    gap: 0.3em;
+    gap: 0.4em; /* Space between text and indicator group */
     text-decoration: none;
+    color: #2271b1; /* Standard WP link color */
+}
+.wp-list-table th.manage-column.sortable a:hover,
+.wp-list-table th.manage-column.sorted a:hover {
+    color: #135e96; /* Standard WP link hover color */
 }
 
-/* Ensure the column title text itself can wrap if long */
-.wp-list-table th.manage-column.sortable a > span:first-child,
+.wp-list-table th.manage-column.sortable a > span:first-child, /* The text part */
 .wp-list-table th.manage-column.sorted a > span:first-child {
-    white-space: normal;
+    white-space: normal; /* Allow text to wrap */
 }
+/* --- End General Link Styling --- */
 
-/* The .sorting-indicator span that WP uses to hold the Dashicon(s) */
-.wp-list-table th.manage-column .sorting-indicator {
-    visibility: visible; /* Keep this, WordPress might use it for its own logic */
+
+/* --- Sorting Indicator Specifics --- */
+
+/* The outer wrapper for both potential indicators (e.g., <span class="sorting-indicators">) */
+.wp-list-table th.manage-column .sorting-indicators { /* Plural */
+    position: relative; 
     line-height: 1;
+    display: inline-block; 
+    width: 1em; 
+    height: 1em; 
+    vertical-align: middle; 
 }
 
-/* Hide ALL Dashicons within any .sorting-indicator by DEFAULT */
-.wp-list-table th.manage-column .sorting-indicator .dashicons {
-    display: none;
-    vertical-align: middle;
+/* The individual indicator spans (e.g., <span class="sorting-indicator asc">) */
+/* Hide BOTH individual indicators by default for ALL columns */
+.wp-list-table th.manage-column .sorting-indicators .sorting-indicator { /* Singular */
+    display: none; 
+    /* WordPress core CSS will use ::before to add the arrow icon to these */
+    /* We just control their display based on the parent <th> state */
 }
 
-/* For ASCENDING sorted columns, show the UP arrow */
-.wp-list-table th.manage-column.sorted.asc .sorting-indicator .dashicons-arrow-up-alt2 {
-    display: inline-block;
+/* For ACTIVELY SORTED columns: */
+
+/* When sorted ASCENDING, make the .asc indicator span displayable */
+/* WordPress core CSS should then apply its ::before styling to this visible span */
+.wp-list-table th.manage-column.sorted.asc .sorting-indicators .sorting-indicator.asc {
+    display: block; /* Or inline-block, matching how WP core might style it */
 }
-/* And explicitly hide the down arrow in this case, just to be safe */
-.wp-list-table th.manage-column.sorted.asc .sorting-indicator .dashicons-arrow-down-alt2 {
-    display: none;
+/* And ensure the .desc one is explicitly hidden */
+.wp-list-table th.manage-column.sorted.asc .sorting-indicators .sorting-indicator.desc {
+    display: none !important;
 }
 
-/* For DESCENDING sorted columns, show the DOWN arrow */
-.wp-list-table th.manage-column.sorted.desc .sorting-indicator .dashicons-arrow-down-alt2 {
-    display: inline-block;
+/* When sorted DESCENDING, make the .desc indicator span displayable */
+.wp-list-table th.manage-column.sorted.desc .sorting-indicators .sorting-indicator.desc {
+    display: block; /* Or inline-block */
 }
-/* And explicitly hide the up arrow in this case */
-.wp-list-table th.manage-column.sorted.desc .sorting-indicator .dashicons-arrow-up-alt2 {
-    display: none;
+/* And ensure the .asc one is explicitly hidden */
+.wp-list-table th.manage-column.sorted.desc .sorting-indicators .sorting-indicator.asc {
+    display: none !important;
 }
-/* --- End of Sorting Arrow Styling --- */
+/* --- End Sorting Indicator Specifics --- */
 
 
 /* === Table Column Width Adjustments === */
 
-/* For Date columns (used in Promotion Methods, Commission/Revenue, Orders) */
-.wp-list-table .column-date,       /* Slug 'date' from Promotion Methods / Commission-Revenue */
-.wp-list-table .column-orderDate { /* Slug 'orderDate' from Orders */
-    width: 10%; /* Adjust this percentage as needed */
-    /* Example fixed width: width: 100px; */
+/* For Date columns */
+.wp-list-table .column-date,
+.wp-list-table .column-orderDate {
+    width: 10%;
 }
 
 /* For ID columns */
 .wp-list-table .column-orderId,
 .wp-list-table .column-orderItemId {
     width: 12%;
-    /* Example fixed width: width: 120px; */
-    /* For very long IDs without spaces, you might consider: */
-    /* word-break: break-all; */
 }
 
 /* For Quantity columns */
-.wp-list-table .column-quantity,        /* Orders */
-.wp-list-table .column-quantityPayable { /* Commission-Revenue */
+.wp-list-table .column-quantity,
+.wp-list-table .column-quantityPayable {
     width: 7%;
-    text-align: center; /* Or right, common for numbers */
-    /* Example fixed width: width: 60px; */
-}
-
-/* For Status column (Orders) */
-.wp-list-table .column-status {
-    width: 10%; /* Might need adjustment based on typical status text length */
-    /* Example fixed width: width: 90px; */
-}
-
-/* For Price / Commission / Revenue / EPC / AOV columns */
-/* (These often benefit from right-alignment) */
-.wp-list-table .column-priceInclVat,       /* Orders, Promotion Methods */
-.wp-list-table .column-commission,         /* Orders */
-.wp-list-table .column-commissionOriginal, /* Commission-Revenue */
-.wp-list-table .column-commissionApproved, /* Commission-Revenue */
-.wp-list-table .column-commissionOpen,     /* Commission-Revenue */
-.wp-list-table .column-revenueOriginalInclVat, /* Commission-Revenue */
-.wp-list-table .column-revenueApprovedInclVat, /* Commission-Revenue */
-/* .wp-list-table .column-revenueInclVat, is covered by .column-priceInclVat if slug is same, otherwise add */
-.wp-list-table .column-earningsPerClick,   /* Promotion Methods */
-.wp-list-table .column-averageOrderValue { /* Promotion Methods */
-    width: 10%; /* Adjust as needed, some titles are long */
-    text-align: right;
-}
-
-/* For Percentage columns */
-.wp-list-table .column-commissionPercentage, /* Commission-Revenue */
-.wp-list-table .column-clickThroughRate,   /* Promotion Methods */
-.wp-list-table .column-conversion {         /* Promotion Methods */
-    width: 8%; /* Adjusted slightly for "CTR (%)" etc. */
-    text-align: center; /* Or right */
-}
-
-/* Columns with potentially longer text (Product Title, Link Name, Site Name, Frame Type) */
-/* It's often best to let these take up remaining space by not setting a fixed width,
-   or give them larger percentages. Explicit widths are commented out examples. */
-
-.wp-list-table .column-productTitle { /* Orders */
-    /* width: 25%; */
-}
-.wp-list-table .column-name { /* Link Name (Commission-Revenue, Promotion Methods) */
-    /* width: 20%; */
-}
-.wp-list-table .column-siteName { /* Commission-Revenue, Promotion Methods */
-    /* width: 15%; */
-}
-.wp-list-table .column-frameType { /* Commission-Revenue, Promotion Methods */
-    /* width: 10%; */
-}
-.wp-list-table .column-subId { /* Commission-Revenue, Promotion Methods */
-    /* width: 8%; */
-}
-.wp-list-table .column-impressions { /* Promotion Methods, can be large numbers */
-    /* width: 8%; */
-    text-align: right;
-}
-.wp-list-table .column-orders { /* Promotion Methods */
-    /* width: 7%; */
     text-align: center;
 }
 
-/* Optional: If you want to force truncation on very long text fields in specific columns */
-/*
-.wp-list-table td.column-productTitle,
-.wp-list-table td.column-name {
-    max-width: 250px; /* Adjust as needed */
-/*  white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* For Status column */
+.wp-list-table .column-status {
+    width: 10%;
 }
-*/
+
+/* For Price / Commission / Revenue / EPC / AOV columns */
+.wp-list-table .column-priceInclVat,
+.wp-list-table .column-commission,
+.wp-list-table .column-commissionOriginal,
+.wp-list-table .column-commissionApproved,
+.wp-list-table .column-commissionOpen,
+.wp-list-table .column-revenueOriginalInclVat,
+.wp-list-table .column-revenueApprovedInclVat,
+.wp-list-table .column-earningsPerClick,
+.wp-list-table .column-averageOrderValue {
+    width: 10%;
+    text-align: right;
+}
+/* Make sure revenueInclVat for Promotion methods is also covered if its slug is different */
+.wp-list-table .column-revenueInclVat { /* Assuming this is for Promotion Methods based on prior context */
+    width: 10%;
+    text-align: right;
+}
+
+
+/* For Percentage columns */
+.wp-list-table .column-commissionPercentage,
+.wp-list-table .column-clickThroughRate,
+.wp-list-table .column-conversion {
+    width: 8%;
+    text-align: center;
+}
+
+/* Columns with potentially longer text (Product Title, Link Name, Site Name, Frame Type) */
+.wp-list-table .column-productTitle {}
+.wp-list-table .column-name {}
+.wp-list-table .column-siteName {}
+.wp-list-table .column-frameType {}
+.wp-list-table .column-subId {}
+
+.wp-list-table .column-impressions {
+    text-align: right;
+}
+.wp-list-table .column-orders { /* From Promotion Methods tab */
+    text-align: center;
+}
 /* --- End of Column Width Adjustments --- */
 
 
 /* Chart Data Table Container */
 #bol-chart-data-table-container {
-    margin-top: 20px; /* Reinforce top margin */
-    margin-bottom: 30px; /* Add bottom margin for spacing */
-    clear: both; /* Ensure it doesn't overlap floated elements if any */
+    margin-top: 20px;
+    margin-bottom: 30px;
+    clear: both;
 }
 
-/* Optional: If table headers need specific styling beyond wp-list-table */
-#bol-chart-data-table-container .wp-list-table th {
-    /* Example: text-align: left; */
-}
-
-#bol-chart-data-table-container .wp-list-table td {
-    /* Example: vertical-align: middle; */
-}
+#bol-chart-data-table-container .wp-list-table th {}
+#bol-chart-data-table-container .wp-list-table td {}
