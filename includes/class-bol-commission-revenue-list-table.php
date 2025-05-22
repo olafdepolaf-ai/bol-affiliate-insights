@@ -34,48 +34,38 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
          */
         public function __construct( $args = array() ) {
             parent::__construct( array(
-                'singular' => 'Commission Record', // Singular name of the listed records.
-                'plural'   => 'Commission Records',// Plural name of the listed records.
-                'ajax'     => false               // This table does not support AJAX.
+                'singular' => 'Commission Record', 
+                'plural'   => 'Commission Records',
+                'ajax'     => false               
             ) );
         }
 
         /**
          * Defines the columns for the commission and revenue table.
          *
-         * These columns correspond to the data fields available in the Bol.com Commission Report.
-         *
          * @return array An associative array of column slugs => titles.
          */
         public function get_columns() {
             $columns = array(
-                'orderDate'             => 'Order Date',                        // Date of the order.
-                'siteName'              => 'Site Name',                         // Name of the affiliate site.
-                // 'siteCode'           => 'Site Code',                        // Site code (optional, can be verbose).
-                'frameType'             => 'Frame Type',                        // Type of frame/link used.
-                'name'                  => 'Link Name',                         // Name of the link/promotion.
-                'subId'                 => 'SubID',                             // Affiliate SubID used.
-                'commissionPercentage'  => 'Comm. %',                           // Commission percentage.
-                'commissionOriginal'    => 'Comm. Original',                    // Original commission amount.
-                'commissionApproved'    => 'Comm. Approved',                    // Approved commission amount.
-                'commissionOpen'        => 'Comm. Open',                        // Open/pending commission amount.
-                'revenueOriginalInclVat'=> 'Revenue Original (VAT Incl.)',    // Original revenue including VAT.
-                'revenueApprovedInclVat'=> 'Revenue Approved (VAT Incl.)',    // Approved revenue including VAT.
-                // 'revenueOpenInclVat'    => 'Revenue Open (VAT Incl.)',       // Open revenue including VAT (optional).
-                'quantityPayable'       => 'Qty. Payable'                       // Quantity of items for which commission is payable.
+                'orderDate'             => __('Order Date', 'bol-affiliate-insights'),                        
+                'siteName'              => __('Site Name', 'bol-affiliate-insights'),                         
+                'frameType'             => __('Frame Type', 'bol-affiliate-insights'),                        
+                'name'                  => __('Link Name', 'bol-affiliate-insights'),                         
+                'subId'                 => __('SubID', 'bol-affiliate-insights'),                             
+                'commissionPercentage'  => __('Comm. %', 'bol-affiliate-insights'),                           
+                'commissionOriginal'    => __('Comm. Original', 'bol-affiliate-insights'),                    
+                'commissionApproved'    => __('Comm. Approved', 'bol-affiliate-insights'),                    
+                'commissionOpen'        => __('Comm. Open', 'bol-affiliate-insights'),                        
+                'revenueOriginalInclVat'=> __('Revenue Original (VAT Incl.)', 'bol-affiliate-insights'),    
+                'revenueApprovedInclVat'=> __('Revenue Approved (VAT Incl.)', 'bol-affiliate-insights'),    
+                'quantityPayable'       => __('Qty. Payable', 'bol-affiliate-insights')                       
             );
             return $columns;
         }
 
         /**
-         * Prepares the items for display in the table.
-         *
-         * This method takes the raw data from the API, sets up column headers,
-         * and assigns the data to `$this->items`. If no data is provided,
-         * it populates `$this->items` with sample data for structural testing.
-         *
-         * @param array $data An array of commission/revenue data from the API.
-         * @return void
+         * Defines sortable columns.
+         * @return array
          */
         public function get_sortable_columns() {
             $sortable_columns = array(
@@ -95,19 +85,17 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
             return $sortable_columns;
         }
 
+        // DO NOT define get_hidden_columns() here. Let it inherit from WP_List_Table.
+
         /**
          * Prepares the items for display in the table.
-         *
-         * This method takes the raw data from the API, sets up column headers,
-         * and assigns the data to `$this->items`. If no data is provided,
-         * it populates `$this->items` with sample data for structural testing.
          *
          * @param array $data An array of commission/revenue data from the API.
          * @return void
          */
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
-            $hidden = array(); // Array of hidden columns.
+            $hidden = (array) $this->get_hidden_columns(); 
             $sortable = $this->get_sortable_columns();
             $this->_column_headers = array( $columns, $hidden, $sortable );
 
@@ -118,14 +106,13 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
             }
 
             if (empty($data)) {
-                // Updated sample data logic as above
                 $sample_item = array('orderDate' => '2023-01-01', 'siteName' => 'My Blog', 'frameType' => 'Tekstlink', 'name' => 'Spring Sale', 'subId' => 'promo1', 'commissionPercentage' => 8.0, 'commissionOriginal' => 10.00, 'commissionApproved' => 8.00, 'commissionOpen' => 2.00, 'revenueOriginalInclVat' => 125.00, 'revenueApprovedInclVat' => 100.00, 'quantityPayable' => 5);
                 $this->items = array();
                 for ($i = 1; $i <= 50; $i++) {
                     $item = $sample_item;
                     $item['orderDate'] = date('Y-m-d', strtotime("-$i days"));
                     $item['name'] = 'Campaign ' . $i;
-                    $item['commissionApproved'] = 8.00 + $i; // Vary some data
+                    $item['commissionApproved'] = 8.00 + $i; 
                     $item['revenueApprovedInclVat'] = 100.00 + ($i * 10);
                     $this->items[] = $item;
                 }
@@ -146,13 +133,11 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
                         $val_a = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_a) ) );
                         $val_b = floatval( str_replace(',', '.', preg_replace('/[^\d,.]/', '', $val_b) ) );
                     } elseif ( $orderby === 'orderDate' ) {
-                        // Assuming YYYY-MM-DD format
                         $time_a = strtotime( $val_a );
                         $time_b = strtotime( $val_b );
                         if ($time_a === $time_b) return 0;
                         return ( $order === 'asc' ) ? ( $time_a < $time_b ? -1 : 1 ) : ( $time_a > $time_b ? -1 : 1 );
                     } else {
-                        // String comparison
                         $val_a = strtolower( (string) $val_a );
                         $val_b = strtolower( (string) $val_b );
                     }
@@ -165,7 +150,7 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
             }
 
             // Pagination logic
-            $per_page = 20;
+            $per_page = $this->get_items_per_page( 'bol_commission_records_per_page', 20 ); // Allow filtering items per page
             $current_page = $this->get_pagenum();
             $total_items = count( $this->items );
 
@@ -180,18 +165,13 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
 
         /**
          * Defines the default rendering for each column.
-         *
-         * This method is called for each cell in the table. It formats data
-         * such as dates, percentages, currency, and numbers for display.
-         *
-         * @param array  $item        A singular item (one row's data).
-         * @param string $column_name The name/slug of the column to be displayed.
-         * @return string Text or HTML to be displayed in the cell.
+         * @param array  $item
+         * @param string $column_name
+         * @return string
          */
         protected function column_default( $item, $column_name ) {
             switch ( $column_name ) {
                 case 'orderDate':
-                    // Assuming date format YYYY-MM-DD from API for this report.
                     if ( !empty($item[ $column_name ]) && is_string($item[ $column_name ]) ) {
                         try {
                            $date = date_create($item[ $column_name ]);
@@ -205,37 +185,29 @@ if ( ! class_exists( 'Bol_Commission_Revenue_List_Table' ) ) {
                    }
                    return 'N/A';
                 case 'commissionPercentage':
-                    // Format commission percentage with one decimal place.
                     return number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 1 ) . '%';
                 case 'commissionOriginal':
                 case 'commissionApproved':
                 case 'commissionOpen':
                 case 'revenueOriginalInclVat':
                 case 'revenueApprovedInclVat':
-                    // Format currency values.
                     return '€' . number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 2 );
                 case 'quantityPayable':
-                    // Format quantity as an integer.
                     return number_format_i18n( (int)$item[ $column_name ] );
                 case 'siteName':
                 case 'frameType':
                 case 'name':
                 case 'subId':
-                    // Escape and display text values.
                     return esc_html( $item[ $column_name ] );
                 default:
-                    // For debugging: show raw value if not specifically handled, or 'N/A'.
                     return isset($item[ $column_name ]) ? esc_html($item[ $column_name ]) : 'N/A';
             }
         }
 
         /**
-         * Message to display when no items are found in the table.
-         *
-         * @return void
+         * Message to display when no items are found.
          */
         public function no_items() {
-            // Localized message for when the table is empty.
             _e( 'No commission or revenue data found for the selected period.', 'bol-affiliate-insights' );
         }
     }

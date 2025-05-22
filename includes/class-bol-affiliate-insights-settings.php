@@ -46,6 +46,11 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
             add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
             // Enqueue scripts and styles specific to the plugin's admin page.
             add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+            // Add action to handle screen options.
+            // Note: The subtask initially suggested an 'admin_init' hook for a method to set up screen options,
+            // but then corrected that the 'load-{$hook_suffix}' action should be added inside 'add_admin_menu'.
+            // So, the actual hook for handle_screen_options() will be added in add_admin_menu().
+            // No new action is added here in __construct directly for handle_screen_options itself.
         }
 
         /**
@@ -706,6 +711,87 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                 plugins_url( 'assets/images/bol-logo.png', BOL_AFFILIATE_INSIGHTS_FILE ), // Corrected path for logo
                 25                                                  
             );
+
+            if ( $this->settings_page_hook_suffix ) {
+                add_action( "load-{$this->settings_page_hook_suffix}", array( $this, 'handle_screen_options' ) );
+            }
+        }
+
+        /**
+         * Adds screen options, specifically the 'per_page' option for list tables.
+         *
+         * This method is hooked into the 'load-{$page_hook_suffix}' action, ensuring it runs
+         * only on the plugin's settings page. It allows users to customize how many
+         * items are shown per page in the WP_List_Table instances.
+         */
+        public function handle_screen_options() {
+            // Ensure we are on the correct screen. This is mostly redundant due to the
+            // specific load hook, but good for robustness.
+            $screen = get_current_screen();
+
+            // Check if the current screen ID matches our settings page's base ID.
+            // The screen ID for a top-level menu page is 'toplevel_page_{menu_slug}'.
+            // add_menu_page returns the hook directly, e.g. "toplevel_page_bol-affiliate-insights"
+            if ( ! is_object( $screen ) || $screen->id !== $this->settings_page_hook_suffix ) {
+                return;
+            }
+
+            // Define the arguments for the 'per_page' screen option.
+            $args = array(
+                'label'   => __('Items per page', 'bol-affiliate-insights'), // Translatable label
+                'default' => 20, // Default number of items per page
+                'option'  => 'bol_items_per_page' // The option name that will store the user's preference
+            );
+            add_screen_option( 'per_page', $args );
+
+            // Determine active tab to load the correct list table columns for screen options
+            $current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'dashboard';
+            $list_table = null;
+            $table_columns = array();
+
+            // Define path to includes directory
+            // Assuming this file (class-bol-affiliate-insights-settings.php) is in the 'includes' directory.
+            $includes_dir = plugin_dir_path( __FILE__ ); // This will be 'wp-content/plugins/your-plugin/includes/'
+
+            if ( $current_tab === 'orders' ) {
+                if ( ! class_exists( 'Bol_Orders_List_Table', false ) ) {
+                    require_once $includes_dir . 'class-bol-orders-list-table.php';
+                }
+                if ( class_exists( 'Bol_Orders_List_Table', false ) ) {
+                    $list_table = new Bol_Orders_List_Table();
+                }
+            } elseif ( $current_tab === 'commission_revenue' ) {
+                if ( ! class_exists( 'Bol_Commission_Revenue_List_Table', false ) ) {
+                    require_once $includes_dir . 'class-bol-commission-revenue-list-table.php';
+                }
+                if ( class_exists( 'Bol_Commission_Revenue_List_Table', false ) ) {
+                    $list_table = new Bol_Commission_Revenue_List_Table();
+                }
+            } elseif ( $current_tab === 'promotion_methods' ) {
+                if ( ! class_exists( 'Bol_Promotion_Methods_List_Table', false ) ) {
+                    require_once $includes_dir . 'class-bol-promotion-methods-list-table.php';
+                }
+                if ( class_exists( 'Bol_Promotion_Methods_List_Table', false ) ) {
+                    $list_table = new Bol_Promotion_Methods_List_Table();
+                }
+            }
+
+            if ( $list_table && method_exists( $list_table, 'get_columns' ) ) {
+                $table_columns = $list_table->get_columns();
+                // Ensure 'cb' column for checkboxes is not included if it exists, as WP handles it.
+                if ( isset( $table_columns['cb'] ) ) {
+                    unset( $table_columns['cb'] );
+                }
+            }
+
+            if ( !empty( $table_columns ) ) {
+                // Add columns to screen options. WordPress uses this to show checkboxes.
+                // The screen object should be available at this point (load-{$hook}).
+                $current_screen = get_current_screen();
+                if ( $current_screen ) {
+                    $current_screen->add_option( 'hidden_columns', $table_columns );
+                }
+            }
         }
 
         /**

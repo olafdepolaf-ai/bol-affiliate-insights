@@ -93,7 +93,7 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
          */
         public function prepare_items( $data = array() ) {
             $columns = $this->get_columns();
-            $hidden = array(); // Array of hidden columns.
+            $hidden = (array) $this->get_hidden_columns(); 
             $sortable = $this->get_sortable_columns();
             $this->_column_headers = array( $columns, $hidden, $sortable );
 
