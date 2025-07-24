@@ -881,7 +881,9 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                         $promo_items = array();
                         if ( is_wp_error( $promo_data_response ) ) {
                             $error_messages[] = "Error fetching promotion data: " . esc_html( $promo_data_response->get_error_message() );
-                        } elseif ( isset($promo_data_response['items']) ) {
+                        } elseif ( !isset($promo_data_response['items']) ) {
+                             $error_messages[] = "Promotion data response is not in the expected format.";
+                        } else {
                             $promo_items = $promo_data_response['items'];
                             if ($global_selected_site_filter !== 'all_sites' && !empty($promo_items)) {
                                 $promo_items = array_filter($promo_items, function($item) use ($global_selected_site_filter) {
@@ -893,19 +895,19 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                                 $total_orders += isset($item['orders']) ? (int)$item['orders'] : 0;
                                 $total_revenue += isset($item['revenueInclVat']) ? (float)$item['revenueInclVat'] : 0.0;
                             }
-                        } elseif (!isset($promo_data_response['items']) && !is_wp_error($promo_data_response)) {
-                             $error_messages[] = "Promotion data response is not in the expected format.";
                         }
 
                         $orders_report_data = $api_client->get_orders_report( $start_date, $end_date );
                         if ( is_wp_error( $orders_report_data ) ) {
                             $error_messages[] = "Error fetching orders report for commission: " . esc_html( $orders_report_data->get_error_message() );
-                        } elseif ( isset( $orders_report_data['items'] ) && !empty( $orders_report_data['items'] ) ) {
-                            foreach ( $orders_report_data['items'] as $order_item ) {
-                                $total_commission += isset( $order_item['commission'] ) ? (float)$order_item['commission'] : 0.0;
-                            }
-                        } elseif (!isset($orders_report_data['items']) && !is_wp_error($orders_report_data)) {
+                        } elseif ( !isset( $orders_report_data['items'] ) ) {
                              $error_messages[] = "Orders report data for commission is not in the expected format.";
+                        } else {
+                            if ( !empty( $orders_report_data['items'] ) ) {
+                                foreach ( $orders_report_data['items'] as $order_item ) {
+                                    $total_commission += isset( $order_item['commission'] ) ? (float)$order_item['commission'] : 0.0;
+                                }
+                            }
                         }
                     }
 
@@ -990,6 +992,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <form method="GET" action="">
                         <input type="hidden" name="page" value="bol-affiliate-insights">
                         <input type="hidden" name="tab" value="orders">
+                        <?php wp_nonce_field('bol_orders_date_range', 'bol_orders_nonce'); ?>
                         <label for="orders-start-date">From:</label>
                         <input type="text" id="orders-start-date" name="start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
                         <label for="orders-end-date">To:</label>
@@ -999,31 +1002,35 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <hr>
                     <div id="orders-data-container">
                         <?php
-                        echo '<h4>Orders from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
-                        if (!$api_client) {
-                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
-                        } else {
-                            $orders_data_response = $api_client->get_orders_report($current_start_date, $current_end_date);
-                            $order_items_to_display = array();
-
-                            if (is_wp_error($orders_data_response)) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching orders: ' . esc_html($orders_data_response->get_error_message()) . '</p></div>';
-                            } elseif (!isset($orders_data_response['items'])) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Orders data response is not in the expected format.</p></div>';
+                        if (isset($_GET['start_date']) && isset($_GET['bol_orders_nonce']) && wp_verify_nonce($_GET['bol_orders_nonce'], 'bol_orders_date_range')) {
+                            echo '<h4>Orders from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+                            if (!$api_client) {
+                                echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                             } else {
-                                $order_items_to_display = $orders_data_response['items'];
-                                
-                                $orders_list_table = new Bol_Orders_List_Table();
-                                $orders_list_table->prepare_items( $order_items_to_display );
-                                echo '<h3>Orders Data</h3>';
-                                if ($global_selected_site_filter !== 'all_sites') {
-                                    echo '<p><em>Note: The Orders Report itself does not provide per-item site filtering. Displaying all orders. The global site filter applies to other reports.</em></p>';
-                                }
-                                $orders_list_table->display();
-                                if (empty($order_items_to_display)) {
-                                     echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected period.</p></div>';
+                                $orders_data_response = $api_client->get_orders_report($current_start_date, $current_end_date);
+                                $order_items_to_display = array();
+
+                                if (is_wp_error($orders_data_response)) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Error fetching orders: ' . esc_html($orders_data_response->get_error_message()) . '</p></div>';
+                                } elseif (!isset($orders_data_response['items'])) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Orders data response is not in the expected format.</p></div>';
+                                } else {
+                                    $order_items_to_display = $orders_data_response['items'];
+                                    
+                                    $orders_list_table = new Bol_Orders_List_Table();
+                                    $orders_list_table->prepare_items( $order_items_to_display );
+                                    echo '<h3>Orders Data</h3>';
+                                    if ($global_selected_site_filter !== 'all_sites') {
+                                        echo '<p><em>Note: The Orders Report itself does not provide per-item site filtering. Displaying all orders. The global site filter applies to other reports.</em></p>';
+                                    }
+                                    $orders_list_table->display();
+                                    if (empty($order_items_to_display)) {
+                                         echo '<div class="notice notice-info is-dismissible"><p>No orders found for the selected period.</p></div>';
+                                    }
                                 }
                             }
+                        } else {
+                            echo '<p>Select a date range and click \'Fetch Orders\' to view the report.</p>';
                         }
                         ?>
                     </div>
@@ -1038,6 +1045,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <form method="GET" action="">
                         <input type="hidden" name="page" value="bol-affiliate-insights">
                         <input type="hidden" name="tab" value="commission_revenue">
+                        <?php wp_nonce_field('bol_cr_date_range', 'bol_cr_nonce'); ?>
                         <label for="cr-start-date">From:</label>
                         <input type="text" id="cr-start-date" name="cr_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
                         <label for="cr-end-date">To:</label>
@@ -1047,42 +1055,46 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <hr>
                     <div id="commission-revenue-data-container">
                         <?php
-                        echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
-                        if (!$api_client) {
-                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
-                        } else {
-                            $report_data_response = $api_client->get_commission_revenue_report($current_start_date, $current_end_date);
-                            $cr_items_to_display = array();
-
-                            if (is_wp_error($report_data_response)) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
-                            } elseif (!isset($report_data_response['items'])) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                        if (isset($_GET['cr_start_date']) && isset($_GET['bol_cr_nonce']) && wp_verify_nonce($_GET['bol_cr_nonce'], 'bol_cr_date_range')) {
+                            echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+                            if (!$api_client) {
+                                echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                             } else {
-                                $cr_items_to_display = $report_data_response['items'];
-                                if ($global_selected_site_filter !== 'all_sites' && !empty($cr_items_to_display)) {
-                                    $cr_items_to_display = array_filter($cr_items_to_display, function($item) use ($global_selected_site_filter) {
-                                        return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
-                                    });
-                                }
+                                $report_data_response = $api_client->get_commission_revenue_report($current_start_date, $current_end_date);
+                                $cr_items_to_display = array();
 
-                                $cr_list_table = new Bol_Commission_Revenue_List_Table();
-                                $cr_list_table->prepare_items( $cr_items_to_display );
-                                echo '<h3>Commission & Revenue Data</h3>';
-                                if ($global_selected_site_filter !== 'all_sites') {
-                                    $site_name_display = $global_selected_site_filter; 
-                                    if(isset($available_sites_for_dropdown[$global_selected_site_filter])) {
-                                        $site_name_display = $available_sites_for_dropdown[$global_selected_site_filter] . " (" . $global_selected_site_filter . ")";
+                                if (is_wp_error($report_data_response)) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
+                                } elseif (!isset($report_data_response['items'])) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                                } else {
+                                    $cr_items_to_display = $report_data_response['items'];
+                                    if ($global_selected_site_filter !== 'all_sites' && !empty($cr_items_to_display)) {
+                                        $cr_items_to_display = array_filter($cr_items_to_display, function($item) use ($global_selected_site_filter) {
+                                            return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                        });
                                     }
-                                    echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name_display) . '</em></p>';
-                                }
-                                $cr_list_table->display();
-                                if (empty($cr_items_to_display) && isset($report_data_response['items']) && !empty($report_data_response['items'])) { // Check if filter resulted in empty
-                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
-                                } elseif (empty($cr_items_to_display)) {
-                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+
+                                    $cr_list_table = new Bol_Commission_Revenue_List_Table();
+                                    $cr_list_table->prepare_items( $cr_items_to_display );
+                                    echo '<h3>Commission & Revenue Data</h3>';
+                                    if ($global_selected_site_filter !== 'all_sites') {
+                                        $site_name_display = $global_selected_site_filter; 
+                                        if(isset($available_sites_for_dropdown[$global_selected_site_filter])) {
+                                            $site_name_display = $available_sites_for_dropdown[$global_selected_site_filter] . " (" . $global_selected_site_filter . ")";
+                                        }
+                                        echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name_display) . '</em></p>';
+                                    }
+                                    $cr_list_table->display();
+                                    if (empty($cr_items_to_display) && isset($report_data_response['items']) && !empty($report_data_response['items'])) { // Check if filter resulted in empty
+                                         echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
+                                    } elseif (empty($cr_items_to_display)) {
+                                         echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+                                    }
                                 }
                             }
+                        } else {
+                            echo '<p>Select a date range and click \'Fetch Report\' to view the data.</p>';
                         }
                         ?>
                     </div>
@@ -1097,6 +1109,7 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <form method="GET" action="">
                         <input type="hidden" name="page" value="bol-affiliate-insights">
                         <input type="hidden" name="tab" value="promotion_methods">
+                        <?php wp_nonce_field('bol_pm_date_range', 'bol_pm_nonce'); ?>
                         <label for="pm-start-date">From:</label>
                         <input type="text" id="pm-start-date" name="pm_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
                         <label for="pm-end-date">To:</label>
@@ -1106,42 +1119,46 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Settings' ) ) {
                     <hr>
                     <div id="promotion-methods-data-container">
                         <?php
-                        echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
-                        if (!$api_client) {
-                            echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
-                        } else {
-                            $report_data_response = $api_client->get_promotion_methods_report($current_start_date, $current_end_date);
-                            $pm_items_to_display = array();
-
-                            if (is_wp_error($report_data_response)) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
-                            } elseif (!isset($report_data_response['items'])) {
-                                echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                        if (isset($_GET['pm_start_date']) && isset($_GET['bol_pm_nonce']) && wp_verify_nonce($_GET['bol_pm_nonce'], 'bol_pm_date_range')) {
+                            echo '<h4>Report from ' . esc_html($current_start_date) . ' to ' . esc_html($current_end_date) . '</h4>';
+                            if (!$api_client) {
+                                echo '<div class="notice notice-error is-dismissible"><p>API Client not available. Check plugin configuration.</p></div>';
                             } else {
-                                $pm_items_to_display = $report_data_response['items'];
-                                if ($global_selected_site_filter !== 'all_sites' && !empty($pm_items_to_display)) {
-                                    $pm_items_to_display = array_filter($pm_items_to_display, function($item) use ($global_selected_site_filter) {
-                                        return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
-                                    });
-                                }
-                                
-                                $pm_list_table = new Bol_Promotion_Methods_List_Table();
-                                $pm_list_table->prepare_items( $pm_items_to_display );
-                                echo '<h3>Promotion Methods Data</h3>';
-                                 if ($global_selected_site_filter !== 'all_sites') {
-                                    $site_name_display = $global_selected_site_filter; 
-                                    if(isset($available_sites_for_dropdown[$global_selected_site_filter])) {
-                                        $site_name_display = $available_sites_for_dropdown[$global_selected_site_filter] . " (" . $global_selected_site_filter . ")";
+                                $report_data_response = $api_client->get_promotion_methods_report($current_start_date, $current_end_date);
+                                $pm_items_to_display = array();
+
+                                if (is_wp_error($report_data_response)) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Error fetching report: ' . esc_html($report_data_response->get_error_message()) . '</p></div>';
+                                } elseif (!isset($report_data_response['items'])) {
+                                    echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+                                } else {
+                                    $pm_items_to_display = $report_data_response['items'];
+                                    if ($global_selected_site_filter !== 'all_sites' && !empty($pm_items_to_display)) {
+                                        $pm_items_to_display = array_filter($pm_items_to_display, function($item) use ($global_selected_site_filter) {
+                                            return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
+                                        });
                                     }
-                                    echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name_display) . '</em></p>';
-                                }
-                                $pm_list_table->display();
-                                if (empty($pm_items_to_display) && isset($report_data_response['items']) && !empty($report_data_response['items'])) {
-                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
-                                } elseif (empty($pm_items_to_display)) {
-                                     echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+                                    
+                                    $pm_list_table = new Bol_Promotion_Methods_List_Table();
+                                    $pm_list_table->prepare_items( $pm_items_to_display );
+                                    echo '<h3>Promotion Methods Data</h3>';
+                                     if ($global_selected_site_filter !== 'all_sites') {
+                                        $site_name_display = $global_selected_site_filter; 
+                                        if(isset($available_sites_for_dropdown[$global_selected_site_filter])) {
+                                            $site_name_display = $available_sites_for_dropdown[$global_selected_site_filter] . " (" . $global_selected_site_filter . ")";
+                                        }
+                                        echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name_display) . '</em></p>';
+                                     }
+                                    $pm_list_table->display();
+                                    if (empty($pm_items_to_display) && isset($report_data_response['items']) && !empty($report_data_response['items'])) {
+                                         echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
+                                    } elseif (empty($pm_items_to_display)) {
+                                         echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected period.</p></div>';
+                                    }
                                 }
                             }
+                        } else {
+                            echo '<p>Select a date range and click \'Fetch Report\' to view the data.</p>';
                         }
                         ?>
                     </div>

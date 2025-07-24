@@ -231,7 +231,6 @@ if ( ! class_exists( 'Bol_Promotion_Methods_List_Table' ) ) {
                     // Escape and display text values.
                     return esc_html( $item[ $column_name ] );
                 default:
-                    // For debugging: show raw value if not specifically handled, or 'N/A'.
                     return isset($item[ $column_name ]) ? esc_html($item[ $column_name ]) : 'N/A';
             }
         }

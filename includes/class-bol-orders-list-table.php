@@ -201,8 +201,7 @@ if ( ! class_exists( 'Bol_Orders_List_Table' ) ) {
                     // Escape and display text values.
                     return esc_html( $item[ $column_name ] );
                 default:
-                    // For debugging: show the whole item array for unhandled columns.
-                    return print_r( $item, true ); 
+                    return isset($item[ $column_name ]) ? esc_html($item[ $column_name ]) : 'N/A';
             }
         }
 
