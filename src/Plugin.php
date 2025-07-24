@@ -39,7 +39,16 @@ class Plugin {
         $settings_page = new \TuinenBalkon\BolAffiliateInsights\Admin\SettingsPage();
         $this->menu_service = new \TuinenBalkon\BolAffiliateInsights\Admin\MenuService($settings_page);
         $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
+        add_filter( 'plugin_action_links_' . plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ), array( $this, 'add_settings_link' ) );
         error_log('Bol Affiliate Insights: Plugin constructor finished.');
+    }
+
+    public function add_settings_link( $links ) {
+        error_log('Bol Affiliate Insights: settings_link filter called.');
+        $url = esc_url( admin_url( 'admin.php?page=bol-affiliate-insights&tab=settings' ) );
+        $settings_link = '<a href="' . $url . '">' . __( 'Settings', 'bol-affiliate-insights' ) . '</a>';
+        $links[] = $settings_link;
+        return $links;
     }
 
     public function get_api_client() {

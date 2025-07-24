@@ -43,23 +43,6 @@ if ( ! defined( 'BOL_AFFILIATE_INSIGHTS_PATH' ) ) {
     define( 'BOL_AFFILIATE_INSIGHTS_PATH', plugin_dir_path( BOL_AFFILIATE_INSIGHTS_FILE ) );
 }
 
-/**
- * Adds a settings link to the plugin action links.
- *
- * This function is hooked into 'plugin_action_links_' . plugin_basename(__FILE__).
- * It adds a direct link to the plugin's settings page on the WordPress Plugins admin page.
- *
- * @param array $links An array of plugin action links.
- * @return array An array of plugin action links with the new settings link.
- */
-function bol_affiliate_insights_settings_link( array $links ) {
-    error_log('Bol Affiliate Insights: settings_link filter called.');
-    $url = esc_url( admin_url( 'admin.php?page=bol-affiliate-insights&tab=settings' ) );
-    $settings_link = '<a href="' . $url . '">' . __( 'Settings', 'bol-affiliate-insights' ) . '</a>';
-    $links[] = $settings_link;
-    return $links;
-}
-add_filter( 'plugin_action_links_' . plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ), 'bol_affiliate_insights_settings_link' );
 
 spl_autoload_register(function ($class) {
     // project-specific namespace prefix
