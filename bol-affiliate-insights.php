@@ -5,7 +5,7 @@ namespace TuinenBalkon\BolAffiliateInsights;
  * Plugin Name:       Bol Affiliate Insights
  * Plugin URI:        https://www.tuinenbalkon.nl
  * Description:       Connects Bol.com Partner Insights with your WordPress environment. Fetches and displays commission, click, and revenue data from the Bol.com Affiliate Reporting API.
- * Version:           0.1.5
+ * Version:           0.1.6
  * Author:            Olaf Lemmers
  * Author URI:        https://www.tuinenbalkon.nl
  * License:           GPLv2 or later
@@ -60,6 +60,8 @@ function bol_affiliate_insights_settings_link( array $links ) {
 }
 add_filter( 'plugin_action_links_' . plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ), 'bol_affiliate_insights_settings_link' );
 
+// Temporarily disable autoloader for debugging
+/*
 spl_autoload_register(function ($class) {
     // project-specific namespace prefix
     $prefix = 'TuinenBalkon\\BolAffiliateInsights\\';
@@ -87,8 +89,21 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
+*/
 
-if ( ! class_exists( __NAMESPACE__ . '\\Plugin' ) ) {
+// Manual includes for debugging
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ApiAuthService.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ApiClient.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ReportDataService.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/SettingsService.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/SettingsPage.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/MenuService.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/AjaxHandlerService.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/CommissionRevenueListTable.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/OrdersListTable.php';
+require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/PromotionMethodsListTable.php';
+
+if ( ! class_exists( __NAMESPACE__ . '\Plugin' ) ) {
     /**
      * Main plugin class for Bol Affiliate Insights.
      *
