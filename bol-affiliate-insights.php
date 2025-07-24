@@ -1,9 +1,11 @@
 <?php
+namespace TuinenBalkon\BolAffiliateInsights;
+
 /**
  * Plugin Name:       Bol Affiliate Insights
  * Plugin URI:        https://www.tuinenbalkon.nl
  * Description:       Connects Bol.com Partner Insights with your WordPress environment. Fetches and displays commission, click, and revenue data from the Bol.com Affiliate Reporting API.
- * Version:           0.1.4
+ * Version:           0.1.5
  * Author:            Olaf Lemmers
  * Author URI:        https://www.tuinenbalkon.nl
  * License:           GPLv2 or later
@@ -86,15 +88,13 @@ spl_autoload_register(function ($class) {
     }
 });
 
-namespace TuinenBalkon\BolAffiliateInsights;
-
-if ( ! class_exists( 'TuinenBalkon\BolAffiliateInsights\Plugin' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\\Plugin' ) ) {
     /**
      * Main plugin class for Bol Affiliate Insights.
      *
      * This class handles the initialization of the plugin, loading of necessary files,
-     * and provides a central point for accessing plugin services like the API client.
-     * It follows a singleton pattern to ensure only one instance exists.
+     * and setting up hooks for WordPress actions and filters. It acts as the central
+     * point for the plugin's functionality.
      */
     class Plugin {
 
@@ -116,13 +116,13 @@ if ( ! class_exists( 'TuinenBalkon\BolAffiliateInsights\Plugin' ) ) {
         }
 
         private function __construct() {
-            $this->api_auth_service = new \TuinenBalkon\BolAffiliateInsights\Service\ApiAuthService();
-            $this->api_client = new \TuinenBalkon\BolAffiliateInsights\Service\ApiClient($this->api_auth_service);
-            $this->report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($this->api_client);
-            $this->settings_service = new \TuinenBalkon\BolAffiliateInsights\Service\SettingsService();
-            $settings_page = new \TuinenBalkon\BolAffiliateInsights\Admin\SettingsPage();
-            $this->menu_service = new \TuinenBalkon\BolAffiliateInsights\Admin\MenuService($settings_page);
-            $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
+            $this->api_auth_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ApiAuthService();
+            $this->api_client = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ApiClient($this->api_auth_service);
+            $this->report_data_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ReportDataService($this->api_client);
+            $this->settings_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\SettingsService();
+            $settings_page = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\SettingsPage();
+            $this->menu_service = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\MenuService($settings_page);
+            $this->ajax_handler_service = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
         }
 
         public function get_api_client() {
