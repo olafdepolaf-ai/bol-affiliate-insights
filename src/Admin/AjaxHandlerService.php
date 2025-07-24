@@ -7,9 +7,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class AjaxHandlerService {
     private $report_data_service;
+    private $api_auth_service;
+    private $api_client;
 
-    public function __construct(\TuinenBalkon\BolAffiliateInsights\Service\ReportDataService $report_data_service) {
+    public function __construct(\TuinenBalkon\BolAffiliateInsights\Service\ReportDataService $report_data_service, \TuinenBalkon\BolAffiliateInsights\Service\ApiAuthService $api_auth_service, \TuinenBalkon\BolAffiliateInsights\Service\ApiClient $api_client) {
         $this->report_data_service = $report_data_service;
+        $this->api_auth_service = $api_auth_service;
+        $this->api_client = $api_client;
         add_action( 'wp_ajax_bol_test_connection', array( $this, 'handle_test_connection_ajax' ) );
         add_action( 'wp_ajax_bol_fetch_chart_data', array( $this, 'handle_fetch_chart_data_ajax' ) );
         add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
@@ -17,8 +21,7 @@ class AjaxHandlerService {
 
     public function handle_test_connection_ajax() {
         check_ajax_referer( 'bol_test_connection_nonce', 'nonce' );
-        $auth_service = new \TuinenBalkon\BolAffiliateInsights\Service\ApiAuthService();
-        $token_data = $auth_service->get_access_token();
+        $token_data = $this->api_auth_service->get_access_token();
         if ( is_wp_error( $token_data ) ) {
             wp_send_json_error( array(
                 'message' => 'Connection Failed: ' . $token_data->get_error_message(),
@@ -48,13 +51,7 @@ class AjaxHandlerService {
 
     public function handle_fetch_available_sites_ajax() {
         check_ajax_referer( 'bol_fetch_sites_nonce', 'nonce' );
-        $api_client = \TuinenBalkon\BolAffiliateInsights\Plugin::get_instance()->get_api_client();
-        if ( ! $api_client ) {
-            wp_send_json_error( array( 'message' => 'API Client not available.' ) );
-            return;
-        }
-
-        $sites = $api_client->get_available_sites();
+        $sites = $this->api_client->get_available_sites();
         if ( is_wp_error( $sites ) ) {
             wp_send_json_error( array( 'message' => 'Error fetching sites: ' . $sites->get_error_message() ) );
         } elseif ( empty( $sites ) ) {

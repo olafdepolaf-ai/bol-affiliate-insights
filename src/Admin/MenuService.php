@@ -24,3 +24,4 @@ class MenuService {
             25
         );
     }
+}
