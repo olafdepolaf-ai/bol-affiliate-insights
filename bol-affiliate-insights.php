@@ -53,6 +53,7 @@ if ( ! defined( 'BOL_AFFILIATE_INSIGHTS_PATH' ) ) {
  * @return array An array of plugin action links with the new settings link.
  */
 function bol_affiliate_insights_settings_link( array $links ) {
+    error_log('Bol Affiliate Insights: settings_link filter called.');
     $url = esc_url( admin_url( 'admin.php?page=bol-affiliate-insights&tab=settings' ) );
     $settings_link = '<a href="' . $url . '">' . __( 'Settings', 'bol-affiliate-insights' ) . '</a>';
     $links[] = $settings_link;

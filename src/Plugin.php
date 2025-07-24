@@ -31,6 +31,7 @@ class Plugin {
     }
 
     private function __construct() {
+        error_log('Bol Affiliate Insights: Plugin constructor called.');
         $this->api_auth_service = new \TuinenBalkon\BolAffiliateInsights\Service\ApiAuthService();
         $this->api_client = new \TuinenBalkon\BolAffiliateInsights\Service\ApiClient($this->api_auth_service);
         $this->report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($this->api_client);
@@ -38,6 +39,7 @@ class Plugin {
         $settings_page = new \TuinenBalkon\BolAffiliateInsights\Admin\SettingsPage();
         $this->menu_service = new \TuinenBalkon\BolAffiliateInsights\Admin\MenuService($settings_page);
         $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
+        error_log('Bol Affiliate Insights: Plugin constructor finished.');
     }
 
     public function get_api_client() {
