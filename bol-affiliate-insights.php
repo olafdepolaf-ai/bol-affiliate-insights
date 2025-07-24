@@ -3,7 +3,7 @@
  * Plugin Name:       Bol Affiliate Insights
  * Plugin URI:        https://www.tuinenbalkon.nl
  * Description:       Connects Bol.com Partner Insights with your WordPress environment. Fetches and displays commission, click, and revenue data from the Bol.com Affiliate Reporting API.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Author:            Olaf Lemmers
  * Author URI:        https://www.tuinenbalkon.nl
  * License:           GPLv2 or later
@@ -119,7 +119,7 @@ if ( ! class_exists( 'TuinenBalkon\BolAffiliateInsights\Plugin' ) ) {
             $this->settings_service = new \TuinenBalkon\BolAffiliateInsights\Service\SettingsService();
             $settings_page = new \TuinenBalkon\BolAffiliateInsights\Admin\SettingsPage();
             $this->menu_service = new \TuinenBalkon\BolAffiliateInsights\Admin\MenuService($settings_page);
-            $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service);
+            $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
         }
 
         public function get_api_client() {
