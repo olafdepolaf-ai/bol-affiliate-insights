@@ -1,6 +1,4 @@
 <?php
-namespace TuinenBalkon\BolAffiliateInsights;
-
 /**
  * Plugin Name:       Bol Affiliate Insights
  * Plugin URI:        https://www.tuinenbalkon.nl
@@ -21,6 +19,8 @@ namespace TuinenBalkon\BolAffiliateInsights;
  * and setting up hooks for WordPress actions and filters. It acts as the central
  * point for the plugin's functionality.
  */
+
+namespace TuinenBalkon\BolAffiliateInsights;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
@@ -60,8 +60,6 @@ function bol_affiliate_insights_settings_link( array $links ) {
 }
 add_filter( 'plugin_action_links_' . plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ), 'bol_affiliate_insights_settings_link' );
 
-// Temporarily disable autoloader for debugging
-/*
 spl_autoload_register(function ($class) {
     // project-specific namespace prefix
     $prefix = 'TuinenBalkon\\BolAffiliateInsights\\';
@@ -89,64 +87,8 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
-*/
 
-// Manual includes for debugging
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ApiAuthService.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ApiClient.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/ReportDataService.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Service/SettingsService.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/SettingsPage.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/MenuService.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Admin/AjaxHandlerService.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/CommissionRevenueListTable.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/OrdersListTable.php';
-require_once BOL_AFFILIATE_INSIGHTS_PATH . 'src/Table/PromotionMethodsListTable.php';
-
-if ( ! class_exists( __NAMESPACE__ . '\Plugin' ) ) {
-    /**
-     * Main plugin class for Bol Affiliate Insights.
-     *
-     * This class handles the initialization of the plugin, loading of necessary files,
-     * and setting up hooks for WordPress actions and filters. It acts as the central
-     * point for the plugin's functionality.
-     */
-    class Plugin {
-
-
-        private static $instance;
-
-        private $api_auth_service;
-        private $api_client;
-        private $report_data_service;
-        private $settings_service;
-        private $menu_service;
-        private $ajax_handler_service;
-
-        public static function get_instance() {
-            if ( null === self::$instance ) {
-                self::$instance = new self();
-            }
-            return self::$instance;
-        }
-
-        private function __construct() {
-            $this->api_auth_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ApiAuthService();
-            $this->api_client = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ApiClient($this->api_auth_service);
-            $this->report_data_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\ReportDataService($this->api_client);
-            $this->settings_service = new \TuinenBalkon\\BolAffiliateInsights\\Service\\SettingsService();
-            $settings_page = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\SettingsPage();
-            $this->menu_service = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\MenuService($settings_page);
-            $this->ajax_handler_service = new \TuinenBalkon\\BolAffiliateInsights\\Admin\\AjaxHandlerService($this->report_data_service, $this->api_auth_service, $this->api_client);
-        }
-
-        public function get_api_client() {
-            return $this->api_client;
-        }
-    }
-
-    // Instantiate the plugin to get it running.
-    // This ensures that the plugin's functionality is initialized and hooks are registered.
-    Plugin::get_instance();
-}
+// Instantiate the plugin to get it running.
+// This ensures that the plugin's functionality is initialized and hooks are registered.
+Plugin::get_instance();
 ?>
