@@ -24,31 +24,8 @@ jQuery(document).ready(function($) {
     // Note: Backend now determines effective_granularity, which is more reliable.
     // If PHP could pass back the `effective_granularity` in the response.data, that would be best.
     // For now, this function will use the selected granularity and period.
-    function getXAxisTitle(granularity, period, chartLabels) {
-        let finalGranularity = granularity;
-        if (granularity === 'auto') {
-            if (period === 'this_year' || period === 'last_year') {
-                finalGranularity = 'month';
-            } else if (period === 'this_month' || period === 'last_month') {
-                // Check labels to infer if backend rendered days or months
-                if (chartLabels && chartLabels.length > 0) {
-                    // Assuming daily labels are like "Jan 01" and monthly are "Jan" or "Jan 2023"
-                    if (chartLabels[0].includes(' ') && chartLabels[0].match(/\d{1,2}/)) { 
-                        finalGranularity = 'day';
-                    } else {
-                        finalGranularity = 'month';
-                    }
-                } else {
-                     finalGranularity = 'day'; // Default for "this_month" or "last_month" if no labels
-                }
-            } else if (period === 'last_4_weeks' || (chartLabels && chartLabels.length > 0 && chartLabels[0].toLowerCase().includes('wk'))) {
-                finalGranularity = 'week';
-            } else { // Default for other 'auto' cases or if labels are not specific
-                finalGranularity = 'day'; 
-            }
-        }
-
-        switch (finalGranularity) {
+    function getXAxisTitle(granularity) {
+        switch (granularity) {
             case 'month': return 'Month';
             case 'week': return 'Week';
             case 'day': return 'Date';

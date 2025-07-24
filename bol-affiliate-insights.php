@@ -58,7 +58,35 @@ function bol_affiliate_insights_settings_link( array $links ) {
 }
 add_filter( 'plugin_action_links_' . plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ), 'bol_affiliate_insights_settings_link' );
 
-if ( ! class_exists( 'Bol_Affiliate_Insights_Plugin' ) ) {
+spl_autoload_register(function ($class) {
+    // project-specific namespace prefix
+    $prefix = 'TuinenBalkon\\BolAffiliateInsights\\';
+
+    // base directory for the namespace prefix
+    $base_dir = __DIR__ . '/src/';
+
+    // does the class use the namespace prefix?
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        // no, move to the next registered autoloader
+        return;
+    }
+
+    // get the relative class name
+    $relative_class = substr($class, $len);
+
+    // replace the namespace prefix with the base directory, replace namespace
+    // separators with directory separators in the relative class name, append
+    // with .php
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+    // if the file exists, require it
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+if ( ! class_exists( 'TuinenBalkon\BolAffiliateInsights\Plugin' ) ) {
     /**
      * Main plugin class for Bol Affiliate Insights.
      *
@@ -66,34 +94,17 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Plugin' ) ) {
      * and provides a central point for accessing plugin services like the API client.
      * It follows a singleton pattern to ensure only one instance exists.
      */
-    class Bol_Affiliate_Insights_Plugin {
+    class Plugin {
 
-        /**
-         * The single instance of the class.
-         *
-         * @var Bol_Affiliate_Insights_Plugin|null
-         */
         private static $instance;
 
-        /**
-         * Instance of the API Authentication Service.
-         *
-         * @var Bol_API_Auth_Service|null
-         */
-        private $auth_service_instance;
+        private $api_auth_service;
+        private $api_client;
+        private $report_data_service;
+        private $settings_service;
+        private $menu_service;
+        private $ajax_handler_service;
 
-        /**
-         * Instance of the API Client Service.
-         *
-         * @var Bol_API_Client|null
-         */
-        private $api_client_instance;
-
-        /**
-         * Ensures only one instance of the plugin class is loaded or can be loaded.
-         *
-         * @return Bol_Affiliate_Insights_Plugin The single instance of the class.
-         */
         public static function get_instance() {
             if ( null === self::$instance ) {
                 self::$instance = new self();
@@ -101,76 +112,23 @@ if ( ! class_exists( 'Bol_Affiliate_Insights_Plugin' ) ) {
             return self::$instance;
         }
 
-        /**
-         * Constructor for the plugin.
-         *
-         * Private to prevent direct object creation.
-         * Initializes required files and services.
-         */
         private function __construct() {
-            $this->includes(); // Load necessary class files.
-            // Instantiate the authentication service, critical for API interactions.
-            $this->auth_service_instance = new Bol_API_Auth_Service();
-            // Example: add_action( 'plugins_loaded', array( $this, 'init' ) ); // Hook for further initialization.
+            $this->api_auth_service = new \TuinenBalkon\BolAffiliateInsights\Service\ApiAuthService();
+            $this->api_client = new \TuinenBalkon\BolAffiliateInsights\Service\ApiClient($this->api_auth_service);
+            $this->report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($this->api_client);
+            $this->settings_service = new \TuinenBalkon\BolAffiliateInsights\Service\SettingsService();
+            $settings_page = new \TuinenBalkon\BolAffiliateInsights\Admin\SettingsPage();
+            $this->menu_service = new \TuinenBalkon\BolAffiliateInsights\Admin\MenuService($settings_page);
+            $this->ajax_handler_service = new \TuinenBalkon\BolAffiliateInsights\Admin\AjaxHandlerService($this->report_data_service);
         }
 
-        /**
-         * Includes all necessary PHP class files for the plugin.
-         *
-         * This method is called early in the plugin's lifecycle to ensure all
-         * dependencies are available.
-         */
-        private function includes() {
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-affiliate-insights-settings.php';
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-api-auth-service.php';
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-api-client.php';
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-orders-list-table.php';
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-commission-revenue-list-table.php';
-            require_once BOL_AFFILIATE_INSIGHTS_PATH . 'includes/class-bol-promotion-methods-list-table.php';
-            
-            // Instantiate settings class to ensure its hooks are registered.
-            new Bol_Affiliate_Insights_Settings();
-        }
-
-        /**
-         * Initializes the plugin.
-         *
-         * This method is intended for actions that should run after all plugins are loaded,
-         * such as loading the plugin text domain for localization or checking for dependencies.
-         * Currently, it's a placeholder for such future enhancements.
-         */
-        public function init() {
-            // Example: Load plugin textdomain for translation.
-            // load_plugin_textdomain( 'bol-affiliate-insights', false, dirname( plugin_basename( BOL_AFFILIATE_INSIGHTS_FILE ) ) . '/languages/' );
-            
-            // Example: Check for required dependencies or run update routines.
-        }
-
-        /**
-         * Get the API client instance.
-         *
-         * Implements lazy loading for the API client. It ensures that the API client
-         * is instantiated only when it's actually needed, and that the authentication
-         * service is available.
-         *
-         * @return Bol_API_Client The initialized API client instance.
-         */
         public function get_api_client() {
-            if ( null === $this->api_client_instance ) {
-                // Ensure auth service is available, though it should be by constructor.
-                if ( null === $this->auth_service_instance ) {
-                     $this->auth_service_instance = new Bol_API_Auth_Service();
-                }
-                $this->api_client_instance = new Bol_API_Client( $this->auth_service_instance );
-            }
-            return $this->api_client_instance;
+            return $this->api_client;
         }
-
-        // Other methods will be added later
     }
 
     // Instantiate the plugin to get it running.
     // This ensures that the plugin's functionality is initialized and hooks are registered.
-    Bol_Affiliate_Insights_Plugin::get_instance();
+    Plugin::get_instance();
 }
 ?>
