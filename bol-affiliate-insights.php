@@ -72,6 +72,11 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Register activation and deactivation hooks.
+register_activation_hook(BOL_AFFILIATE_INSIGHTS_FILE, array('TuinenBalkon\BolAffiliateInsights\Plugin', 'activate'));
+register_deactivation_hook(BOL_AFFILIATE_INSIGHTS_FILE, array('TuinenBalkon\BolAffiliateInsights\Plugin', 'deactivate'));
+
+
 // Instantiate the plugin to get it running.
 // This ensures that the plugin's functionality is initialized and hooks are registered.
 Plugin::get_instance();

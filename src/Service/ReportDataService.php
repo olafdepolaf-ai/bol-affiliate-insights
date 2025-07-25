@@ -88,7 +88,38 @@ class ReportDataService {
         return $this->aggregate_chart_data($items, $metric, $granularity, $start_date, $end_date, $date_key);
     }
 
+    private function initialize_aggregated_data($granularity, $start_date, $end_date) {
+        $aggregated_data = [];
+        $current_date = new \DateTimeImmutable($start_date->format('Y-m-d'), wp_timezone());
+        $end_date_loop = new \DateTimeImmutable($end_date->format('Y-m-d'), wp_timezone());
+
+        while ($current_date <= $end_date_loop) {
+            $key = '';
+            $label = '';
+            switch ($granularity) {
+                case 'day':
+                    $key = $current_date->format('Y-m-d');
+                    $label = $current_date->format('d M');
+                    $current_date = $current_date->add(new \DateInterval('P1D'));
+                    break;
+                case 'week':
+                    $key = $current_date->format('Y-W');
+                    $label = 'Week ' . $current_date->format('W');
+                    $current_date = $current_date->add(new \DateInterval('P1W'));
+                    break;
+                case 'month':
+                    $key = $current_date->format('Y-m');
+                    $label = $current_date->format('M Y');
+                    $current_date = $current_date->add(new \DateInterval('P1M'));
+                    break;
+            }
+            $aggregated_data[$key] = ['label' => $label, 'value' => 0, 'clicks' => 0, 'orders' => 0];
+        }
+        return $aggregated_data;
+    }
+
     private function aggregate_chart_data($items, $metric, $granularity, $start_date, $end_date, $date_key) {
+        $aggregated_data = $this->initialize_aggregated_data($granularity, $start_date, $end_date);
         error_log('ReportDataService: aggregate_chart_data - Initial aggregated_data: ' . print_r($aggregated_data, true));
 
         foreach ($items as $item) {
@@ -164,7 +195,6 @@ class ReportDataService {
         }
         error_log('ReportDataService: Final labels: ' . print_r($labels, true));
         error_log('ReportDataService: Final data: ' . print_r($data, true));
-        }
 
         return [
             'labels' => $labels,
