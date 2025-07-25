@@ -213,4 +213,46 @@ class ReportDataService {
             ]
         ];
     }
+
+    public function get_saldo_metrics() {
+        $end_date = new \DateTimeImmutable('now', wp_timezone());
+        $start_date = $end_date->modify('-89 days');
+        $start_date_str = $start_date->format('Y-m-d');
+        $end_date_str = $end_date->format('Y-m-d');
+
+        $response = $this->api_client->get_orders_report($start_date_str, $end_date_str);
+
+        if (is_wp_error($response) || !isset($response['items'])) {
+            return [
+                'approved' => 0,
+                'pending' => 0,
+                'total' => 0,
+            ];
+        }
+
+        $items = $response['items'];
+        $approved_saldo = 0;
+        $pending_saldo = 0;
+
+        foreach ($items as $item) {
+            $commission = isset($item['commission']) ? (float) str_replace(',', '.', $item['commission']) : 0;
+            $status = $item['status'] ?? '';
+            $approved_for_payment = $item['approvedForPayment'] ?? false;
+            $status_final = $item['statusFinal'] ?? false;
+
+            if ($status === 'Geaccepteerd' && !$approved_for_payment && !$status_final) {
+                $approved_saldo += $commission;
+            }
+
+            if ($status === 'Open' && !$approved_for_payment && !$status_final) {
+                $pending_saldo += $commission;
+            }
+        }
+
+        return [
+            'approved' => $approved_saldo,
+            'pending' => $pending_saldo,
+            'total' => $approved_saldo + $pending_saldo,
+        ];
+    }
 }
