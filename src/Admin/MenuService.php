@@ -32,7 +32,7 @@ class MenuService {
         wp_enqueue_script(
             'bol-admin-settings',
             plugins_url( 'assets/js/admin-settings.js', BOL_AFFILIATE_INSIGHTS_FILE ),
-            array( 'jquery', 'jquery-ui-datepicker', 'chart-js' ),
+            array( 'jquery', 'chart-js' ),
             filemtime( BOL_AFFILIATE_INSIGHTS_PATH . 'assets/js/admin-settings.js' ),
             true
         );
