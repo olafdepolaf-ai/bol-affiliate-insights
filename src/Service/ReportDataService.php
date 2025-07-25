@@ -153,8 +153,12 @@ class ReportDataService {
 
             switch ($metric) {
                 case 'commission':
-                    if (isset($item['commissionAmount'])) {
-                        $aggregated_data[$key]['value'] += (float) $item['commissionAmount'];
+                    if (isset($item['commission'])) {
+                        $commission_value = $item['commission'];
+                        if (is_string($commission_value)) {
+                            $commission_value = str_replace(',', '.', $commission_value);
+                        }
+                        $aggregated_data[$key]['value'] += (float) $commission_value;
                     }
                     break;
                 case 'orders':
