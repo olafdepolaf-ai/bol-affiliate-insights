@@ -35,7 +35,7 @@ class AjaxHandlerService {
     }
 
     public function handle_fetch_chart_data_ajax() {
-        // check_ajax_referer( 'bol_fetch_chart_data_nonce', 'nonce' );
+        check_ajax_referer( 'bol_fetch_chart_data_nonce', 'nonce' );
         $metric = isset( $_POST['metric'] ) ? sanitize_key( $_POST['metric'] ) : 'orders';
         $period = isset( $_POST['period'] ) ? sanitize_key( $_POST['period'] ) : 'last_4_weeks';
         $granularity = isset( $_POST['granularity'] ) ? sanitize_key( $_POST['granularity'] ) : 'auto';
