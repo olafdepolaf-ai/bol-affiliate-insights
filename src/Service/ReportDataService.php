@@ -23,7 +23,7 @@ class ReportDataService {
     }
 
     private function calculate_date_range($period) {
-        $end_date = new \DateTimeImmutable('yesterday', wp_timezone());
+        $end_date = new \DateTimeImmutable('now', wp_timezone());
         switch ($period) {
             case 'last_4_weeks':
                 return [$end_date->modify('-27 days'), $end_date];
@@ -59,6 +59,7 @@ class ReportDataService {
         $start_date_str = $start_date->format('Y-m-d');
         $end_date_str = $end_date->format('Y-m-d');
 
+        error_log('ReportDataService: fetch_and_process_chart_data - start_date_str: ' . $start_date_str . ', end_date_str: ' . $end_date_str . ', metric: ' . $metric);
         if ($metric === 'commission') {
             $response = $this->api_client->get_orders_report($start_date_str, $end_date_str);
             $date_key = 'orderDateTime';
@@ -66,6 +67,8 @@ class ReportDataService {
             $response = $this->api_client->get_promotion_methods_report($start_date_str, $end_date_str);
             $date_key = 'date';
         }
+
+        error_log('ReportDataService: API Response for ' . $metric . ': ' . print_r($response, true));
 
         if (is_wp_error($response)) {
             throw new \Exception('Error fetching API data: ' . $response->get_error_message());
@@ -80,74 +83,21 @@ class ReportDataService {
                 return isset($item['siteCode']) && $item['siteCode'] == $site_filter;
             });
         }
+        error_log('ReportDataService: Items after site filter: ' . print_r($items, true));
 
         return $this->aggregate_chart_data($items, $metric, $granularity, $start_date, $end_date, $date_key);
     }
 
     private function aggregate_chart_data($items, $metric, $granularity, $start_date, $end_date, $date_key) {
-        $aggregated_data = [];
-        $current_date = clone $start_date;
-
-        while ($current_date <= $end_date) {
-            $label = '';
-            $key = '';
-
-            switch ($granularity) {
-                case 'day':
-                    $label = $current_date->format('M d');
-                    $key = $current_date->format('Y-m-d');
-                    $current_date = $current_date->modify('+1 day');
-                    break;
-                case 'week':
-                    $label = 'Week ' . $current_date->format('W');
-                    $key = $current_date->format('Y-W');
-                    $current_date = $current_date->modify('+1 week');
-                    break;
-                case 'month':
-                    $label = $current_date->format('M Y');
-                    $key = $current_date->format('Y-m');
-                    $current_date = $current_date->modify('+1 month');
-                    break;
-            }
-            $aggregated_data[$key] = ['label' => $label, 'value' => 0];
-        }
+        error_log('ReportDataService: aggregate_chart_data - Initial aggregated_data: ' . print_r($aggregated_data, true));
 
         foreach ($items as $item) {
             $item_date = new \DateTimeImmutable($item[$date_key], wp_timezone());
-            $value = 0;
 
-            switch ($metric) {
-                case 'commission':
-                    // Sum commissionAmount for orders
-                    if (isset($item['commissionAmount'])) {
-                        $value = (float) $item['commissionAmount'];
-                    }
-                    break;
-                case 'orders':
-                    // Count orders
-                    $value = 1;
-                    break;
-                case 'clicks':
-                    // Sum clicks
-                    if (isset($item['clicks'])) {
-                        $value = (int) $item['clicks'];
-                    }
-                    break;
-                case 'revenue':
-                    // Sum revenueOriginalInclVat for promotion methods
-                    if (isset($item['revenueOriginalInclVat'])) {
-                        $value = (float) $item['revenueOriginalInclVat'];
-                    }
-                    break;
-                case 'conversion':
-                    // Conversion rate needs total orders and total clicks for the period
-                    // This will be calculated later if needed, or passed as a separate metric
-                    // For now, we'll just set it to 0 or handle it differently.
-                    $value = 0; 
-                    break;
-                default:
-                    $value = 0;
-                    break;
+            // Only process data within the requested date range
+            if ($item_date < $start_date || $item_date > $end_date) {
+                error_log('ReportDataService: Skipping item outside date range: ' . $item_date->format('Y-m-d H:i:s'));
+                continue;
             }
 
             $key = '';
@@ -163,16 +113,57 @@ class ReportDataService {
                     break;
             }
 
-            if (isset($aggregated_data[$key])) {
-                $aggregated_data[$key]['value'] += $value;
+            if (!isset($aggregated_data[$key])) {
+                // This should ideally not happen if aggregated_data is pre-filled correctly
+                // but as a safeguard, initialize if a key is missing
+                error_log('ReportDataService: Key ' . $key . ' not found in aggregated_data. Initializing.');
+                $aggregated_data[$key] = ['label' => '', 'value' => 0, 'clicks' => 0, 'orders' => 0];
             }
+
+            switch ($metric) {
+                case 'commission':
+                    if (isset($item['commissionAmount'])) {
+                        $aggregated_data[$key]['value'] += (float) $item['commissionAmount'];
+                    }
+                    break;
+                case 'orders':
+                    $aggregated_data[$key]['value'] += 1;
+                    break;
+                case 'clicks':
+                    if (isset($item['clicks'])) {
+                        $aggregated_data[$key]['value'] += (int) $item['clicks'];
+                    }
+                    break;
+                case 'revenue':
+                    if (isset($item['revenueOriginalInclVat'])) {
+                        $aggregated_data[$key]['value'] += (float) $item['revenueOriginalInclVat'];
+                    }
+                    break;
+                case 'conversion':
+                    if (isset($item['clicks'])) {
+                        $aggregated_data[$key]['clicks'] += (int) $item['clicks'];
+                    }
+                    if ($date_key === 'orderDateTime') {
+                        $aggregated_data[$key]['orders'] += 1;
+                    }
+                    break;
+            }
+            error_log('ReportDataService: Aggregated data for key ' . $key . ': ' . print_r($aggregated_data[$key], true));
         }
 
         $labels = [];
         $data = [];
         foreach ($aggregated_data as $entry) {
             $labels[] = $entry['label'];
-            $data[] = $entry['value'];
+            if ($metric === 'conversion') {
+                $conversion_rate = ($entry['clicks'] > 0) ? ($entry['orders'] / $entry['clicks']) * 100 : 0;
+                $data[] = round($conversion_rate, 2);
+            } else {
+                $data[] = $entry['value'];
+            }
+        }
+        error_log('ReportDataService: Final labels: ' . print_r($labels, true));
+        error_log('ReportDataService: Final data: ' . print_r($data, true));
         }
 
         return [
