@@ -28,12 +28,12 @@ class ReportDataService {
             case 'last_4_weeks':
                 return [$end_date->modify('-27 days'), $end_date];
             case 'this_year':
-                return [new \DateTimeImmutable(date('Y-01-01'), wp_timezone()), new \DateTimeImmutable(date('Y-12-31'), wp_timezone())];
+                return [new \DateTimeImmutable(date('Y-01-01'), wp_timezone()), new \DateTimeImmutable('today', wp_timezone())];
             case 'last_year':
                 $last_year = (int)date('Y') - 1;
                 return [new \DateTimeImmutable($last_year . '-01-01', wp_timezone()), new \DateTimeImmutable($last_year . '-12-31', wp_timezone())];
             case 'this_month':
-                return [new \DateTimeImmutable('first day of this month', wp_timezone()), new \DateTimeImmutable('last day of this month', wp_timezone())];
+                return [new \DateTimeImmutable('first day of this month', wp_timezone()), new \DateTimeImmutable('today', wp_timezone())];
             case 'last_month':
                  return [new \DateTimeImmutable('first day of last month', wp_timezone()), new \DateTimeImmutable('last day of last month', wp_timezone())];
             case 'last_30_days':
@@ -85,33 +85,94 @@ class ReportDataService {
     }
 
     private function aggregate_chart_data($items, $metric, $granularity, $start_date, $end_date, $date_key) {
-        // This is a simplified aggregation. A full implementation would be more complex.
-        // For brevity, we'll assume a basic structure and return dummy data.
-        // A real implementation would loop through $items and populate labels/data based on granularity.
-        
-        $labels = [];
-        $data = [];
-
-        // Dummy data generation for demonstration
+        $aggregated_data = [];
         $current_date = clone $start_date;
+
         while ($current_date <= $end_date) {
+            $label = '';
+            $key = '';
+
             switch ($granularity) {
                 case 'day':
-                    $labels[] = $current_date->format('M d');
-                    $data[] = rand(10, 100);
+                    $label = $current_date->format('M d');
+                    $key = $current_date->format('Y-m-d');
                     $current_date = $current_date->modify('+1 day');
                     break;
                 case 'week':
-                    $labels[] = 'Week ' . $current_date->format('W');
-                    $data[] = rand(100, 500);
+                    $label = 'Week ' . $current_date->format('W');
+                    $key = $current_date->format('Y-W');
                     $current_date = $current_date->modify('+1 week');
                     break;
                 case 'month':
-                    $labels[] = $current_date->format('M Y');
-                    $data[] = rand(500, 2000);
+                    $label = $current_date->format('M Y');
+                    $key = $current_date->format('Y-m');
                     $current_date = $current_date->modify('+1 month');
                     break;
             }
+            $aggregated_data[$key] = ['label' => $label, 'value' => 0];
+        }
+
+        foreach ($items as $item) {
+            $item_date = new \DateTimeImmutable($item[$date_key], wp_timezone());
+            $value = 0;
+
+            switch ($metric) {
+                case 'commission':
+                    // Sum commissionAmount for orders
+                    if (isset($item['commissionAmount'])) {
+                        $value = (float) $item['commissionAmount'];
+                    }
+                    break;
+                case 'orders':
+                    // Count orders
+                    $value = 1;
+                    break;
+                case 'clicks':
+                    // Sum clicks
+                    if (isset($item['clicks'])) {
+                        $value = (int) $item['clicks'];
+                    }
+                    break;
+                case 'revenue':
+                    // Sum revenueOriginalInclVat for promotion methods
+                    if (isset($item['revenueOriginalInclVat'])) {
+                        $value = (float) $item['revenueOriginalInclVat'];
+                    }
+                    break;
+                case 'conversion':
+                    // Conversion rate needs total orders and total clicks for the period
+                    // This will be calculated later if needed, or passed as a separate metric
+                    // For now, we'll just set it to 0 or handle it differently.
+                    $value = 0; 
+                    break;
+                default:
+                    $value = 0;
+                    break;
+            }
+
+            $key = '';
+            switch ($granularity) {
+                case 'day':
+                    $key = $item_date->format('Y-m-d');
+                    break;
+                case 'week':
+                    $key = $item_date->format('Y-W');
+                    break;
+                case 'month':
+                    $key = $item_date->format('Y-m');
+                    break;
+            }
+
+            if (isset($aggregated_data[$key])) {
+                $aggregated_data[$key]['value'] += $value;
+            }
+        }
+
+        $labels = [];
+        $data = [];
+        foreach ($aggregated_data as $entry) {
+            $labels[] = $entry['label'];
+            $data[] = $entry['value'];
         }
 
         return [
