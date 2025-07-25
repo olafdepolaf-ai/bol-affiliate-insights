@@ -134,16 +134,24 @@ class SettingsPage {
                 </div>
 
                 <?php
-                $report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($api_client);
-                $saldo_metrics = $report_data_service->get_saldo_metrics();
+                // Attempt to get the saldo metrics from the cache first
+                $saldo_metrics = get_transient('bol_saldo_metrics');
+
+                // If the cache is empty or expired, fetch the data and set the cache
+                if (false === $saldo_metrics) {
+                    $report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($api_client);
+                    $saldo_metrics = $report_data_service->get_saldo_metrics();
+                    // Cache the results for 1 hour
+                    set_transient('bol_saldo_metrics', $saldo_metrics, 3600);
+                }
                 ?>
-                <div class="metrics-container" style="margin-top: 20px;">
+                <div class="metrics-container">
                     <div class="metric-box"><h4>Goedgekeurd Saldo</h4><p><?php echo '€' . number_format_i18n( $saldo_metrics['approved'], 2 ); ?></p></div>
                     <div class="metric-box"><h4>Openstaand Saldo</h4><p><?php echo '€' . number_format_i18n( $saldo_metrics['pending'], 2 ); ?></p></div>
                     <div class="metric-box"><h4>Totaal Verwacht Saldo</h4><p><?php echo '€' . number_format_i18n( $saldo_metrics['total'], 2 ); ?></p></div>
                 </div>
 
-                <hr style="margin-top:30px;">
+                <hr>
                 <div class="chart-container">
                     <h3>Performance Chart</h3>
                     <div class="chart-controls">
