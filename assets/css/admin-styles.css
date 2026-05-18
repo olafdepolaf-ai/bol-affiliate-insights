@@ -52,8 +52,15 @@
     margin-right: 5px;
 }
 #bol-chart-error-message {
-    color: red;
     margin-top: 10px;
+}
+
+.bol-status-success {
+    color: #008a20; /* WP success green */
+}
+
+.bol-status-error {
+    color: #d63638; /* WP error red */
 }
 
 /* Table Header Styling */

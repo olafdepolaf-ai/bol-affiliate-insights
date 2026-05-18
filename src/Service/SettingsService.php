@@ -21,9 +21,15 @@ class SettingsService {
         );
 
         register_setting(
-            $options_group_name, 
+            $options_group_name,
             'bol_affiliate_insights_selected_website',
-            'sanitize_text_field' 
+            'sanitize_text_field'
+        );
+
+        register_setting(
+            $options_group_name,
+            'bol_affiliate_insights_debug_enabled',
+            array( $this, 'sanitize_debug_flag' )
         );
 
         add_settings_section(
@@ -65,6 +71,22 @@ class SettingsService {
             'bol-affiliate-insights-settings',
             'bol_data_filters_section',
             array( 'label_for' => 'bol_selected_website_field' )
+        );
+
+        add_settings_section(
+            'bol_debug_section',
+            'Debug & Logging',
+            array( $this, 'render_debug_section_text' ),
+            'bol-affiliate-insights-settings'
+        );
+
+        add_settings_field(
+            'bol_debug_enabled',
+            'Enable debug logging',
+            array( $this, 'render_debug_enabled_field' ),
+            'bol-affiliate-insights-settings',
+            'bol_debug_section',
+            array( 'label_for' => 'bol_debug_enabled_field' )
         );
     }
 
@@ -119,10 +141,26 @@ class SettingsService {
         echo "<input type='password' id='bol_client_secret_field' name='bol_affiliate_insights_credentials[client_secret]' value='" . esc_attr( $value ) . "' class='regular-text'>";
     }
 
+    public function render_debug_section_text() {
+        echo '<p>Enable debug logging only when you are troubleshooting. It may log additional technical details to the PHP error log.</p>';
+    }
+
+    public function render_debug_enabled_field() {
+        $enabled = (bool) get_option( 'bol_affiliate_insights_debug_enabled', false );
+        echo "<label for='bol_debug_enabled_field'>";
+        echo "<input type='checkbox' id='bol_debug_enabled_field' name='bol_affiliate_insights_debug_enabled' value='1' " . checked( $enabled, true, false ) . " />";
+        echo ' Log extra debug information to the PHP error log';
+        echo '</label>';
+    }
+
     public function sanitize_credentials( $input ) {
         $sanitized_input = array();
         $sanitized_input['client_id'] = isset( $input['client_id'] ) ? sanitize_text_field( $input['client_id'] ) : '';
         $sanitized_input['client_secret'] = isset( $input['client_secret'] ) ? sanitize_text_field( $input['client_secret'] ) : '';
         return $sanitized_input;
+    }
+
+    public function sanitize_debug_flag( $value ) {
+        return ! empty( $value ) ? 1 : 0;
     }
 }

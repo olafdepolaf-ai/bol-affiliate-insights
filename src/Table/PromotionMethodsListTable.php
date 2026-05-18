@@ -12,6 +12,27 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 
 class PromotionMethodsListTable extends \WP_List_Table {
 
+    /** @var array Bol params index from the affiliate adapter (by_subid, by_name). */
+    private $affiliate_link_index = array();
+
+    /** @var bool When true the siteName column is hidden (single-site view). */
+    private $hide_site_column = false;
+
+    /**
+     * Sets the affiliate link index used to match promotion rows to TA links.
+     * Build this with AffiliateLinkAdapterInterface::build_bol_params_index().
+     */
+    public function set_affiliate_link_index( array $index ): void {
+        $this->affiliate_link_index = $index;
+    }
+
+    /**
+     * When set to true the siteName column is omitted (single-site filter active).
+     */
+    public function set_hide_site_column( bool $hide ): void {
+        $this->hide_site_column = $hide;
+    }
+
     /**
      * Constructor for PromotionMethodsListTable.
      *
@@ -37,21 +58,27 @@ class PromotionMethodsListTable extends \WP_List_Table {
      */
     public function get_columns() {
         $columns = array(
-            'date'              => 'Date',                  // Date of the record.
-            'siteName'          => 'Site Name',             // Name of the affiliate site.
-            'frameType'         => 'Frame Type',            // Type of frame/link used.
-            'name'              => 'Link Name',             // Name of the link/promotion.
-            'subId'             => 'SubID',                 // Affiliate SubID used.
-            'clicks'            => 'Clicks',                // Number of clicks.
-            'impressions'       => 'Impressions',           // Number of impressions (optional, can be large).
-            'clickThroughRate'  => 'CTR (%)',               // Click-Through Rate.
-            'earningsPerClick'  => 'EPC (€)',               // Earnings Per Click.
-            // 'earningsPerMille'  => 'EPM (€)',            // Earnings Per Mille (1000 impressions) (optional).
-            'orders'            => 'Orders',                // Number of orders generated.
-            'conversion'        => 'Conversion (%)',        // Conversion rate.
-            'revenueInclVat'    => 'Revenue (VAT Incl.)',   // Revenue including VAT.
-            'averageOrderValue' => 'AOV (€)'                // Average Order Value.
+            'date'              => 'Date',
+            'name'              => 'Link Name',
+            'subId'             => 'SubID',
+            'ta_link'           => 'Link',
+            'clicks'            => 'Clicks',
+            'impressions'       => 'Impressions',
+            'clickThroughRate'  => 'CTR (%)',
+            'earningsPerClick'  => 'EPC (€)',
+            'orders'            => 'Orders',
+            'conversion'        => 'Conversion (%)',
+            'revenueInclVat'    => 'Revenue (VAT Incl.)',
+            'averageOrderValue' => 'AOV (€)',
         );
+        if ( ! $this->hide_site_column ) {
+            // Insert siteName after date.
+            $columns = array_merge(
+                array( 'date' => $columns['date'] ),
+                array( 'siteName' => 'Site Name' ),
+                array_slice( $columns, 1 )
+            );
+        }
         return $columns;
     }
 
@@ -69,7 +96,6 @@ class PromotionMethodsListTable extends \WP_List_Table {
         $sortable_columns = array(
             'date'              => array('date', false),
             'siteName'          => array('siteName', false),
-            'frameType'         => array('frameType', false),
             'name'              => array('name', false),
             'subId'             => array('subId', false),
             'clicks'            => array('clicks', false),
@@ -79,7 +105,7 @@ class PromotionMethodsListTable extends \WP_List_Table {
             'orders'            => array('orders', false),
             'conversion'        => array('conversion', false),
             'revenueInclVat'    => array('revenueInclVat', false),
-            'averageOrderValue' => array('averageOrderValue', false)
+            'averageOrderValue' => array('averageOrderValue', false),
         );
         return $sortable_columns;
     }
@@ -213,11 +239,11 @@ class PromotionMethodsListTable extends \WP_List_Table {
                 // Format currency values.
                 return '€' . number_format_i18n( (float) preg_replace('/[^\d,.]/', '', str_replace(',', '.', $item[ $column_name ]) ), 2 );
             case 'siteName':
-            case 'frameType':
             case 'name':
             case 'subId':
-                // Escape and display text values.
                 return esc_html( $item[ $column_name ] );
+            case 'ta_link':
+                return $this->render_ta_link_cell( $item );
             default:
                 return isset($item[ $column_name ]) ? esc_html($item[ $column_name ]) : 'N/A';
         }
@@ -228,6 +254,38 @@ class PromotionMethodsListTable extends \WP_List_Table {
      *
      * @return void
      */
+    /**
+     * Renders the ThirstyAffiliates link cell for a promotion methods row.
+     * Matches on subId first (most specific), falls back to name.
+     * Only shows icons when a matching bol.com affiliate link is found.
+     */
+    private function render_ta_link_cell( array $item ): string {
+        if ( empty( $this->affiliate_link_index['by_subid'] ) && empty( $this->affiliate_link_index['by_name'] ) ) {
+            return '';
+        }
+
+        $subid = strtolower( trim( $item['subId'] ?? '' ) );
+        $name  = strtolower( trim( $item['name'] ?? '' ) );
+
+        $link = null;
+        if ( $subid !== '' && isset( $this->affiliate_link_index['by_subid'][ $subid ] ) ) {
+            $link = $this->affiliate_link_index['by_subid'][ $subid ];
+        } elseif ( $name !== '' && isset( $this->affiliate_link_index['by_name'][ $name ] ) ) {
+            $link = $this->affiliate_link_index['by_name'][ $name ];
+        }
+
+        if ( ! $link ) {
+            return '';
+        }
+
+        $edit_url   = esc_url( admin_url( 'post.php?post=' . (int) $link['id'] . '&action=edit' ) );
+        $target_url = esc_url( $link['redirect_url'] ?: $link['url'] );
+        $link_name  = esc_attr( $link['name'] );
+
+        return '<a href="' . $target_url . '" target="_blank" rel="noopener" title="Bekijk: ' . $link_name . '">[&rarr;]</a>'
+             . '&nbsp;<a href="' . $edit_url . '" title="Bewerk in ThirstyAffiliates: ' . $link_name . '">[&#9998;]</a>';
+    }
+
     public function no_items() {
         // Localized message for when the table is empty.
         _e( 'No promotion method data found for the selected period.', 'bol-affiliate-insights' );

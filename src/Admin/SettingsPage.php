@@ -15,24 +15,41 @@ class SettingsPage {
         $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'dashboard';
         $plugin_instance = \TuinenBalkon\BolAffiliateInsights\Plugin::get_instance();
         $api_client = $plugin_instance->get_api_client();
+        $affiliate_adapter = $plugin_instance->get_affiliate_link_adapter();
         $global_selected_site_filter = get_option('bol_affiliate_insights_selected_website', 'all_sites');
+        $credentials = get_option( 'bol_affiliate_insights_credentials' );
         
-        $available_sites_for_dropdown = array(); 
-        if ($api_client) {
-            $fetched_sites = $api_client->get_available_sites(); 
-            if (!empty($fetched_sites) && is_array($fetched_sites)) {
-                $available_sites_for_dropdown = $fetched_sites;
+        $tabs_needing_sites = array( 'dashboard', 'commission_revenue', 'promotion_methods', 'analysis' );
+        $available_sites_for_dropdown = array();
+        if ( $api_client && in_array( $active_tab, $tabs_needing_sites, true ) ) {
+            $sites_cache_key = 'bol_available_sites_' . date( 'Y-m-d' );
+            $available_sites_for_dropdown = get_transient( $sites_cache_key );
+            if ( false === $available_sites_for_dropdown ) {
+                $fetched_sites = $api_client->get_available_sites();
+                $available_sites_for_dropdown = ( ! empty( $fetched_sites ) && is_array( $fetched_sites ) ) ? $fetched_sites : array();
+                set_transient( $sites_cache_key, $available_sites_for_dropdown, DAY_IN_SECONDS );
             }
         }
         ?>
         <div class="wrap">
             <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
+            <?php
+            $client_id    = isset( $credentials['client_id'] ) ? trim( $credentials['client_id'] ) : '';
+            $client_secret = isset( $credentials['client_secret'] ) ? trim( $credentials['client_secret'] ) : '';
+            if ( empty( $client_id ) || empty( $client_secret ) ) : ?>
+                <div class="notice notice-warning">
+                    <p><strong>Bol Affiliate Insights:</strong> Your Bol.com API credentials are not configured yet. Go to the <a href="<?php echo esc_url( admin_url( 'admin.php?page=bol-affiliate-insights&tab=settings' ) ); ?>">Settings tab</a> and add your Client ID and Client Secret.</p>
+                </div>
+            <?php endif; ?>
+
             <h2 class="nav-tab-wrapper">
                 <a href="?page=bol-affiliate-insights&tab=dashboard" class="nav-tab <?php echo $active_tab === 'dashboard' ? 'nav-tab-active' : ''; ?>">Dashboard</a>
                 <a href="?page=bol-affiliate-insights&tab=orders" class="nav-tab <?php echo $active_tab === 'orders' ? 'nav-tab-active' : ''; ?>">Orders</a>
                 <a href="?page=bol-affiliate-insights&tab=commission_revenue" class="nav-tab <?php echo $active_tab === 'commission_revenue' ? 'nav-tab-active' : ''; ?>">Commission & Revenue</a>
                 <a href="?page=bol-affiliate-insights&tab=promotion_methods" class="nav-tab <?php echo $active_tab === 'promotion_methods' ? 'nav-tab-active' : ''; ?>">Promotion Methods</a>
+                <a href="?page=bol-affiliate-insights&tab=analysis" class="nav-tab <?php echo $active_tab === 'analysis' ? 'nav-tab-active' : ''; ?>">Analyse</a>
+                <a href="?page=bol-affiliate-insights&tab=affiliate_links" class="nav-tab <?php echo $active_tab === 'affiliate_links' ? 'nav-tab-active' : ''; ?>">Affiliate Links</a>
                 <a href="?page=bol-affiliate-insights&tab=settings" class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
             </h2>
 
@@ -138,11 +155,11 @@ class SettingsPage {
                 $saldo_metrics = get_transient('bol_saldo_metrics');
 
                 // If the cache is empty or expired, fetch the data and set the cache
-                if (false === $saldo_metrics) {
-                    $report_data_service = new \TuinenBalkon\BolAffiliateInsights\Service\ReportDataService($api_client);
-                    $saldo_metrics = $report_data_service->get_saldo_metrics();
+                if ( false === $saldo_metrics ) {
+                    $report_data_service = $plugin_instance->get_report_data_service();
+                    $saldo_metrics       = $report_data_service->get_saldo_metrics();
                     // Cache the results for 1 hour
-                    set_transient('bol_saldo_metrics', $saldo_metrics, 3600);
+                    set_transient( 'bol_saldo_metrics', $saldo_metrics, 3600 );
                 }
                 ?>
                 <div class="metrics-container">
@@ -154,6 +171,7 @@ class SettingsPage {
                 <hr>
                 <div class="chart-container">
                     <h3>Performance Chart</h3>
+                    <p id="bol-chart-last-updated" style="margin-top:0;"></p>
                     <div class="chart-controls">
                         <div>
                             <label for="chart-metric-selector">Metric:</label>
@@ -200,6 +218,7 @@ class SettingsPage {
                             </select>
                         </div>
                         <button type="button" id="bol-update-chart-button" class="button button-secondary">Update Chart</button>
+                        <span id="bol-chart-loading-indicator" class="spinner" style="float:none;display:none;"></span>
                     </div>
                     <div style="max-width: 800px; margin: auto;">
                         <canvas id="bolPerformanceChart"></canvas>
@@ -330,6 +349,7 @@ class SettingsPage {
                 $default_end_date = current_time('Y-m-d');
                 $current_start_date = isset( $_GET['pm_start_date'] ) ? sanitize_text_field( $_GET['pm_start_date'] ) : $default_start_date;
                 $current_end_date = isset( $_GET['pm_end_date'] ) ? sanitize_text_field( $_GET['pm_end_date'] ) : $default_end_date;
+                $only_with_orders = ! empty( $_GET['pm_only_with_orders'] );
                 ?>
                 <form method="GET" action="">
                     <input type="hidden" name="page" value="bol-affiliate-insights">
@@ -339,6 +359,10 @@ class SettingsPage {
                     <input type="text" id="pm-start-date" name="pm_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
                     <label for="pm-end-date">To:</label>
                     <input type="text" id="pm-end-date" name="pm_end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
+                    <label style="margin-left:10px;">
+                        <input type="checkbox" name="pm_only_with_orders" value="1" <?php checked( $only_with_orders, true ); ?> />
+                        Only entries with orders
+                    </label>
                     <input type="submit" value="Fetch Report" class="button button-secondary">
                 </form>
                 <hr>
@@ -364,8 +388,17 @@ class SettingsPage {
                                         return isset($item['siteCode']) && $item['siteCode'] == $global_selected_site_filter;
                                     });
                                 }
+
+                                if ( $only_with_orders && ! empty( $pm_items_to_display ) ) {
+                                    $pm_items_to_display = array_filter( $pm_items_to_display, function( $item ) {
+                                        $orders = isset( $item['orders'] ) ? (int) $item['orders'] : 0;
+                                        return $orders > 0;
+                                    } );
+                                }
                                 
                                 $pm_list_table = new \TuinenBalkon\BolAffiliateInsights\Table\PromotionMethodsListTable();
+                                $pm_list_table->set_affiliate_link_index( $affiliate_adapter->build_bol_params_index() );
+                                $pm_list_table->set_hide_site_column( $global_selected_site_filter !== 'all_sites' );
                                 $pm_list_table->prepare_items( $pm_items_to_display );
                                 echo '<h3>Promotion Methods Data</h3>';
                                  if ($global_selected_site_filter !== 'all_sites') {
@@ -375,6 +408,9 @@ class SettingsPage {
                                     }
                                     echo '<p><em>Displaying data filtered for site: ' . esc_html($site_name_display) . '</em></p>';
                                  }
+                                if ( $only_with_orders ) {
+                                    echo '<p><em>Filter active: only showing rows with at least 1 order.</em></p>';
+                                }
                                 $pm_list_table->display();
                                 if (empty($pm_items_to_display) && isset($report_data_response['items']) && !empty($report_data_response['items'])) {
                                      echo '<div class="notice notice-info is-dismissible"><p>No records found for the selected site and period.</p></div>';
@@ -390,6 +426,230 @@ class SettingsPage {
                     ?>
                 </div>
                 <?php
+            } elseif ( $active_tab === 'analysis' ) {
+                echo '<h3>Analyse</h3>';
+
+                $default_end_date = current_time('Y-m-d');
+                $default_start_date = date_create( $default_end_date, wp_timezone() )->modify('-59 days')->format('Y-m-d');
+
+                $analysis_period = isset( $_GET['an_period'] ) ? sanitize_key( $_GET['an_period'] ) : 'last_60_days';
+                if ( ! in_array( $analysis_period, array( 'last_30_days', 'last_60_days', 'last_90_days', 'custom' ), true ) ) {
+                    $analysis_period = 'last_60_days';
+                }
+
+                $analysis_end_date = isset( $_GET['an_end_date'] ) ? sanitize_text_field( $_GET['an_end_date'] ) : $default_end_date;
+                if ( empty( $analysis_end_date ) ) {
+                    $analysis_end_date = $default_end_date;
+                }
+
+                if ( 'custom' === $analysis_period ) {
+                    $analysis_start_date = isset( $_GET['an_start_date'] ) ? sanitize_text_field( $_GET['an_start_date'] ) : $default_start_date;
+                } else {
+                    $end_obj = date_create( $analysis_end_date, wp_timezone() );
+                    if ( ! $end_obj ) {
+                        $end_obj = date_create( $default_end_date, wp_timezone() );
+                        $analysis_end_date = $default_end_date;
+                    }
+                    if ( 'last_30_days' === $analysis_period ) {
+                        $analysis_start_date = $end_obj->modify( '-29 days' )->format( 'Y-m-d' );
+                    } elseif ( 'last_90_days' === $analysis_period ) {
+                        $analysis_start_date = $end_obj->modify( '-89 days' )->format( 'Y-m-d' );
+                    } else { // last_60_days
+                        $analysis_start_date = $end_obj->modify( '-59 days' )->format( 'Y-m-d' );
+                    }
+                }
+
+                $min_clicks          = isset( $_GET['an_min_clicks'] ) ? (int) $_GET['an_min_clicks'] : 50;
+                if ( $min_clicks < 1 ) {
+                    $min_clicks = 1;
+                }
+                ?>
+                <form method="GET" action="">
+                    <input type="hidden" name="page" value="bol-affiliate-insights">
+                    <input type="hidden" name="tab" value="analysis">
+                    <?php wp_nonce_field('bol_analysis_filters', 'bol_analysis_nonce'); ?>
+                    <label for="an-period" style="margin-right:6px;">Window:</label>
+                    <select id="an-period" name="an_period">
+                        <option value="last_30_days" <?php selected( $analysis_period, 'last_30_days' ); ?>>Last 30 days</option>
+                        <option value="last_60_days" <?php selected( $analysis_period, 'last_60_days' ); ?>>Last 60 days</option>
+                        <option value="last_90_days" <?php selected( $analysis_period, 'last_90_days' ); ?>>Last 90 days</option>
+                        <option value="custom" <?php selected( $analysis_period, 'custom' ); ?>>Custom</option>
+                    </select>
+                    <label for="an-start-date">From:</label>
+                    <input type="text" id="an-start-date" name="an_start_date" class="datepicker" value="<?php echo esc_attr( $analysis_start_date ); ?>">
+                    <label for="an-end-date">To:</label>
+                    <input type="text" id="an-end-date" name="an_end_date" class="datepicker" value="<?php echo esc_attr( $analysis_end_date ); ?>">
+                    <label for="an-min-clicks" style="margin-left:10px;">Min clicks (0 orders):</label>
+                    <input type="number" id="an-min-clicks" name="an_min_clicks" min="1" step="1" value="<?php echo esc_attr( $min_clicks ); ?>" style="width:90px;">
+                    <input type="submit" value="Update Analysis" class="button button-secondary">
+                </form>
+                <hr>
+                <?php
+
+                $show_analysis = isset( $_GET['bol_analysis_nonce'] )
+                    ? wp_verify_nonce( $_GET['bol_analysis_nonce'], 'bol_analysis_filters' )
+                    : true; // auto-load with defaults on first visit
+
+                if ( $show_analysis ) {
+                    if ( ! $api_client ) {
+                        echo '<div class=”notice notice-error is-dismissible”><p>API Client not available. Check plugin configuration.</p></div>';
+                    } else {
+                        $report_data_service = $plugin_instance->get_report_data_service();
+                        $insights = $report_data_service->get_analysis_insights( $analysis_start_date, $analysis_end_date, $global_selected_site_filter, $min_clicks );
+
+                        if ( isset( $insights['error'] ) && $insights['error'] ) {
+                            echo '<div class=”notice notice-error is-dismissible”><p>Error generating analysis: ' . esc_html( $insights['error'] ) . '</p></div>';
+                        }
+
+                        echo '<p><em>Based on Promotion Report data. Generated at: ' . esc_html( $insights['generated_at'] ?? '' ) . '</em></p>';
+
+                        // Build bol params index once for all analysis tables.
+                        $bol_params_index = $affiliate_adapter->build_bol_params_index();
+                        $aff_available    = $affiliate_adapter->is_available();
+                        $hide_site_col    = ( $global_selected_site_filter !== 'all_sites' );
+
+                        $render_table = function( $title, $rows ) use ( $bol_params_index, $aff_available, $hide_site_col, $affiliate_adapter ) {
+                            echo '<h3>' . esc_html( $title ) . '</h3>';
+                            if ( empty( $rows ) ) {
+                                echo '<div class=”notice notice-info is-dismissible”><p>No rows found for this selection.</p></div>';
+                                return;
+                            }
+                            echo '<table class=”wp-list-table widefat fixed striped” style=”table-layout:auto;”>';
+                            echo '<thead><tr>';
+                            if ( ! $hide_site_col ) {
+                                echo '<th scope=”col” class=”manage-column”>Site</th>';
+                            }
+                            echo '<th scope=”col” class=”manage-column”>Link</th>';
+                            echo '<th scope=”col” class=”manage-column”>SubID</th>';
+                            if ( $aff_available ) {
+                                echo '<th scope=”col” class=”manage-column”>Aff. link</th>';
+                            }
+                            echo '<th scope=”col” class=”manage-column” style=”text-align:right;”>Clicks</th>';
+                            echo '<th scope=”col” class=”manage-column” style=”text-align:right;”>Orders</th>';
+                            echo '<th scope=”col” class=”manage-column” style=”text-align:right;”>Revenue</th>';
+                            echo '<th scope=”col” class=”manage-column” style=”text-align:right;”>EPC</th>';
+                            echo '<th scope=”col” class=”manage-column” style=”text-align:right;”>Conversion</th>';
+                            echo '</tr></thead><tbody>';
+                            foreach ( $rows as $row ) {
+                                $site      = trim( $row['siteName'] ?? '' ) !== ''
+                                    ? ( $row['siteName'] . ( $row['siteCode'] ? ' (' . $row['siteCode'] . ')' : '' ) )
+                                    : ( $row['siteCode'] ?? '' );
+                                $link_name = $row['name'] ?? '';
+                                $sub_id    = $row['subId'] ?? '';
+
+                                echo '<tr>';
+                                if ( ! $hide_site_col ) {
+                                    echo '<td>' . esc_html( $site ) . '</td>';
+                                }
+                                echo '<td>' . esc_html( $link_name ) . '</td>';
+                                echo '<td>' . esc_html( $sub_id ) . '</td>';
+
+                                if ( $aff_available ) {
+                                    // Match by subId first (most specific), then by name — same logic as PromotionMethodsListTable.
+                                    $subid_key = strtolower( trim( $sub_id ) );
+                                    $name_key  = strtolower( trim( $link_name ) );
+                                    $matched   = null;
+                                    if ( $subid_key !== '' && isset( $bol_params_index['by_subid'][ $subid_key ] ) ) {
+                                        $matched = $bol_params_index['by_subid'][ $subid_key ];
+                                    } elseif ( $name_key !== '' && isset( $bol_params_index['by_name'][ $name_key ] ) ) {
+                                        $matched = $bol_params_index['by_name'][ $name_key ];
+                                    }
+
+                                    if ( $matched ) {
+                                        $edit_url   = esc_url( $affiliate_adapter->get_admin_edit_url( (int) $matched['id'] ) );
+                                        $target_url = esc_url( $matched['redirect_url'] ?: $matched['url'] );
+                                        $link_title = esc_attr( $matched['name'] );
+                                        echo '<td>'
+                                           . '<a href=”' . $target_url . '” target=”_blank” rel=”noopener” title=”Bekijk: ' . $link_title . '”>[&rarr;]</a>'
+                                           . '&nbsp;<a href=”' . $edit_url . '” title=”Bewerk: ' . $link_title . '”>[&#9998;]</a>'
+                                           . '</td>';
+                                    } else {
+                                        echo '<td style=”color:#999;”>—</td>';
+                                    }
+                                }
+
+                                echo '<td style=”text-align:right;”>' . number_format_i18n( (int) ( $row['clicks'] ?? 0 ) ) . '</td>';
+                                echo '<td style=”text-align:right;”>' . number_format_i18n( (int) ( $row['orders'] ?? 0 ) ) . '</td>';
+                                echo '<td style=”text-align:right;”>€' . number_format_i18n( (float) ( $row['revenueInclVat'] ?? 0 ), 2 ) . '</td>';
+                                echo '<td style=”text-align:right;”>€' . number_format_i18n( (float) ( $row['epc'] ?? 0 ), 4 ) . '</td>';
+                                echo '<td style=”text-align:right;”>' . number_format_i18n( (float) ( $row['conversion'] ?? 0 ), 2 ) . '%</td>';
+                                echo '</tr>';
+                            }
+                            echo '</tbody></table>';
+                        };
+
+                        $render_table(
+                            'Top links op opbrengst (laatste periode)',
+                            $insights['top_earning_links'] ?? array()
+                        );
+
+                        $render_table(
+                            'Veel kliks, 0 orders (mogelijk probleem / optimalisatie-kans)',
+                            $insights['high_clicks_no_orders'] ?? array()
+                        );
+
+                        $render_table(
+                            'Kans om op te schalen: hoge EPC, laag volume (10–150 clicks, >0 orders)',
+                            $insights['scale_candidates'] ?? array()
+                        );
+
+                        $render_table(
+                            'Optimalisatie: veel clicks, lage EPC (≥200 clicks, >0 orders)',
+                            $insights['high_volume_low_epc'] ?? array()
+                        );
+                    }
+                }
+            } elseif ( $active_tab === 'affiliate_links' ) {
+                echo '<h3>Bol.com Affiliate Links</h3>';
+                $adapter_available = $affiliate_adapter->is_available();
+                $all_links         = $adapter_available ? $affiliate_adapter->get_all_links() : array();
+                $bol_links         = $adapter_available ? $affiliate_adapter->get_links_by_host( 'bol.com' ) : array();
+
+                // Status balk
+                echo '<table class="widefat" style="margin-bottom:16px;max-width:600px;">';
+                echo '<tbody>';
+                echo '<tr><td><strong>Affiliate plugin</strong></td><td>' . esc_html( $affiliate_adapter->get_plugin_name() ) . '</td></tr>';
+                echo '<tr><td><strong>Status</strong></td><td>' . ( $adapter_available ? '<span style="color:green;">✔ Actief</span>' : '<span style="color:red;">✘ Niet gevonden</span>' ) . '</td></tr>';
+                echo '<tr><td><strong>Totaal links</strong></td><td>' . count( $all_links ) . '</td></tr>';
+                echo '<tr><td><strong>Bol.com links</strong></td><td>' . count( $bol_links ) . '</td></tr>';
+                echo '</tbody></table>';
+
+                if ( ! $adapter_available ) {
+                    echo '<div class="notice notice-warning"><p>';
+                    echo '<strong>ThirstyAffiliates niet gevonden.</strong> Zorg dat de plugin actief is.';
+                    echo '</p></div>';
+                } elseif ( empty( $all_links ) ) {
+                    echo '<div class="notice notice-warning"><p>';
+                    echo 'ThirstyAffiliates is actief maar er zijn nog geen links aangemaakt. ';
+                    echo '<a href="' . esc_url( admin_url( 'post-new.php?post_type=thirstylink' ) ) . '">Voeg een link toe</a>.';
+                    echo '</p></div>';
+                } elseif ( empty( $bol_links ) ) {
+                    echo '<div class="notice notice-info"><p>';
+                    echo 'Er zijn <strong>' . count( $all_links ) . '</strong> links gevonden, maar geen met een bol.com bestemming. ';
+                    echo 'Zorg dat de bestemming-URL begint met <code>https://www.bol.com/</code>.';
+                    echo '</p></div>';
+                } else {
+                    echo '<p>' . count( $bol_links ) . ' bol.com link(s) gevonden. <a href="' . esc_url( admin_url( 'admin.php?page=thirstyaffiliates' ) ) . '">Beheer alle links in ThirstyAffiliates →</a></p>';
+                    echo '<table class="wp-list-table widefat striped" style="width:100%;table-layout:auto;word-wrap:break-word;">';
+                    echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column">Naam</th>';
+                    echo '<th scope="col" class="manage-column">Cloaked URL</th>';
+                    echo '<th scope="col" class="manage-column">Bestemming</th>';
+                    echo '<th scope="col" class="manage-column">Shortcode</th>';
+                    echo '</tr></thead><tbody>';
+                    foreach ( $bol_links as $link ) {
+                        $edit_url   = esc_url( $affiliate_adapter->get_admin_edit_url( $link['id'] ) );
+                        $redir_url  = esc_url( $link['redirect_url'] );
+                        $dest_url   = esc_url( $link['url'] );
+                        echo '<tr>';
+                        echo '<td><strong><a href="' . $edit_url . '">' . esc_html( $link['name'] ) . '</a></strong></td>';
+                        echo '<td><a href="' . $redir_url . '" target="_blank" rel="noopener">' . esc_html( $link['redirect_url'] ) . '</a></td>';
+                        echo '<td><a href="' . $dest_url . '" target="_blank" rel="nofollow noopener" title="' . esc_attr( $link['url'] ) . '">[&rarr;]</a></td>';
+                        echo '<td><code>[thirstylink id="' . (int) $link['id'] . '"]</code></td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table>';
+                }
             } elseif ( $active_tab === 'settings' ) {
                 ?>
                 <form action="options.php" method="post">
@@ -403,6 +663,11 @@ class SettingsPage {
                 <h2>Test API Connection</h2>
                 <button type="button" id="bol-test-connection-button" class="button">Test Connection</button>
                 <div id="bol-test-connection-results"></div>
+                <hr/>
+                <h2>Cache</h2>
+                <p>API-data wordt tot 1 uur gecached. Gebruik deze knop om de cache te legen en verse data op te halen bij de volgende paginabezoek.</p>
+                <button type="button" id="bol-clear-cache-button" class="button button-secondary">Cache legen</button>
+                <span id="bol-clear-cache-result" style="margin-left:10px;"></span>
                 <hr/>
                 <h2>Getting Your API Credentials</h2>
                 <p>To obtain your Bol.com Client ID and Client Secret:</p>
