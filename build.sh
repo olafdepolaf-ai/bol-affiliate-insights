@@ -2,27 +2,29 @@
 
 # Variables
 PLUGIN_SLUG="bol-affiliate-insights"
-BUILD_PATH="./build"
-ZIP_FILE="${PLUGIN_SLUG}.zip"
+VERSION=$(grep -m1 "Version:" bol-affiliate-insights.php | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+DIST_PATH="./dist"
+BUILD_DIR="${DIST_PATH}/${PLUGIN_SLUG}"
+ZIP_FILE="${DIST_PATH}/${PLUGIN_SLUG}.zip"
 
-# Create build directory
-rm -rf $BUILD_PATH
-mkdir -p $BUILD_PATH
+echo "Building version ${VERSION}..."
+
+# Clean dist folder completely
+rm -rf "${DIST_PATH:?}"/*
+
+# Create build directory with fixed plugin slug (no version in folder name)
+# This ensures WordPress recognises it as the same plugin on every update
+mkdir -p "$BUILD_DIR"
 
 # Copy plugin files
-cp -r ./assets $BUILD_PATH/
-cp -r ./src $BUILD_PATH/
-cp ./*.php $BUILD_PATH/
-cp ./*.txt $BUILD_PATH/
+cp -r ./assets "$BUILD_DIR/"
+cp -r ./src "$BUILD_DIR/"
+cp ./*.php "$BUILD_DIR/"
+cp ./*.txt "$BUILD_DIR/"
 
-# Create zip file
-cd $BUILD_PATH
-zip -r ../$ZIP_FILE .
-
-# Return to root
+# Create zip — inner folder is always "bol-affiliate-insights"
+cd "$DIST_PATH"
+zip -r "${PLUGIN_SLUG}.zip" "${PLUGIN_SLUG}"
 cd ..
 
-# Clean up
-rm -rf $BUILD_PATH
-
-echo "Plugin successfully zipped to ${ZIP_FILE}"
+echo "Done: ${ZIP_FILE} (v${VERSION})"

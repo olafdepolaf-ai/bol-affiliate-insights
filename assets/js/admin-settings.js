@@ -36,7 +36,10 @@ jQuery(document).ready(function($) {
 
     $('#bol-test-connection-button').on('click', function() {
         var resultsDiv = $('#bol-test-connection-results');
-        resultsDiv.html('<p>Testing connection...</p>');
+        resultsDiv
+            .removeClass('bol-status-success bol-status-error')
+            .html('<span class="spinner is-active" style="float:none;margin:0 6px 0 0;"></span>Testing connection...');
+        $('#bol-test-connection-button').prop('disabled', true);
 
         $.ajax({
             url: ajaxurl, // WordPress global variable for AJAX URL
@@ -46,14 +49,25 @@ jQuery(document).ready(function($) {
                 nonce: bol_settings_params.nonce // Nonce for security (will be localized)
             },
             success: function(response) {
+                resultsDiv.removeClass('bol-status-success bol-status-error');
                 if (response.success) {
-                    resultsDiv.html('<p style="color: green;">' + response.data.message + '</p>');
+                    resultsDiv
+                        .addClass('bol-status-success')
+                        .text(response.data.message);
                 } else {
-                    resultsDiv.html('<p style="color: red;">' + response.data.message + '</p>');
+                    resultsDiv
+                        .addClass('bol-status-error')
+                        .text(response.data.message);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                resultsDiv.html('<p style="color: red;">AJAX Error: ' + textStatus + ' - ' + errorThrown + '</p>');
+                resultsDiv
+                    .removeClass('bol-status-success')
+                    .addClass('bol-status-error')
+                    .text('AJAX Error: ' + textStatus + ' - ' + errorThrown);
+            },
+            complete: function() {
+                $('#bol-test-connection-button').prop('disabled', false);
             }
         });
     });
@@ -62,9 +76,11 @@ jQuery(document).ready(function($) {
         var selectedMetric = $('#chart-metric-selector').val();
         var selectedPeriod = $('#chart-period-selector').val();
         var selectedGranularity = $('#chart-granularity-selector').val();
-        var selectedSite = $('#chart-site-selector').val(); 
-        var resultsDiv = $('#bol-chart-error-message'); 
-        resultsDiv.html(''); 
+        var selectedSite = $('#chart-site-selector').val();
+        var resultsDiv = $('#bol-chart-error-message');
+        resultsDiv
+            .removeClass('bol-status-success bol-status-error')
+            .html('');
 
         $.ajax({
             url: ajaxurl,
@@ -113,32 +129,52 @@ jQuery(document).ready(function($) {
                     // Add this line, passing selectedMetric as well for context in table formatting
                     populateChartDataTable(chartData, selectedMetric);
 
-                     // Handle notices from backend (e.g. conversion calculation note)
+                    // Handle notices from backend (e.g. conversion calculation note)
                     if (chartData.notice) {
-                        resultsDiv.html('<p class="notice notice-info">' + chartData.notice + '</p>');
+                        resultsDiv
+                            .addClass('bol-status-success')
+                            .text(chartData.notice);
+                    }
+
+                    if (chartData.generated_at) {
+                        $('#bol-chart-last-updated').text('Last updated: ' + chartData.generated_at);
                     }
                 } else {
-                    resultsDiv.html('<p>Error loading chart data: ' + response.data.message + '</p>');
+                    resultsDiv
+                        .addClass('bol-status-error')
+                        .text('Error loading chart data: ' + response.data.message);
                     // Clear the table if there's an error
                     populateChartDataTable(null, selectedMetric); // Pass null to clear
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                resultsDiv.html('<p>AJAX Error: ' + textStatus + ' - ' + errorThrown + '</p>');
+                resultsDiv
+                    .addClass('bol-status-error')
+                    .text('AJAX Error: ' + textStatus + ' - ' + errorThrown);
             },
             beforeSend: function() {
-                // Optional: Show a loading indicator
+                // Show a loading indicator
                 if (bolChartInstance) { // Dim current chart while loading
                     bolChartInstance.ctx.canvas.style.opacity = 0.5;
                 }
-                 $('#bol-update-chart-button').prop('disabled', true).text('Loading...');
+                $('#bol-update-chart-button')
+                    .prop('disabled', true)
+                    .text('Loading…');
+                $('#bol-chart-loading-indicator')
+                    .addClass('is-active')
+                    .show();
             },
             complete: function() {
-                // Optional: Hide loading indicator
+                // Hide loading indicator
                 if (bolChartInstance) {
-                     bolChartInstance.ctx.canvas.style.opacity = 1;
+                    bolChartInstance.ctx.canvas.style.opacity = 1;
                 }
-                $('#bol-update-chart-button').prop('disabled', false).text('Update Chart');
+                $('#bol-update-chart-button')
+                    .prop('disabled', false)
+                    .text('Update Chart');
+                $('#bol-chart-loading-indicator')
+                    .removeClass('is-active')
+                    .hide();
             }
         });
     }); 
@@ -205,6 +241,36 @@ jQuery(document).ready(function($) {
 
         tableContainer.append(table);
     }
+
+    $('#bol-clear-cache-button').on('click', function() {
+        var resultSpan = $('#bol-clear-cache-result');
+        var button = $(this);
+
+        button.prop('disabled', true).text('Bezig…');
+        resultSpan.removeClass('bol-status-success bol-status-error').text('');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'bol_clear_cache',
+                nonce: bol_settings_params.clear_cache_nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    resultSpan.addClass('bol-status-success').text(response.data.message);
+                } else {
+                    resultSpan.addClass('bol-status-error').text(response.data.message);
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                resultSpan.addClass('bol-status-error').text('AJAX fout: ' + textStatus);
+            },
+            complete: function() {
+                button.prop('disabled', false).text('Cache legen');
+            }
+        });
+    });
 
     // Initialize datepickers
     $('.datepicker').each(function(){

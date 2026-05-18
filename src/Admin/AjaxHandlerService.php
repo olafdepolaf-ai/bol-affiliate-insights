@@ -17,6 +17,7 @@ class AjaxHandlerService {
         add_action( 'wp_ajax_bol_test_connection', array( $this, 'handle_test_connection_ajax' ) );
         add_action( 'wp_ajax_bol_fetch_chart_data', array( $this, 'handle_fetch_chart_data_ajax' ) );
         add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
+        add_action( 'wp_ajax_bol_clear_cache', array( $this, 'handle_clear_cache_ajax' ) );
     }
 
     public function handle_test_connection_ajax() {
@@ -59,5 +60,26 @@ class AjaxHandlerService {
         } else {
             wp_send_json_success( array( 'sites' => $sites ) );
         }
+    }
+
+    public function handle_clear_cache_ajax() {
+        check_ajax_referer( 'bol_clear_cache_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+        }
+
+        global $wpdb;
+        $deleted = $wpdb->query(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_bol\_%'
+                OR option_name LIKE '_transient_timeout_bol\_%'"
+        );
+
+        \TuinenBalkon\BolAffiliateInsights\Service\Logger::debug( 'Cache cleared.', array( 'rows_deleted' => $deleted ) );
+
+        wp_send_json_success( array(
+            'message' => sprintf( 'Cache geleegd. %d item(s) verwijderd.', (int) $deleted ),
+        ) );
     }
 }

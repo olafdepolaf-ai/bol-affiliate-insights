@@ -1,0 +1,32 @@
+# Build output
+dist/
+*.zip
+
+# Claude Code (AI assistant) — niet committen in publieke repo
+CLAUDE.md
+.claude/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# External plugin copies (reference only, not part of this codebase)
+thirstyaffiliates/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Composer
+vendor/
