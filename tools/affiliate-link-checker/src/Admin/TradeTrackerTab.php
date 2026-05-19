@@ -19,33 +19,41 @@ class TradeTrackerTab {
 	}
 
 	public function render(): void {
-		$base_url   = admin_url( 'admin.php?page=affiliate-link-checker&tab=tradetracker' );
-		$subtab     = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'settings';
-		$subtabs    = [ 'settings' => 'Instellingen', 'rapport' => 'Rapport', 'sales' => 'Sales' ];
+		$base_url = admin_url( 'admin.php?page=affiliate-link-checker&tab=tradetracker' );
+		$subtab   = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'sales';
+
+		// Left tabs (ordered), settings floated right
+		$left_subtabs = [ 'sales' => 'Sales', 'kliks' => 'Kliks', 'rapport' => 'Rapport' ];
 		?>
 		<style>
-			.alc-subtab-nav { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
+			.alc-subtab-nav { display:flex; align-items:flex-end; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
 			.alc-subtab-nav a { display:inline-block; padding:6px 14px; text-decoration:none; font-size:13px; color:#2271b1; border:1px solid transparent; border-bottom:none; border-radius:3px 3px 0 0; margin-bottom:-1px; }
 			.alc-subtab-nav a:hover { background:#f0f0f1; color:#135e96; }
 			.alc-subtab-nav a.active { background:#fff; border-color:#c3c4c7; color:#1d2327; font-weight:600; }
+			.alc-subtab-nav .alc-subtab-settings { margin-left:auto; font-size:12px; color:#646970; border-color:transparent !important; }
+			.alc-subtab-nav .alc-subtab-settings:hover { color:#135e96; background:#f0f0f1; }
+			.alc-subtab-nav .alc-subtab-settings.active { color:#1d2327; background:#fff; border-color:#c3c4c7 !important; }
 		</style>
 		<nav class="alc-subtab-nav">
-			<?php foreach ( $subtabs as $slug => $label ) : ?>
+			<?php foreach ( $left_subtabs as $slug => $label ) : ?>
 			<a href="<?php echo esc_url( $base_url . '&subtab=' . $slug ); ?>"
 			   class="<?php echo $subtab === $slug ? 'active' : ''; ?>">
 				<?php echo esc_html( $label ); ?>
 			</a>
 			<?php endforeach; ?>
+			<a href="<?php echo esc_url( $base_url . '&subtab=settings' ); ?>"
+			   class="alc-subtab-settings <?php echo $subtab === 'settings' ? 'active' : ''; ?>">
+				⚙ Instellingen
+			</a>
 		</nav>
 
 		<?php
-		if ( $subtab === 'rapport' ) {
-			$this->render_rapport_subtab( $base_url );
-		} elseif ( $subtab === 'sales' ) {
-			$this->render_sales_subtab();
-		} else {
-			$this->render_settings_subtab();
-		}
+		match ( $subtab ) {
+			'kliks'   => $this->render_clicks_subtab(),
+			'rapport' => $this->render_rapport_subtab( $base_url ),
+			'settings'=> $this->render_settings_subtab(),
+			default   => $this->render_sales_subtab(),
+		};
 	}
 
 	// -------------------------------------------------------------------------
@@ -293,6 +301,163 @@ class TradeTrackerTab {
 				</tr>
 			</tfoot>
 		</table>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Kliks subtab
+	// -------------------------------------------------------------------------
+
+	private function render_clicks_subtab(): void {
+		$current_year  = (int) gmdate( 'Y' );
+		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
+		$selected_year = max( 2015, min( $current_year, $selected_year ) );
+		$per_page      = 50;
+		$current_page  = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+
+		$customer_id = get_option( 'alc_tt_customer_id', '' );
+		$access_key  = get_option( 'alc_tt_access_key', '' );
+		if ( empty( $customer_id ) || empty( $access_key ) ) {
+			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			return;
+		}
+
+		$sites = $this->service->get_affiliate_sites();
+		if ( is_wp_error( $sites ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $sites->get_error_message() ) . '</p></div>';
+			return;
+		}
+		$primary_site = reset( $sites );
+		$site_id      = (string) ( is_object( $primary_site ) ? $primary_site->ID : ( $primary_site['ID'] ?? '' ) );
+
+		// Base URL for this subtab (year/page navigation)
+		$subtab_url = admin_url( 'admin.php?page=affiliate-link-checker&tab=tradetracker&subtab=kliks&jaar=' . $selected_year );
+		?>
+		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+			<input type="hidden" name="page" value="affiliate-link-checker" />
+			<input type="hidden" name="tab" value="tradetracker" />
+			<input type="hidden" name="subtab" value="kliks" />
+			<label for="alc_kliks_jaar" style="font-weight:600;">Jaar:</label>
+			<select id="alc_kliks_jaar" name="jaar" onchange="this.form.submit()">
+				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
+				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
+				<?php endfor; ?>
+			</select>
+		</form>
+
+		<?php
+		$clicks = $this->service->get_clicks_year( $site_id, $selected_year );
+
+		if ( is_wp_error( $clicks ) ) {
+			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $clicks->get_error_message() ) . '</p></div>';
+			return;
+		}
+
+		if ( empty( $clicks ) ) {
+			echo '<p><em>Geen kliks gevonden voor ' . esc_html( $selected_year ) . '.</em></p>';
+			return;
+		}
+
+		$total_clicks = count( $clicks );
+		$total_pages  = (int) ceil( $total_clicks / $per_page );
+		$current_page = min( $current_page, $total_pages );
+		$offset       = ( $current_page - 1 ) * $per_page;
+		$page_clicks  = array_slice( $clicks, $offset, $per_page );
+		?>
+
+		<style>
+			.alc-clicks-tbl { border-collapse:collapse; width:100%; max-width:1100px; }
+			.alc-clicks-tbl th, .alc-clicks-tbl td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
+			.alc-clicks-tbl th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
+			.alc-clicks-tbl td.alc-ref { font-family:monospace; font-size:12px; }
+			.alc-clicks-tbl td.alc-id  { color:#646970; font-size:12px; }
+			.alc-clicks-tbl td.alc-src { max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#646970; }
+
+			.alc-pagination { display:flex; align-items:center; gap:6px; margin-top:16px; flex-wrap:wrap; }
+			.alc-pagination a, .alc-pagination span { display:inline-block; padding:4px 10px; border:1px solid #c3c4c7; border-radius:3px; font-size:13px; text-decoration:none; color:#2271b1; background:#fff; }
+			.alc-pagination span.current { background:#2271b1; color:#fff; border-color:#2271b1; font-weight:600; }
+			.alc-pagination span.dots { border:none; color:#646970; }
+			.alc-pagination a:hover { background:#f0f0f1; }
+			.alc-clicks-meta { color:#646970; font-size:13px; margin-bottom:10px; }
+		</style>
+
+		<p class="alc-clicks-meta">
+			<?php echo esc_html( number_format( $total_clicks, 0, ',', '.' ) ); ?> kliks in <?php echo esc_html( $selected_year ); ?>
+			— pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( $total_pages ); ?>
+		</p>
+
+		<table class="alc-clicks-tbl">
+			<thead>
+				<tr>
+					<th>Datum</th>
+					<th>ID</th>
+					<th>Campagne</th>
+					<th>Referentie</th>
+					<th>Apparaat</th>
+					<th>Land</th>
+					<th>Herkomst</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $page_clicks as $click ) :
+					$c        = (object) $click;
+					$campaign = is_object( $c->campaign ?? null ) ? ( $c->campaign->name ?? '—' ) : '—';
+					$reg_date = ! empty( $c->registrationDate )
+						? gmdate( 'd-m-Y H:i', strtotime( $c->registrationDate ) )
+						: '—';
+					// device: check various possible property names
+					$device   = $c->deviceType ?? ( $c->device ?? ( $c->deviceName ?? '—' ) );
+					$country  = $c->countryCode ?? ( $c->country ?? '—' );
+					$referrer = $c->referrer ?? ( $c->referrerURL ?? ( $c->referrerUrl ?? '' ) );
+				?>
+				<tr>
+					<td><?php echo esc_html( $reg_date ); ?></td>
+					<td class="alc-id"><?php echo esc_html( '#' . ( $c->ID ?? '?' ) ); ?></td>
+					<td><?php echo esc_html( $campaign ); ?></td>
+					<td class="alc-ref"><?php echo esc_html( $c->reference ?? '—' ); ?></td>
+					<td><?php echo esc_html( (string) $device ); ?></td>
+					<td><?php echo esc_html( (string) $country ); ?></td>
+					<td class="alc-src" title="<?php echo esc_attr( $referrer ); ?>">
+						<?php echo esc_html( $referrer ?: '—' ); ?>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<?php if ( $total_pages > 1 ) : ?>
+		<div class="alc-pagination">
+			<?php if ( $current_page > 1 ) : ?>
+			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page - 1 ) ); ?>">‹ Vorige</a>
+			<?php endif; ?>
+
+			<?php
+			// Show first, last, and a window around current page
+			$shown = [];
+			for ( $p = 1; $p <= $total_pages; $p++ ) {
+				if ( $p === 1 || $p === $total_pages || abs( $p - $current_page ) <= 2 ) {
+					$shown[] = $p;
+				}
+			}
+			$prev = null;
+			foreach ( $shown as $p ) :
+				if ( $prev !== null && $p - $prev > 1 ) :
+					?><span class="dots">…</span><?php
+				endif;
+				if ( $p === $current_page ) :
+					?><span class="current"><?php echo esc_html( $p ); ?></span><?php
+				else :
+					?><a href="<?php echo esc_url( $subtab_url . '&paged=' . $p ); ?>"><?php echo esc_html( $p ); ?></a><?php
+				endif;
+				$prev = $p;
+			endforeach;
+			?>
+
+			<?php if ( $current_page < $total_pages ) : ?>
+			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page + 1 ) ); ?>">Volgende ›</a>
+			<?php endif; ?>
+		</div>
+		<?php endif; ?>
 		<?php
 	}
 

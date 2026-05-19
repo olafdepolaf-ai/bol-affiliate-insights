@@ -16,6 +16,8 @@ class TradeTrackerService {
 	const TTL_REPORT_PAST  = 86400;  // 24h — past years
 	const TTL_SALES        = 3600;   // 1h  — current year
 	const TTL_SALES_PAST   = 86400;  // 24h — past years
+	const TTL_CLICKS       = 3600;   // 1h  — current year
+	const TTL_CLICKS_PAST  = 86400;  // 24h — past years
 
 	private $client = null;
 
@@ -217,6 +219,40 @@ class TradeTrackerService {
 			$ttl          = ( $year < (int) gmdate( 'Y' ) ) ? self::TTL_SALES_PAST : self::TTL_SALES;
 			$this->cache_set( $cache_key, $transactions, $ttl );
 			return $transactions;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Haalt alle klik-transacties op voor het opgegeven jaar.
+	 * Gesorteerd op registratiedatum aflopend, max 1000 per jaar.
+	 */
+	public function get_clicks_year( string $site_id, int $year ): array|\WP_Error {
+		$cache_key = 'clicks_' . md5( $site_id . '_' . $year );
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		$filter                        = new \stdClass();
+		$filter->registrationDateFrom  = sprintf( '%04d-01-01T00:00:00', $year );
+		$filter->registrationDateTo    = sprintf( '%04d-12-31T23:59:59', $year );
+		$filter->limit                 = 1000;
+		$filter->sort                  = 'registrationDate';
+		$filter->sortDirection         = 'descending';
+
+		try {
+			$result = $client->getClickTransactions( $site_id, $filter );
+			$clicks = $this->to_array( $result );
+			$ttl    = ( $year < (int) gmdate( 'Y' ) ) ? self::TTL_CLICKS_PAST : self::TTL_CLICKS;
+			$this->cache_set( $cache_key, $clicks, $ttl );
+			return $clicks;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
 		}
