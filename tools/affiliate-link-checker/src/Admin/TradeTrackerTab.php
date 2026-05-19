@@ -302,6 +302,148 @@ class TradeTrackerTab {
 				</tr>
 			</tfoot>
 		</table>
+
+		<?php
+		$ref_page = isset( $_GET['refpaged'] ) ? max( 1, (int) $_GET['refpaged'] ) : 1;
+		$this->render_top_links_table( $site_id, $selected_year, $ref_page );
+	}
+
+	/**
+	 * Tabel met meest geklikt links (campagne + referentie), gesorteerd op klikcount.
+	 * Gratis uit cache — hergebruikt get_clicks_year() data van de Kliks-tab.
+	 */
+	private function render_top_links_table( string $site_id, int $selected_year, int $current_page ): void {
+		$clicks = $this->service->get_clicks_year( $site_id, $selected_year );
+		if ( is_wp_error( $clicks ) || empty( $clicks ) ) {
+			return;
+		}
+
+		// Groepeer op campagne-ID + referentie, tel kliks
+		$groups = [];
+		foreach ( $clicks as $click ) {
+			$c             = (object) $click;
+			$campaign_id   = is_object( $c->campaign ?? null ) ? (string) ( $c->campaign->ID   ?? '' ) : '';
+			$campaign_name = is_object( $c->campaign ?? null ) ? ( $c->campaign->name ?? '—' )         : '—';
+			$reference     = (string) ( $c->reference ?? '' );
+			$key           = $campaign_id . '|' . $reference;
+
+			if ( ! isset( $groups[ $key ] ) ) {
+				$groups[ $key ] = [
+					'campaign_id'   => $campaign_id,
+					'campaign_name' => $campaign_name,
+					'reference'     => $reference,
+					'count'         => 0,
+				];
+			}
+			$groups[ $key ]['count']++;
+		}
+
+		// Sorteer aflopend op klikcount
+		usort( $groups, fn( $a, $b ) => $b['count'] - $a['count'] );
+
+		$per_page     = 25;
+		$total        = count( $groups );
+		$total_pages  = (int) ceil( $total / $per_page );
+		$current_page = max( 1, min( $current_page, $total_pages ) );
+		$offset       = ( $current_page - 1 ) * $per_page;
+		$page_groups  = array_slice( $groups, $offset, $per_page );
+
+		$paged_url = admin_url(
+			'admin.php?page=affiliate-link-checker&tab=tradetracker&subtab=rapport&jaar=' . $selected_year
+		);
+		?>
+
+		<h3 style="margin-top:32px;">Meest geklikt — per link</h3>
+		<p style="color:#646970; font-size:13px; margin-top:-8px; margin-bottom:14px;">
+			<?php echo esc_html( $total ); ?> unieke links · <?php echo esc_html( count( $clicks ) ); ?> kliks totaal
+		</p>
+
+		<style>
+			.alc-toplinks { border-collapse:collapse; width:100%; max-width:720px; }
+			.alc-toplinks th, .alc-toplinks td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
+			.alc-toplinks th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
+			.alc-toplinks td.alc-tl-count { text-align:right; font-weight:700; font-size:15px; color:#2271b1; white-space:nowrap; }
+			.alc-toplinks td.alc-tl-ref { font-family:monospace; font-size:12px; }
+			.alc-toplinks td.alc-tl-link { text-align:center; width:32px; }
+			.alc-toplinks td.alc-tl-link a { color:#2271b1; text-decoration:none; font-size:15px; }
+			.alc-toplinks td.alc-tl-link a:hover { color:#135e96; }
+			.alc-tl-bar-wrap { background:#e8f0fb; border-radius:3px; height:6px; min-width:40px; max-width:160px; margin-top:4px; }
+			.alc-tl-bar { background:#2271b1; height:6px; border-radius:3px; }
+		</style>
+
+		<?php $max_count = ! empty( $page_groups ) ? $page_groups[0]['count'] : 1; ?>
+
+		<table class="alc-toplinks">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>Campagne</th>
+					<th>Referentie</th>
+					<th>Kliks</th>
+					<th title="Open link in nieuw tabblad">↗</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $page_groups as $i => $group ) :
+					$rank      = $offset + $i + 1;
+					$link_url  = '';
+					if ( ! empty( $group['campaign_id'] ) ) {
+						$link_url = 'https://tc.tradetracker.net/?c=' . rawurlencode( $group['campaign_id'] )
+							. '&m=12&a=' . rawurlencode( $site_id );
+						if ( $group['reference'] !== '' ) {
+							$link_url .= '&r=' . rawurlencode( $group['reference'] );
+						}
+					}
+					$bar_pct = $max_count > 0 ? round( ( $group['count'] / $max_count ) * 100 ) : 0;
+				?>
+				<tr>
+					<td style="color:#646970; font-size:12px;"><?php echo esc_html( $rank ); ?></td>
+					<td><?php echo esc_html( $group['campaign_name'] ); ?></td>
+					<td class="alc-tl-ref"><?php echo esc_html( $group['reference'] !== '' ? $group['reference'] : '—' ); ?></td>
+					<td class="alc-tl-count">
+						<?php echo esc_html( $group['count'] ); ?>
+						<div class="alc-tl-bar-wrap"><div class="alc-tl-bar" style="width:<?php echo esc_attr( $bar_pct ); ?>%"></div></div>
+					</td>
+					<td class="alc-tl-link">
+						<?php if ( $link_url ) : ?>
+						<a href="<?php echo esc_url( $link_url ); ?>" target="_blank" rel="noopener" title="<?php echo esc_attr( $group['campaign_name'] . ( $group['reference'] ? ' · ' . $group['reference'] : '' ) ); ?>">↗</a>
+						<?php else : ?>
+						—
+						<?php endif; ?>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<?php if ( $total_pages > 1 ) : ?>
+		<div class="alc-pagination" style="margin-top:12px;">
+			<?php if ( $current_page > 1 ) : ?>
+			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page - 1 ) ); ?>">‹ Vorige</a>
+			<?php endif; ?>
+			<?php
+			$prev = null;
+			for ( $p = 1; $p <= $total_pages; $p++ ) :
+				if ( $p !== 1 && $p !== $total_pages && abs( $p - $current_page ) > 2 ) {
+					if ( $prev !== null && abs( $prev - $current_page ) <= 2 ) {
+						echo '<span class="dots">…</span>';
+					}
+					$prev = $p;
+					continue;
+				}
+				if ( $p === $current_page ) :
+					?><span class="current"><?php echo esc_html( $p ); ?></span><?php
+				else :
+					?><a href="<?php echo esc_url( $paged_url . '&refpaged=' . $p ); ?>"><?php echo esc_html( $p ); ?></a><?php
+				endif;
+				$prev = $p;
+			endfor;
+			?>
+			<?php if ( $current_page < $total_pages ) : ?>
+			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page + 1 ) ); ?>">Volgende ›</a>
+			<?php endif; ?>
+		</div>
+		<?php endif; ?>
 		<?php
 	}
 
