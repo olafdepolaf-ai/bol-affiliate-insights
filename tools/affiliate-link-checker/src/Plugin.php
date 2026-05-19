@@ -24,6 +24,15 @@ class Plugin {
 		$scan_page          = new ScanPage( $link_scanner, $tt_tab );
 		new MenuService( $scan_page );
 		new AjaxHandlerService( $link_scanner );
+
+		add_filter(
+			'plugin_action_links_' . plugin_basename( ALC_FILE ),
+			function( array $links ): array {
+				$settings = '<a href="' . admin_url( 'admin.php?page=affiliate-link-checker' ) . '">Instellingen</a>';
+				array_unshift( $links, $settings );
+				return $links;
+			}
+		);
 	}
 
 	public static function get_instance(): Plugin {
