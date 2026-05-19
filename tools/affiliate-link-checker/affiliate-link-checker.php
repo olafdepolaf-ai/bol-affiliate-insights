@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Affiliate Link Checker
  * Description: Scant ThirstyAffiliates destination URLs op 404s en serverfouten.
- * Version: 0.1.0
+ * Version: 0.1.3
  * Update URI: https://github.com/olafdepolaf-ai/bol-affiliate-insights
  * Author: OlafL
  */
