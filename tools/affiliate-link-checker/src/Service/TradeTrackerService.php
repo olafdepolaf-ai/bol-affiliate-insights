@@ -6,7 +6,50 @@ class TradeTrackerService {
 
 	const WSDL = 'https://ws.tradetracker.com/soap/affiliate?wsdl';
 
+	// Versioned prefix — bump to v2, v3, etc. to bust all caches on breaking changes
+	const CACHE_PREFIX = 'alc_tt_v1_';
+
+	// TTL constants as integer literals (cannot use WP define() constants in class const)
+	const TTL_SITES        = 21600;  // 6h  — sites list rarely changes
+	const TTL_CAMPAIGNS    = 3600;   // 1h
+	const TTL_REPORT       = 3600;   // 1h  — current year
+	const TTL_REPORT_PAST  = 86400;  // 24h — past years
+	const TTL_SALES        = 3600;   // 1h  — current year
+	const TTL_SALES_PAST   = 86400;  // 24h — past years
+
 	private $client = null;
+
+	// -------------------------------------------------------------------------
+	// Cache helpers
+	// -------------------------------------------------------------------------
+
+	private function cache_get( string $key ): mixed {
+		$cached = get_transient( self::CACHE_PREFIX . $key );
+		if ( false === $cached ) {
+			return false;
+		}
+		// Guard against stale scalar values from older cache versions
+		if ( ! is_array( $cached ) && ! is_object( $cached ) ) {
+			return false;
+		}
+		return $cached;
+	}
+
+	private function cache_set( string $key, mixed $value, int $ttl ): void {
+		// Never cache error states
+		if ( is_wp_error( $value ) ) {
+			return;
+		}
+		set_transient( self::CACHE_PREFIX . $key, $value, $ttl );
+	}
+
+	private function cache_delete( string $key ): void {
+		delete_transient( self::CACHE_PREFIX . $key );
+	}
+
+	// -------------------------------------------------------------------------
+	// SOAP client
+	// -------------------------------------------------------------------------
 
 	private function get_client(): \SoapClient|\WP_Error {
 		if ( $this->client ) {
@@ -47,8 +90,13 @@ class TradeTrackerService {
 		return $this->client;
 	}
 
+	// -------------------------------------------------------------------------
+	// Public API methods
+	// -------------------------------------------------------------------------
+
 	public function get_affiliate_sites(): array|\WP_Error {
-		$cached = get_transient( 'alc_tt_sites' );
+		$cache_key = 'sites';
+		$cached    = $this->cache_get( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -61,7 +109,7 @@ class TradeTrackerService {
 		try {
 			$result = $client->getAffiliateSites();
 			$sites  = $this->to_array( $result );
-			set_transient( 'alc_tt_sites', $sites, 15 * MINUTE_IN_SECONDS );
+			$this->cache_set( $cache_key, $sites, self::TTL_SITES );
 			return $sites;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
@@ -69,8 +117,8 @@ class TradeTrackerService {
 	}
 
 	public function get_campaigns( string $site_id ): array|\WP_Error {
-		$cache_key = 'alc_tt_campaigns_' . md5( $site_id );
-		$cached    = get_transient( $cache_key );
+		$cache_key = 'campaigns_' . md5( $site_id );
+		$cached    = $this->cache_get( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -85,7 +133,7 @@ class TradeTrackerService {
 			$filter->assignmentStatus = 'accepted';
 			$result                   = $client->getCampaigns( $site_id, $filter );
 			$campaigns                = $this->to_array( $result );
-			set_transient( $cache_key, $campaigns, 15 * MINUTE_IN_SECONDS );
+			$this->cache_set( $cache_key, $campaigns, self::TTL_CAMPAIGNS );
 			return $campaigns;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
@@ -99,8 +147,8 @@ class TradeTrackerService {
 	 * @return array|\WP_Error  array[1..12] => ReportData object|null
 	 */
 	public function get_report_year( string $site_id, int $year ): array|\WP_Error {
-		$cache_key = 'alc_tt_year_' . md5( $site_id . '_' . $year );
-		$cached    = get_transient( $cache_key );
+		$cache_key = 'year_' . md5( $site_id . '_' . $year );
+		$cached    = $this->cache_get( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -133,9 +181,8 @@ class TradeTrackerService {
 			}
 		}
 
-		// Voorbije jaren langer cachen
-		$ttl = ( $year < $current_year ) ? 86400 : 3600;
-		set_transient( $cache_key, $months, $ttl );
+		$ttl = ( $year < $current_year ) ? self::TTL_REPORT_PAST : self::TTL_REPORT;
+		$this->cache_set( $cache_key, $months, $ttl );
 
 		return $months;
 	}
@@ -145,8 +192,8 @@ class TradeTrackerService {
 	 * Gesorteerd op registratiedatum aflopend, max 500 per jaar.
 	 */
 	public function get_sales_year( string $site_id, int $year ): array|\WP_Error {
-		$cache_key = 'alc_tt_sales_' . md5( $site_id . '_' . $year );
-		$cached    = get_transient( $cache_key );
+		$cache_key = 'sales_' . md5( $site_id . '_' . $year );
+		$cached    = $this->cache_get( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -167,8 +214,8 @@ class TradeTrackerService {
 		try {
 			$result       = $client->getConversionTransactions( $site_id, $filter );
 			$transactions = $this->to_array( $result );
-			$ttl          = ( $year < (int) gmdate( 'Y' ) ) ? 86400 : 3600;
-			set_transient( $cache_key, $transactions, $ttl );
+			$ttl          = ( $year < (int) gmdate( 'Y' ) ) ? self::TTL_SALES_PAST : self::TTL_SALES;
+			$this->cache_set( $cache_key, $transactions, $ttl );
 			return $transactions;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
@@ -177,12 +224,19 @@ class TradeTrackerService {
 
 	public function clear_cache(): void {
 		global $wpdb;
+		$prefix = $wpdb->esc_like( '_transient_' . self::CACHE_PREFIX );
 		$wpdb->query(
-			"DELETE FROM {$wpdb->options}
-			 WHERE option_name LIKE '_transient_alc_tt_%'
-			    OR option_name LIKE '_transient_timeout_alc_tt_%'"
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+				$prefix . '%',
+				$wpdb->esc_like( '_transient_timeout_' . self::CACHE_PREFIX ) . '%'
+			)
 		);
 	}
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
 
 	private function to_array( mixed $value ): array {
 		if ( is_array( $value ) ) {
