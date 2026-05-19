@@ -23,7 +23,7 @@ class TradeTrackerTab {
 		$subtab   = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'sales';
 
 		// Left tabs (ordered), settings floated right
-		$left_subtabs = [ 'sales' => 'Sales', 'kliks' => 'Kliks', 'rapport' => 'Rapport' ];
+		$left_subtabs = [ 'sales' => 'Sales', 'kliks' => 'Kliks', 'rapport' => 'Rapport', 'linkgenerator' => 'Linkgenerator' ];
 		?>
 		<style>
 			.alc-subtab-nav { display:flex; align-items:flex-end; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
@@ -49,10 +49,11 @@ class TradeTrackerTab {
 
 		<?php
 		match ( $subtab ) {
-			'kliks'   => $this->render_clicks_subtab(),
-			'rapport' => $this->render_rapport_subtab( $base_url ),
-			'settings'=> $this->render_settings_subtab(),
-			default   => $this->render_sales_subtab(),
+			'kliks'         => $this->render_clicks_subtab(),
+			'rapport'       => $this->render_rapport_subtab( $base_url ),
+			'linkgenerator' => $this->render_linkgenerator_subtab(),
+			'settings'      => $this->render_settings_subtab(),
+			default         => $this->render_sales_subtab(),
 		};
 	}
 
@@ -458,6 +459,157 @@ class TradeTrackerTab {
 			<?php endif; ?>
 		</div>
 		<?php endif; ?>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Linkgenerator subtab
+	// -------------------------------------------------------------------------
+
+	private function render_linkgenerator_subtab(): void {
+		$customer_id = get_option( 'alc_tt_customer_id', '' );
+		$access_key  = get_option( 'alc_tt_access_key', '' );
+		if ( empty( $customer_id ) || empty( $access_key ) ) {
+			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			return;
+		}
+
+		$sites = $this->service->get_affiliate_sites();
+		if ( is_wp_error( $sites ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $sites->get_error_message() ) . '</p></div>';
+			return;
+		}
+		$primary_site = reset( $sites );
+		$site_id      = (string) ( is_object( $primary_site ) ? $primary_site->ID : ( $primary_site['ID'] ?? '' ) );
+
+		$campaigns = $this->service->get_campaigns( $site_id );
+		if ( is_wp_error( $campaigns ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $campaigns->get_error_message() ) . '</p></div>';
+			return;
+		}
+
+		// Bouw een eenvoudige lijst: id → name, gesorteerd op naam
+		$campaign_list = [];
+		foreach ( $campaigns as $c ) {
+			$c = (object) $c;
+			if ( ! empty( $c->ID ) && ! empty( $c->name ) ) {
+				$campaign_list[] = [ 'id' => (string) $c->ID, 'name' => $c->name ];
+			}
+		}
+		usort( $campaign_list, fn( $a, $b ) => strcmp( $a['name'], $b['name'] ) );
+		?>
+
+		<style>
+			.alc-gen-wrap { max-width:640px; }
+			.alc-gen-wrap label { display:block; font-weight:600; font-size:13px; margin-bottom:4px; }
+			.alc-gen-wrap .alc-gen-field { margin-bottom:18px; }
+			.alc-gen-wrap select, .alc-gen-wrap input[type=text], .alc-gen-wrap input[type=url] { width:100%; max-width:560px; }
+			.alc-gen-result { background:#f0f6fc; border:1px solid #c3d9f0; border-radius:4px; padding:12px 16px; margin-top:20px; display:none; }
+			.alc-gen-result label { font-weight:600; font-size:12px; color:#1d2327; margin-bottom:6px; }
+			.alc-gen-result-url { font-family:monospace; font-size:13px; word-break:break-all; color:#1d2327; }
+			.alc-gen-copy { margin-top:10px; }
+			.alc-gen-copied { color:#00a32a; font-size:12px; margin-left:8px; display:none; }
+		</style>
+
+		<div class="alc-gen-wrap">
+			<div class="alc-gen-field">
+				<label for="alc-gen-campaign">Campagne</label>
+				<select id="alc-gen-campaign">
+					<option value="">— Selecteer campagne —</option>
+					<?php foreach ( $campaign_list as $c ) : ?>
+					<option value="<?php echo esc_attr( $c['id'] ); ?>"><?php echo esc_html( $c['name'] ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<p class="description" style="margin-top:4px;">Alleen geaccepteerde campagnes.</p>
+			</div>
+
+			<div class="alc-gen-field">
+				<label for="alc-gen-url">Doel-URL <span style="font-weight:400; color:#646970;">(leeg = homepage van campagne)</span></label>
+				<input type="url" id="alc-gen-url" placeholder="https://www.voorbeeld.nl/pagina/" class="regular-text" />
+			</div>
+
+			<div class="alc-gen-field">
+				<label for="alc-gen-ref">Referentie <span style="font-weight:400; color:#646970;">(optioneel)</span></label>
+				<input type="text" id="alc-gen-ref" placeholder="bijv. loopkamille" class="regular-text" maxlength="64" />
+				<p class="description" style="margin-top:4px;">Gebruik alleen letters, cijfers en koppeltekens.</p>
+			</div>
+
+			<div class="alc-gen-result" id="alc-gen-result">
+				<label>Gegenereerde tekstlink</label>
+				<div class="alc-gen-result-url" id="alc-gen-result-url"></div>
+				<div class="alc-gen-copy">
+					<button type="button" class="button" id="alc-gen-copy-btn">Kopieer link</button>
+					<span class="alc-gen-copied" id="alc-gen-copied">✓ Gekopieerd!</span>
+				</div>
+			</div>
+		</div>
+
+		<script>
+		(function() {
+			var siteId    = <?php echo wp_json_encode( $site_id ); ?>;
+			var elCamp    = document.getElementById('alc-gen-campaign');
+			var elUrl     = document.getElementById('alc-gen-url');
+			var elRef     = document.getElementById('alc-gen-ref');
+			var elResult  = document.getElementById('alc-gen-result');
+			var elOut     = document.getElementById('alc-gen-result-url');
+			var elCopy    = document.getElementById('alc-gen-copy-btn');
+			var elCopied  = document.getElementById('alc-gen-copied');
+
+			function generate() {
+				var campaignId = elCamp.value;
+				if ( ! campaignId ) {
+					elResult.style.display = 'none';
+					return;
+				}
+
+				var destUrl = elUrl.value.trim();
+				var ref     = elRef.value.trim().replace(/[^a-zA-Z0-9\-_]/g, '');
+
+				// Standard TradeTracker text link format
+				var link = 'https://tc.tradetracker.net/?c=' + encodeURIComponent(campaignId)
+					+ '&m=12'
+					+ '&a=' + encodeURIComponent(siteId);
+
+				if ( ref ) {
+					link += '&r=' + encodeURIComponent(ref);
+				}
+				if ( destUrl ) {
+					link += '&u=' + encodeURIComponent(destUrl);
+				}
+
+				elOut.textContent  = link;
+				elResult.style.display = 'block';
+				elCopied.style.display = 'none';
+			}
+
+			elCamp.addEventListener('change', generate);
+			elUrl.addEventListener('input', generate);
+			elRef.addEventListener('input', generate);
+
+			elCopy.addEventListener('click', function() {
+				var text = elOut.textContent;
+				if ( ! text ) return;
+				if ( navigator.clipboard ) {
+					navigator.clipboard.writeText(text).then(function() {
+						elCopied.style.display = 'inline';
+						setTimeout(function() { elCopied.style.display = 'none'; }, 2000);
+					});
+				} else {
+					// Fallback voor oudere browsers
+					var ta = document.createElement('textarea');
+					ta.value = text;
+					ta.style.position = 'fixed';
+					ta.style.opacity  = '0';
+					document.body.appendChild(ta);
+					ta.select();
+					document.execCommand('copy');
+					document.body.removeChild(ta);
+					elCopied.style.display = 'inline';
+					setTimeout(function() { elCopied.style.display = 'none'; }, 2000);
+				}
+			});
+		})();
+		</script>
 		<?php
 	}
 
