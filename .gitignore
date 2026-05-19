@@ -1,6 +1,7 @@
 # Build output
 dist/
 *.zip
+!tools/*.zip
 
 # Claude Code (AI assistant) — niet committen in publieke repo
 CLAUDE.md
