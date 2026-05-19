@@ -31,6 +31,9 @@ class ScanPage {
 			'tradetracker' => 'TradeTracker',
 		];
 
+		if ( ! function_exists( 'get_plugin_data' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
 		$plugin_data    = get_plugin_data( ALC_FILE );
 		$current_ver    = $plugin_data['Version'] ?? '?';
 		$check_url      = wp_nonce_url(

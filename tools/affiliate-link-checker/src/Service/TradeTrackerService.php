@@ -6,7 +6,7 @@ class TradeTrackerService {
 
 	const WSDL = 'https://ws.tradetracker.com/soap/affiliate?wsdl';
 
-	private ?\SoapClient $client = null;
+	private $client = null;
 
 	private function get_client(): \SoapClient|\WP_Error {
 		if ( $this->client ) {
@@ -96,7 +96,7 @@ class TradeTrackerService {
 		}
 	}
 
-	public function get_report_last_month( string $site_id ): object|array|\WP_Error {
+	public function get_report_last_month( string $site_id ): mixed {
 		$cache_key = 'alc_tt_report_' . md5( $site_id );
 		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {

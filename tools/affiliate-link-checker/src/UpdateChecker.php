@@ -8,7 +8,7 @@ class UpdateChecker {
 	const TAG_PREFIX   = 'alc-v';
 	const ASSET_NAME   = 'affiliate-link-checker.zip';
 	const CACHE_KEY    = 'alc_github_update';
-	const CACHE_TTL    = 6 * HOUR_IN_SECONDS;
+	const CACHE_TTL    = 21600; // 6 hours — cannot use HOUR_IN_SECONDS (define() constant) in class const
 
 	private string $plugin_file;
 	private string $plugin_slug;
@@ -68,7 +68,7 @@ class UpdateChecker {
 			'version'       => $release['version'],
 			'download_link' => $release['download_url'],
 			'sections'      => [
-				'changelog' => $release['body'] ?: 'Zie GitHub voor wijzigingen.',
+				'changelog' => $release['body'] ? $release['body'] : 'Zie GitHub voor wijzigingen.',
 			],
 		];
 	}
@@ -99,16 +99,15 @@ class UpdateChecker {
 			return new \WP_Error( 'github_api', 'Ongeldig antwoord van GitHub.' );
 		}
 
-		// Find latest release with our tag prefix
 		foreach ( $releases as $release ) {
-			$tag = $release['tag_name'] ?? '';
+			$tag = isset( $release['tag_name'] ) ? $release['tag_name'] : '';
 
 			if ( strpos( $tag, self::TAG_PREFIX ) !== 0 ) {
 				continue;
 			}
 
 			$version      = ltrim( substr( $tag, strlen( self::TAG_PREFIX ) ), 'v' );
-			$download_url = $this->find_asset_url( $release['assets'] ?? [] );
+			$download_url = $this->find_asset_url( isset( $release['assets'] ) ? $release['assets'] : [] );
 
 			if ( empty( $download_url ) || empty( $version ) ) {
 				continue;
@@ -117,8 +116,8 @@ class UpdateChecker {
 			$result = [
 				'version'      => $version,
 				'download_url' => $download_url,
-				'html_url'     => $release['html_url'] ?? '',
-				'body'         => wp_kses_post( $release['body'] ?? '' ),
+				'html_url'     => isset( $release['html_url'] ) ? $release['html_url'] : '',
+				'body'         => wp_kses_post( isset( $release['body'] ) ? $release['body'] : '' ),
 			];
 
 			set_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
@@ -126,16 +125,15 @@ class UpdateChecker {
 			return $result;
 		}
 
-		// No matching release found — cache empty result to avoid hammering API
 		set_transient( self::CACHE_KEY, [], self::CACHE_TTL );
 
 		return [];
 	}
 
-	private function find_asset_url( array $assets ): string {
+	private function find_asset_url( array $assets ) {
 		foreach ( $assets as $asset ) {
-			if ( ( $asset['name'] ?? '' ) === self::ASSET_NAME ) {
-				return $asset['browser_download_url'] ?? '';
+			if ( ( isset( $asset['name'] ) ? $asset['name'] : '' ) === self::ASSET_NAME ) {
+				return isset( $asset['browser_download_url'] ) ? $asset['browser_download_url'] : '';
 			}
 		}
 		return '';
@@ -146,6 +144,6 @@ class UpdateChecker {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 		$data = get_plugin_data( $this->plugin_file );
-		return $data['Version'] ?? '0.0.0';
+		return isset( $data['Version'] ) ? $data['Version'] : '0.0.0';
 	}
 }
