@@ -1,0 +1,215 @@
+/* Dashboard Period Selector */
+.dashboard-period-selector a.current,
+.dashboard-period-selector a.active { /* 'active' class might be added by WP on current page link */
+    font-weight: bold;
+    text-decoration: none;
+    color: black; /* Or your preferred active color */
+}
+
+/* Dashboard Metrics */
+.metrics-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px; /* Added margin for spacing */
+}
+.metric-box {
+    border: 1px solid #ccd0d4; /* WordPress standard border color */
+    padding: 15px;
+    min-width: 150px;
+    text-align: center;
+    background-color: #fff; /* White background */
+    box-shadow: 0 1px 1px rgba(0,0,0,.04); /* Subtle shadow like WP cards */
+}
+.metric-box h4 {
+    margin: 0 0 10px 0; /* Adjust heading margin */
+    font-size: 1em; /* Standard size */
+}
+.metric-box p {
+    font-size: 1.8em; /* Larger font for the number */
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+/* Chart Area */
+.chart-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+.chart-controls {
+    margin-bottom: 20px; /* Increased margin */
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 15px; /* Spacing between control groups */
+    align-items: center;
+}
+.chart-controls div { /* Each control group (label + select) */
+    margin-right: 10px; /* Spacing between items if not using gap effectively */
+}
+.chart-controls label {
+    margin-right: 5px;
+}
+#bol-chart-error-message {
+    margin-top: 10px;
+}
+
+.bol-status-success {
+    color: #008a20; /* WP success green */
+}
+
+.bol-status-error {
+    color: #d63638; /* WP error red */
+}
+
+/* Table Header Styling */
+.wp-list-table th.manage-column {
+    font-weight: bold;
+}
+
+/* === WP_List_Table Sorting Arrow Fix (Based on provided HTML) === */
+
+/* --- General Link Styling --- */
+.wp-list-table th.manage-column.sortable a,
+.wp-list-table th.manage-column.sorted a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em; /* Space between text and indicator group */
+    text-decoration: none;
+    color: #2271b1; /* Standard WP link color */
+}
+.wp-list-table th.manage-column.sortable a:hover,
+.wp-list-table th.manage-column.sorted a:hover {
+    color: #135e96; /* Standard WP link hover color */
+}
+
+.wp-list-table th.manage-column.sortable a > span:first-child, /* The text part */
+.wp-list-table th.manage-column.sorted a > span:first-child {
+    white-space: normal; /* Allow text to wrap */
+}
+/* --- End General Link Styling --- */
+
+
+/* --- Sorting Indicator Specifics --- */
+
+/* The outer wrapper for both potential indicators (e.g., <span class="sorting-indicators">) */
+.wp-list-table th.manage-column .sorting-indicators { /* Plural */
+    position: relative; 
+    line-height: 1;
+    display: inline-block; 
+    width: 1em; 
+    height: 1em; 
+    vertical-align: middle; 
+}
+
+/* The individual indicator spans (e.g., <span class="sorting-indicator asc">) */
+/* Hide BOTH individual indicators by default for ALL columns */
+.wp-list-table th.manage-column .sorting-indicators .sorting-indicator { /* Singular */
+    display: none; 
+    /* WordPress core CSS will use ::before to add the arrow icon to these */
+    /* We just control their display based on the parent <th> state */
+}
+
+/* For ACTIVELY SORTED columns: */
+
+/* When sorted ASCENDING, make the .asc indicator span displayable */
+/* WordPress core CSS should then apply its ::before styling to this visible span */
+.wp-list-table th.manage-column.sorted.asc .sorting-indicators .sorting-indicator.asc {
+    display: block; /* Or inline-block, matching how WP core might style it */
+}
+/* And ensure the .desc one is explicitly hidden */
+.wp-list-table th.manage-column.sorted.asc .sorting-indicators .sorting-indicator.desc {
+    display: none !important;
+}
+
+/* When sorted DESCENDING, make the .desc indicator span displayable */
+.wp-list-table th.manage-column.sorted.desc .sorting-indicators .sorting-indicator.desc {
+    display: block; /* Or inline-block */
+}
+/* And ensure the .asc one is explicitly hidden */
+.wp-list-table th.manage-column.sorted.desc .sorting-indicators .sorting-indicator.asc {
+    display: none !important;
+}
+/* --- End Sorting Indicator Specifics --- */
+
+
+/* === Table Column Width Adjustments === */
+
+/* For Date columns */
+.wp-list-table .column-date,
+.wp-list-table .column-orderDate {
+    width: 10%;
+}
+
+/* For ID columns */
+.wp-list-table .column-orderId,
+.wp-list-table .column-orderItemId {
+    width: 12%;
+}
+
+/* For Quantity columns */
+.wp-list-table .column-quantity,
+.wp-list-table .column-quantityPayable {
+    width: 7%;
+    text-align: center;
+}
+
+/* For Status column */
+.wp-list-table .column-status {
+    width: 10%;
+}
+
+/* For Price / Commission / Revenue / EPC / AOV columns */
+.wp-list-table .column-priceInclVat,
+.wp-list-table .column-commission,
+.wp-list-table .column-commissionOriginal,
+.wp-list-table .column-commissionApproved,
+.wp-list-table .column-commissionOpen,
+.wp-list-table .column-revenueOriginalInclVat,
+.wp-list-table .column-revenueApprovedInclVat,
+.wp-list-table .column-earningsPerClick,
+.wp-list-table .column-averageOrderValue {
+    width: 10%;
+    text-align: right;
+}
+/* Make sure revenueInclVat for Promotion methods is also covered if its slug is different */
+.wp-list-table .column-revenueInclVat { /* Assuming this is for Promotion Methods based on prior context */
+    width: 10%;
+    text-align: right;
+}
+
+
+/* For Percentage columns */
+.wp-list-table .column-commissionPercentage,
+.wp-list-table .column-clickThroughRate,
+.wp-list-table .column-conversion {
+    width: 8%;
+    text-align: center;
+}
+
+/* Columns with potentially longer text (Product Title, Link Name, Site Name, Frame Type) */
+.wp-list-table .column-productTitle {}
+.wp-list-table .column-name {}
+.wp-list-table .column-siteName {}
+.wp-list-table .column-frameType {}
+.wp-list-table .column-subId {}
+
+.wp-list-table .column-impressions {
+    text-align: right;
+}
+.wp-list-table .column-orders { /* From Promotion Methods tab */
+    text-align: center;
+}
+/* --- End of Column Width Adjustments --- */
+
+
+/* Chart Data Table Container */
+#bol-chart-data-table-container {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    clear: both;
+}
+
+#bol-chart-data-table-container .wp-list-table th {}
+#bol-chart-data-table-container .wp-list-table td {}

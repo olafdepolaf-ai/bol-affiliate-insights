@@ -10,15 +10,17 @@ class TradeTrackerService {
 	const CACHE_PREFIX = 'alc_tt_v1_';
 
 	// TTL constants as integer literals (cannot use WP define() constants in class const)
-	const TTL_SITES        = 21600;  // 6h  — sites list rarely changes
-	const TTL_CAMPAIGNS    = 3600;   // 1h
-	const TTL_REPORT       = 3600;   // 1h  — current year
-	const TTL_REPORT_PAST  = 86400;  // 24h — past years
-	const TTL_SALES        = 3600;   // 1h  — current year
-	const TTL_SALES_PAST   = 86400;  // 24h — past years
-	const TTL_CLICKS       = 3600;   // 1h  — current year
-	const TTL_CLICKS_PAST  = 86400;  // 24h — past years
-	const TTL_MATERIALS    = 21600;  // 6h  — text link materials rarely change
+	const TTL_SITES         = 21600;  // 6h  — sites list rarely changes
+	const TTL_CAMPAIGNS     = 3600;   // 1h
+	const TTL_REPORT        = 3600;   // 1h  — current year
+	const TTL_REPORT_PAST   = 86400;  // 24h — past years
+	const TTL_SALES         = 3600;   // 1h  — current year
+	const TTL_SALES_PAST    = 86400;  // 24h — past years
+	const TTL_CLICKS        = 3600;   // 1h  — current year
+	const TTL_CLICKS_PAST   = 86400;  // 24h — past years
+	const TTL_MATERIALS     = 21600;  // 6h  — text link materials rarely change
+	const TTL_FEEDS         = 86400;  // 24h — feed-catalogus verandert hooguit dagelijks
+	const TTL_FEED_PRODUCTS = 86400;  // 24h — productcatalogus verandert niet intraday
 
 	private $client = null;
 
@@ -262,7 +264,7 @@ class TradeTrackerService {
 	/**
 	 * Haalt tekstlink-materialen op voor alle campagnes van de affiliate site.
 	 * Geeft een map terug: campaignID (string) => base tracking URL (string).
-	 * De base URL eindigt altijd met een lege referentie-slot (bv. "?tt=8892_12_98344_")
+	 * De base URL eindigt met een lege referentie-slot (bv. "?tt=8892_12_98344_")
 	 * zodat de referentie er direct achter geplakt kan worden.
 	 *
 	 * @return array<string,string>|\WP_Error
@@ -280,27 +282,48 @@ class TradeTrackerService {
 		}
 
 		try {
-			// getMaterialTextItems( affiliateSiteID, materialOutputType, MaterialItemFilter )
-			// materialOutputType null = alle formaten; lege filter = alle campagnes
-			$filter  = new \stdClass();
-			$result  = $client->getMaterialTextItems( $site_id, null, $filter );
-			$items   = $this->to_array( $result );
+			$filter = new \stdClass();
+			// 'html' is the correct materialOutputType for text link materials.
+			// null caused silent SOAP failures on some servers.
+			$raw = $client->getMaterialTextItems( $site_id, 'html', $filter );
 
-			// Bouw map campagnID => base tracking URL (eerste material per campagne)
+			// SOAP returns a single object (not array) when there is exactly one result.
+			// to_array() would flatten that object into its properties, losing the item structure.
+			if ( is_object( $raw ) ) {
+				$items = [ $raw ];
+			} elseif ( is_array( $raw ) ) {
+				$items = $raw;
+			} else {
+				$items = [];
+			}
+
 			$map = [];
 			foreach ( $items as $item ) {
-				$m           = (object) $item;
-				$campaign_id = (string) ( is_object( $m->campaign ?? null ) ? ( $m->campaign->ID ?? '' ) : '' );
+				$m = is_object( $item ) ? $item : (object) $item;
+
+				// Campaign kan een object of gecast array zijn
+				$campaign = $m->campaign ?? null;
+				if ( is_array( $campaign ) ) {
+					$campaign = (object) $campaign;
+				}
+				$campaign_id = (string) ( is_object( $campaign ) ? ( $campaign->ID ?? '' ) : '' );
+
 				if ( $campaign_id === '' || isset( $map[ $campaign_id ] ) ) {
 					continue;
 				}
 
-				// Probeer URL direct, anders href uit HTML code extraheren
+				// URL ophalen: probeer meerdere property-namen, daarna href uit HTML-code
 				$url = '';
-				if ( ! empty( $m->URL ) ) {
-					$url = (string) $m->URL;
-				} elseif ( ! empty( $m->code ) ) {
-					preg_match( '/href=["\']([^"\']+)["\']/i', (string) $m->code, $matches );
+				foreach ( [ 'URL', 'url', 'trackingURL', 'trackingUrl' ] as $prop ) {
+					if ( ! empty( $m->$prop ) ) {
+						$url = (string) $m->$prop;
+						break;
+					}
+				}
+				if ( $url === '' && ! empty( $m->code ) ) {
+					// HTML-entities decoderen voor regex (bv. &amp; → &)
+					$decoded = html_entity_decode( (string) $m->code, ENT_QUOTES | ENT_HTML5 );
+					preg_match( '/href=["\']([^"\']+)["\']/i', $decoded, $matches );
 					$url = $matches[1] ?? '';
 				}
 
@@ -308,8 +331,8 @@ class TradeTrackerService {
 					continue;
 				}
 
-				// Normaliseer: zorg dat het tt-param eindigt met lege referentie (trailing _)
-				// Bv. "?tt=8892_12_98344_bestaanderef" → "?tt=8892_12_98344_"
+				// Normaliseer: referentie-slot leeg maken (trailing _)
+				// "?tt=8892_12_98344_bestaanderef" → "?tt=8892_12_98344_"
 				$url = (string) preg_replace( '/([?&]tt=\d+_\d+_\d+_)[^&]*/', '$1', $url );
 
 				$map[ $campaign_id ] = $url;
@@ -317,6 +340,104 @@ class TradeTrackerService {
 
 			$this->cache_set( $cache_key, $map, self::TTL_MATERIALS );
 			return $map;
+		} catch ( \Exception $e ) {
+			// Reset client: a failed getMaterialTextItems can invalidate the server-side
+			// SOAP session, which would cause subsequent calls to fail with auth errors.
+			$this->client = null;
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Geeft het ID van de primaire affiliate site terug.
+	 */
+	public function get_primary_site_id(): string|\WP_Error {
+		$sites = $this->get_affiliate_sites();
+		if ( is_wp_error( $sites ) ) {
+			return $sites;
+		}
+		if ( empty( $sites ) ) {
+			return new \WP_Error( 'no_sites', 'Geen affiliate sites gevonden.' );
+		}
+		$primary = reset( $sites );
+		return (string) ( is_object( $primary ) ? $primary->ID : ( $primary['ID'] ?? '' ) );
+	}
+
+	/**
+	 * Haalt productfeeds op voor de opgegeven affiliate site.
+	 * assignment_status: 'accepted' = alleen geaccepteerde feeds, '' = alle feeds.
+	 */
+	public function get_feeds( string $site_id, string $assignment_status = 'accepted' ): array|\WP_Error {
+		$cache_key = 'feeds_' . md5( $site_id . '_' . $assignment_status );
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		try {
+			$filter = new \stdClass();
+			if ( $assignment_status !== '' ) {
+				$filter->assignmentStatus = $assignment_status;
+			}
+
+			$raw = $client->getFeeds( (int) $site_id, $filter );
+
+			if ( is_object( $raw ) ) {
+				$feeds = [ $raw ];
+			} elseif ( is_array( $raw ) ) {
+				$feeds = $raw;
+			} else {
+				$feeds = [];
+			}
+
+			$this->cache_set( $cache_key, $feeds, self::TTL_FEEDS );
+			return $feeds;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Zoekt producten binnen een specifieke productfeed.
+	 */
+	public function get_feed_products( string $site_id, int $feed_id, string $search = '', int $limit = 25, int $offset = 0 ): array|\WP_Error {
+		$cache_key = 'fp_' . md5( $site_id . '_' . $feed_id . '_' . $search . '_' . $limit . '_' . $offset );
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		try {
+			$filter         = new \stdClass();
+			$filter->feedID = $feed_id;
+			$filter->limit  = $limit;
+			$filter->offset = $offset;
+			if ( $search !== '' ) {
+				$filter->query = $search;
+			}
+
+			$raw = $client->getFeedProducts( (int) $site_id, $filter );
+
+			if ( is_object( $raw ) ) {
+				$products = [ $raw ];
+			} elseif ( is_array( $raw ) ) {
+				$products = $raw;
+			} else {
+				$products = [];
+			}
+
+			$this->cache_set( $cache_key, $products, self::TTL_FEED_PRODUCTS );
+			return $products;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
 		}
@@ -343,7 +464,9 @@ class TradeTrackerService {
 			return $value;
 		}
 		if ( is_object( $value ) ) {
-			return (array) $value;
+			// Wrap in array — do NOT cast to (array), that flattens the object's
+			// properties instead of keeping the item as a single-element list.
+			return [ $value ];
 		}
 		return [];
 	}

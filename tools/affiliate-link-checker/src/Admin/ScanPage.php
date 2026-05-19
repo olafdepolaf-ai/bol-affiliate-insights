@@ -8,10 +8,14 @@ class ScanPage {
 
 	private LinkScanner $link_scanner;
 	private TradeTrackerTab $tt_tab;
+	private TATab $ta_tab;
+	private BolTab $bol_tab;
 
-	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab ) {
+	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab ) {
 		$this->link_scanner = $link_scanner;
 		$this->tt_tab       = $tt_tab;
+		$this->ta_tab       = $ta_tab;
+		$this->bol_tab      = $bol_tab;
 	}
 
 	public function render(): void {
@@ -21,6 +25,12 @@ class ScanPage {
 		if ( isset( $_GET['alc_check_updates'] ) && check_admin_referer( 'alc_check_updates' ) ) {
 			delete_transient( 'alc_github_update' );
 			delete_site_transient( 'update_plugins' );
+			// Forceer directe update-check zodat onze filter de verse GitHub-data toevoegt
+			// vóór de redirect — anders wacht WordPress op z'n eigen cron/admin_init timing.
+			if ( ! function_exists( 'wp_update_plugins' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/update.php';
+			}
+			wp_update_plugins();
 			$update_redirect = esc_url( remove_query_arg( [ 'alc_check_updates', '_wpnonce' ] ) );
 			$update_notice   = '<div class="notice notice-success"><p>Cache gewist. WordPress controleert nu op updates.</p></div>';
 		}
@@ -31,6 +41,8 @@ class ScanPage {
 		$tabs = [
 			'scanner'      => 'Link Scanner',
 			'tradetracker' => 'TradeTracker',
+			'ta'           => 'ThirstyAffiliates',
+			'bol'          => 'Bol.com',
 		];
 
 		if ( ! function_exists( 'get_plugin_data' ) ) {
@@ -70,6 +82,10 @@ class ScanPage {
 
 			<?php if ( $current_tab === 'tradetracker' ) : ?>
 				<?php $this->tt_tab->render(); ?>
+			<?php elseif ( $current_tab === 'ta' ) : ?>
+				<?php $this->ta_tab->render(); ?>
+			<?php elseif ( $current_tab === 'bol' ) : ?>
+				<?php $this->bol_tab->render(); ?>
 			<?php else : ?>
 				<?php $this->render_scanner(); ?>
 			<?php endif; ?>

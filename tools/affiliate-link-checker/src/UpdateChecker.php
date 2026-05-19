@@ -34,14 +34,23 @@ class UpdateChecker {
 			return $transient;
 		}
 
+		$update_obj = (object) [
+			'slug'        => dirname( $this->plugin_slug ),
+			'plugin'      => $this->plugin_slug,
+			'new_version' => $release['version'],
+			'url'         => $release['html_url'],
+			'package'     => $release['download_url'],
+		];
+
 		if ( version_compare( $release['version'], $this->current_version, '>' ) ) {
-			$transient->response[ $this->plugin_slug ] = (object) [
-				'slug'        => dirname( $this->plugin_slug ),
-				'plugin'      => $this->plugin_slug,
-				'new_version' => $release['version'],
-				'url'         => $release['html_url'],
-				'package'     => $release['download_url'],
-			];
+			// Update beschikbaar — in response zodat WP "Update now" toont
+			$transient->response[ $this->plugin_slug ] = $update_obj;
+			// Verwijder eventueel stale no_update entry
+			unset( $transient->no_update[ $this->plugin_slug ] );
+		} else {
+			// Up to date — in no_update zodat WP de auto-update toggle toont
+			$transient->no_update[ $this->plugin_slug ] = $update_obj;
+			unset( $transient->response[ $this->plugin_slug ] );
 		}
 
 		return $transient;

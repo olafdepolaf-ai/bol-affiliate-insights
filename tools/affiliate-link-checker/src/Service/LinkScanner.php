@@ -14,11 +14,13 @@ class LinkScanner {
 		global $wpdb;
 
 		$rows = $wpdb->get_results(
-			"SELECT ID, post_title
-			 FROM {$wpdb->posts}
-			 WHERE post_type = 'thirstylink'
-			   AND post_status = 'publish'
-			 ORDER BY post_title ASC"
+			"SELECT p.ID, p.post_title, pm.meta_value AS destination_url
+			 FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->postmeta} pm
+			     ON pm.post_id = p.ID AND pm.meta_key = '_ta_destination_url'
+			 WHERE p.post_type = 'thirstylink'
+			   AND p.post_status = 'publish'
+			 ORDER BY p.post_title ASC"
 		);
 
 		$total      = 0;
@@ -27,22 +29,22 @@ class LinkScanner {
 		$domains    = [];
 
 		foreach ( $rows as $row ) {
-			$id  = (int) $row->ID;
-			$url = (string) get_post_meta( $id, '_ta_destination_url', true );
+			$url = (string) ( $row->destination_url ?? '' );
 
-			if ( empty( $url ) ) {
+			if ( $url === '' ) {
 				continue;
 			}
 
+			$id = (int) $row->ID;
 			$total++;
 
 			if ( strpos( $url, 'partner.bol.com' ) !== false ) {
 				$bol_count++;
 				$domains['partner.bol.com (overgeslagen)'] = ( $domains['partner.bol.com (overgeslagen)'] ?? 0 ) + 1;
 			} else {
-				$host            = parse_url( $url, PHP_URL_HOST ) ?: 'onbekend';
+				$host             = parse_url( $url, PHP_URL_HOST ) ?: 'onbekend';
 				$domains[ $host ] = ( $domains[ $host ] ?? 0 ) + 1;
-				$scan_links[]    = [
+				$scan_links[]     = [
 					'id'   => $id,
 					'name' => $row->post_title,
 					'url'  => $url,
@@ -62,6 +64,11 @@ class LinkScanner {
 	}
 
 	public function check_link( string $url ): int {
+		// Reject malformed URLs and guard against SSRF via wp_http_validate_url().
+		if ( ! wp_http_validate_url( $url ) ) {
+			return 0;
+		}
+
 		$response = wp_remote_get( $url, [
 			'timeout'     => 10,
 			'redirection' => 5,
