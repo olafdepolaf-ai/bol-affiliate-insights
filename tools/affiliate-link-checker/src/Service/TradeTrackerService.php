@@ -31,18 +31,14 @@ class TradeTrackerService {
 				'trace'       => false,
 			] );
 
-			$authenticated = $this->client->authenticate(
+			// authenticate() returns void — throws SoapFault on failure
+			$this->client->authenticate(
 				(int) $customer_id,
 				$access_key,
 				false,
 				'nl_NL',
 				false
 			);
-
-			if ( ! $authenticated ) {
-				$this->client = null;
-				return new \WP_Error( 'auth_failed', 'Authenticatie mislukt. Controleer klant-ID en toegangssleutel.' );
-			}
 		} catch ( \Exception $e ) {
 			$this->client = null;
 			return new \WP_Error( 'soap_error', 'SOAP fout: ' . $e->getMessage() );
