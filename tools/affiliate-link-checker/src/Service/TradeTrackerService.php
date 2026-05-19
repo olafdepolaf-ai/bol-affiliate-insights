@@ -140,6 +140,41 @@ class TradeTrackerService {
 		return $months;
 	}
 
+	/**
+	 * Haalt alle sales (conversie-transacties) op voor het opgegeven jaar.
+	 * Gesorteerd op registratiedatum aflopend, max 500 per jaar.
+	 */
+	public function get_sales_year( string $site_id, int $year ): array|\WP_Error {
+		$cache_key = 'alc_tt_sales_' . md5( $site_id . '_' . $year );
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		$filter                        = new \stdClass();
+		$filter->transactionType       = 'sale';
+		$filter->registrationDateFrom  = sprintf( '%04d-01-01T00:00:00', $year );
+		$filter->registrationDateTo    = sprintf( '%04d-12-31T23:59:59', $year );
+		$filter->limit                 = 500;
+		$filter->sort                  = 'registrationDate';
+		$filter->sortDirection         = 'descending';
+
+		try {
+			$result       = $client->getConversionTransactions( $site_id, $filter );
+			$transactions = $this->to_array( $result );
+			$ttl          = ( $year < (int) gmdate( 'Y' ) ) ? 86400 : 3600;
+			set_transient( $cache_key, $transactions, $ttl );
+			return $transactions;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
 	public function clear_cache(): void {
 		global $wpdb;
 		$wpdb->query(

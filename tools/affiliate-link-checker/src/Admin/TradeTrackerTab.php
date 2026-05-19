@@ -21,7 +21,7 @@ class TradeTrackerTab {
 	public function render(): void {
 		$base_url   = admin_url( 'admin.php?page=affiliate-link-checker&tab=tradetracker' );
 		$subtab     = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'settings';
-		$subtabs    = [ 'settings' => 'Instellingen', 'rapport' => 'Rapport' ];
+		$subtabs    = [ 'settings' => 'Instellingen', 'rapport' => 'Rapport', 'sales' => 'Sales' ];
 		?>
 		<style>
 			.alc-subtab-nav { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
@@ -41,6 +41,8 @@ class TradeTrackerTab {
 		<?php
 		if ( $subtab === 'rapport' ) {
 			$this->render_rapport_subtab( $base_url );
+		} elseif ( $subtab === 'sales' ) {
+			$this->render_sales_subtab();
 		} else {
 			$this->render_settings_subtab();
 		}
@@ -290,6 +292,152 @@ class TradeTrackerTab {
 					<?php endforeach; ?>
 				</tr>
 			</tfoot>
+		</table>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Sales subtab
+	// -------------------------------------------------------------------------
+
+	private function render_sales_subtab(): void {
+		$current_year  = (int) gmdate( 'Y' );
+		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
+		$selected_year = max( 2015, min( $current_year, $selected_year ) );
+
+		$customer_id = get_option( 'alc_tt_customer_id', '' );
+		$access_key  = get_option( 'alc_tt_access_key', '' );
+		if ( empty( $customer_id ) || empty( $access_key ) ) {
+			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			return;
+		}
+
+		$sites = $this->service->get_affiliate_sites();
+		if ( is_wp_error( $sites ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $sites->get_error_message() ) . '</p></div>';
+			return;
+		}
+		$primary_site = reset( $sites );
+		$site_id      = (string) ( is_object( $primary_site ) ? $primary_site->ID : ( $primary_site['ID'] ?? '' ) );
+		?>
+
+		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+			<input type="hidden" name="page" value="affiliate-link-checker" />
+			<input type="hidden" name="tab" value="tradetracker" />
+			<input type="hidden" name="subtab" value="sales" />
+			<label for="alc_sales_jaar" style="font-weight:600;">Jaar:</label>
+			<select id="alc_sales_jaar" name="jaar" onchange="this.form.submit()">
+				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
+				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
+				<?php endfor; ?>
+			</select>
+		</form>
+
+		<?php
+		$transactions = $this->service->get_sales_year( $site_id, $selected_year );
+
+		if ( is_wp_error( $transactions ) ) {
+			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $transactions->get_error_message() ) . '</p></div>';
+			return;
+		}
+
+		if ( empty( $transactions ) ) {
+			echo '<p><em>Geen sales gevonden voor ' . esc_html( $selected_year ) . '.</em></p>';
+			return;
+		}
+
+		// Samenvattingstotalen berekenen
+		$summary = [ 'pending' => [ 'count' => 0, 'commission' => 0.0 ], 'accepted' => [ 'count' => 0, 'commission' => 0.0 ], 'rejected' => [ 'count' => 0, 'commission' => 0.0 ] ];
+		foreach ( $transactions as $tx ) {
+			$t      = (object) $tx;
+			$status = strtolower( $t->transactionStatus ?? 'pending' );
+			if ( ! isset( $summary[ $status ] ) ) {
+				$summary[ $status ] = [ 'count' => 0, 'commission' => 0.0 ];
+			}
+			$summary[ $status ]['count']++;
+			$summary[ $status ]['commission'] += (float) ( $t->commission ?? 0 );
+		}
+
+		$status_labels = [ 'accepted' => 'Geaccepteerd', 'pending' => 'In behandeling', 'rejected' => 'Afgekeurd' ];
+		$status_colors = [ 'accepted' => '#00a32a', 'pending' => '#dba617', 'rejected' => '#d63638' ];
+		$total_commission = array_sum( array_column( $summary, 'commission' ) );
+		$total_count      = array_sum( array_column( $summary, 'count' ) );
+		?>
+
+		<style>
+			.alc-sales-summary { display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+			.alc-sales-card { background:#fff; border:1px solid #ccd0d4; border-radius:4px; padding:12px 18px; min-width:160px; }
+			.alc-sales-card .alc-card-num { font-size:22px; font-weight:700; }
+			.alc-sales-card .alc-card-sub { font-size:12px; color:#646970; margin-top:2px; }
+			.alc-sales-card.alc-card-total .alc-card-num { color:#2271b1; }
+
+			.alc-sales-tbl { border-collapse:collapse; width:100%; max-width:1000px; }
+			.alc-sales-tbl th, .alc-sales-tbl td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
+			.alc-sales-tbl th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
+			.alc-sales-tbl td.num { text-align:right; white-space:nowrap; }
+			.alc-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; color:#fff; white-space:nowrap; }
+		</style>
+
+		<div class="alc-sales-summary">
+			<div class="alc-sales-card alc-card-total">
+				<div class="alc-card-num"><?php echo esc_html( $total_count ); ?> sales</div>
+				<div class="alc-card-sub">€ <?php echo esc_html( number_format( $total_commission, 2, ',', '.' ) ); ?> totaal</div>
+			</div>
+			<?php foreach ( $status_labels as $key => $label ) :
+				if ( empty( $summary[ $key ]['count'] ) ) continue;
+			?>
+			<div class="alc-sales-card">
+				<div class="alc-card-num" style="color:<?php echo esc_attr( $status_colors[ $key ] ); ?>">
+					<?php echo esc_html( $summary[ $key ]['count'] ); ?>
+				</div>
+				<div class="alc-card-sub">
+					<?php echo esc_html( $label ); ?> —
+					€ <?php echo esc_html( number_format( $summary[ $key ]['commission'], 2, ',', '.' ) ); ?>
+				</div>
+			</div>
+			<?php endforeach; ?>
+		</div>
+
+		<table class="alc-sales-tbl">
+			<thead>
+				<tr>
+					<th>Registratiedatum</th>
+					<th>ID</th>
+					<th>Campagne</th>
+					<th>Referentie</th>
+					<th>Productgroep</th>
+					<th>Status</th>
+					<th class="num">Bestelbedr</th>
+					<th class="num">Commissie</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $transactions as $tx ) :
+					$t          = (object) $tx;
+					$status_key = strtolower( $t->transactionStatus ?? 'pending' );
+					$color      = $status_colors[ $status_key ] ?? '#888';
+					$label      = $status_labels[ $status_key ] ?? $status_key;
+
+					$campaign = is_object( $t->campaign ?? null ) ? ( $t->campaign->name ?? '—' ) : '—';
+					$reg_date = ! empty( $t->registrationDate )
+						? gmdate( 'd-m-Y H:i', strtotime( $t->registrationDate ) )
+						: '—';
+					$order_amt  = isset( $t->orderAmount ) ? '€ ' . number_format( (float) $t->orderAmount, 2, ',', '.' ) : '—';
+					$commission = isset( $t->commission )  ? '€ ' . number_format( (float) $t->commission,  2, ',', '.' ) : '—';
+					$product    = $t->campaignProduct->name ?? ( $t->description ?? '—' );
+				?>
+				<tr>
+					<td><?php echo esc_html( $reg_date ); ?></td>
+					<td style="color:#646970; font-size:12px;"><?php echo esc_html( '#' . ( $t->ID ?? '?' ) ); ?></td>
+					<td><?php echo esc_html( $campaign ); ?></td>
+					<td><?php echo esc_html( $t->reference ?? '—' ); ?></td>
+					<td><?php echo esc_html( $product ); ?></td>
+					<td><span class="alc-badge" style="background:<?php echo esc_attr( $color ); ?>"><?php echo esc_html( $label ); ?></span></td>
+					<td class="num"><?php echo esc_html( $order_amt ); ?></td>
+					<td class="num"><?php echo esc_html( $commission ); ?></td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
 		</table>
 		<?php
 	}
