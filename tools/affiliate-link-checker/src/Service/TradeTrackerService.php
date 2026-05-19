@@ -18,6 +18,7 @@ class TradeTrackerService {
 	const TTL_SALES_PAST   = 86400;  // 24h — past years
 	const TTL_CLICKS       = 3600;   // 1h  — current year
 	const TTL_CLICKS_PAST  = 86400;  // 24h — past years
+	const TTL_MATERIALS    = 21600;  // 6h  — text link materials rarely change
 
 	private $client = null;
 
@@ -253,6 +254,69 @@ class TradeTrackerService {
 			$ttl    = ( $year < (int) gmdate( 'Y' ) ) ? self::TTL_CLICKS_PAST : self::TTL_CLICKS;
 			$this->cache_set( $cache_key, $clicks, $ttl );
 			return $clicks;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Haalt tekstlink-materialen op voor alle campagnes van de affiliate site.
+	 * Geeft een map terug: campaignID (string) => base tracking URL (string).
+	 * De base URL eindigt altijd met een lege referentie-slot (bv. "?tt=8892_12_98344_")
+	 * zodat de referentie er direct achter geplakt kan worden.
+	 *
+	 * @return array<string,string>|\WP_Error
+	 */
+	public function get_text_material_urls( string $site_id ): array|\WP_Error {
+		$cache_key = 'text_materials_' . md5( $site_id );
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		try {
+			// getMaterialTextItems( affiliateSiteID, materialOutputType, MaterialItemFilter )
+			// materialOutputType null = alle formaten; lege filter = alle campagnes
+			$filter  = new \stdClass();
+			$result  = $client->getMaterialTextItems( $site_id, null, $filter );
+			$items   = $this->to_array( $result );
+
+			// Bouw map campagnID => base tracking URL (eerste material per campagne)
+			$map = [];
+			foreach ( $items as $item ) {
+				$m           = (object) $item;
+				$campaign_id = (string) ( is_object( $m->campaign ?? null ) ? ( $m->campaign->ID ?? '' ) : '' );
+				if ( $campaign_id === '' || isset( $map[ $campaign_id ] ) ) {
+					continue;
+				}
+
+				// Probeer URL direct, anders href uit HTML code extraheren
+				$url = '';
+				if ( ! empty( $m->URL ) ) {
+					$url = (string) $m->URL;
+				} elseif ( ! empty( $m->code ) ) {
+					preg_match( '/href=["\']([^"\']+)["\']/i', (string) $m->code, $matches );
+					$url = $matches[1] ?? '';
+				}
+
+				if ( $url === '' ) {
+					continue;
+				}
+
+				// Normaliseer: zorg dat het tt-param eindigt met lege referentie (trailing _)
+				// Bv. "?tt=8892_12_98344_bestaanderef" → "?tt=8892_12_98344_"
+				$url = (string) preg_replace( '/([?&]tt=\d+_\d+_\d+_)[^&]*/', '$1', $url );
+
+				$map[ $campaign_id ] = $url;
+			}
+
+			$this->cache_set( $cache_key, $map, self::TTL_MATERIALS );
+			return $map;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
 		}

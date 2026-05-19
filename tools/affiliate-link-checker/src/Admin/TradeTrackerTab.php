@@ -630,7 +630,14 @@ class TradeTrackerTab {
 			return;
 		}
 
-		// Bouw een eenvoudige lijst: id → name, gesorteerd op naam
+		// Tekstlink-materialen ophalen: campagneID => base tracking URL
+		// Bij fout: stille fallback naar tc.tradetracker.net (JS handelt dit af)
+		$material_urls = $this->service->get_text_material_urls( $site_id );
+		if ( is_wp_error( $material_urls ) ) {
+			$material_urls = [];
+		}
+
+		// Campagnelijst: id → name, gesorteerd op naam
 		$campaign_list = [];
 		foreach ( $campaigns as $c ) {
 			$c = (object) $c;
@@ -649,6 +656,7 @@ class TradeTrackerTab {
 			.alc-gen-result { background:#f0f6fc; border:1px solid #c3d9f0; border-radius:4px; padding:12px 16px; margin-top:20px; display:none; }
 			.alc-gen-result label { font-weight:600; font-size:12px; color:#1d2327; margin-bottom:6px; }
 			.alc-gen-result-url { font-family:monospace; font-size:13px; word-break:break-all; color:#1d2327; }
+			.alc-gen-source { font-size:11px; color:#646970; margin-top:6px; }
 			.alc-gen-copy { margin-top:10px; }
 			.alc-gen-copied { color:#00a32a; font-size:12px; margin-left:8px; display:none; }
 		</style>
@@ -679,6 +687,7 @@ class TradeTrackerTab {
 			<div class="alc-gen-result" id="alc-gen-result">
 				<label>Gegenereerde tekstlink</label>
 				<div class="alc-gen-result-url" id="alc-gen-result-url"></div>
+				<div class="alc-gen-source" id="alc-gen-source"></div>
 				<div class="alc-gen-copy">
 					<button type="button" class="button" id="alc-gen-copy-btn">Kopieer link</button>
 					<span class="alc-gen-copied" id="alc-gen-copied">✓ Gekopieerd!</span>
@@ -688,14 +697,17 @@ class TradeTrackerTab {
 
 		<script>
 		(function() {
-			var siteId    = <?php echo wp_json_encode( $site_id ); ?>;
-			var elCamp    = document.getElementById('alc-gen-campaign');
-			var elUrl     = document.getElementById('alc-gen-url');
-			var elRef     = document.getElementById('alc-gen-ref');
-			var elResult  = document.getElementById('alc-gen-result');
-			var elOut     = document.getElementById('alc-gen-result-url');
-			var elCopy    = document.getElementById('alc-gen-copy-btn');
-			var elCopied  = document.getElementById('alc-gen-copied');
+			var siteId       = <?php echo wp_json_encode( $site_id ); ?>;
+			var materialUrls = <?php echo wp_json_encode( (object) $material_urls ); ?>;
+
+			var elCamp   = document.getElementById('alc-gen-campaign');
+			var elUrl    = document.getElementById('alc-gen-url');
+			var elRef    = document.getElementById('alc-gen-ref');
+			var elResult = document.getElementById('alc-gen-result');
+			var elOut    = document.getElementById('alc-gen-result-url');
+			var elSrc    = document.getElementById('alc-gen-source');
+			var elCopy   = document.getElementById('alc-gen-copy-btn');
+			var elCopied = document.getElementById('alc-gen-copied');
 
 			function generate() {
 				var campaignId = elCamp.value;
@@ -706,20 +718,36 @@ class TradeTrackerTab {
 
 				var destUrl = elUrl.value.trim();
 				var ref     = elRef.value.trim().replace(/[^a-zA-Z0-9\-_]/g, '');
+				var baseUrl = materialUrls[campaignId] || null;
+				var link, source;
 
-				// Standard TradeTracker text link format
-				var link = 'https://tc.tradetracker.net/?c=' + encodeURIComponent(campaignId)
-					+ '&m=12'
-					+ '&a=' + encodeURIComponent(siteId);
+				if ( baseUrl ) {
+					// Transparante link via merchant-domein (uit getMaterialTextItems API)
+					// baseUrl eindigt met lege referentie-slot: "?tt=8892_12_98344_"
+					link = baseUrl + ref;
 
-				if ( ref ) {
-					link += '&r=' + encodeURIComponent(ref);
+					if ( destUrl ) {
+						try {
+							// Alleen het pad-deel meegeven als r= parameter
+							var parsed = new URL(destUrl);
+							var path   = parsed.pathname + parsed.search + parsed.hash;
+							link += '&r=' + encodeURIComponent(path);
+						} catch(e) {
+							// ongeldige URL, deeplink overslaan
+						}
+					}
+					source = '✓ Merchant-domein (via TradeTracker materiaal API)';
+				} else {
+					// Fallback: standaard tc.tradetracker.net redirect
+					link = 'https://tc.tradetracker.net/?c=' + encodeURIComponent(campaignId)
+						 + '&m=12&a=' + encodeURIComponent(siteId);
+					if ( ref )     link += '&r=' + encodeURIComponent(ref);
+					if ( destUrl ) link += '&u=' + encodeURIComponent(destUrl);
+					source = '↩ Fallback: tc.tradetracker.net (geen tekstmateriaal gevonden voor deze campagne)';
 				}
-				if ( destUrl ) {
-					link += '&u=' + encodeURIComponent(destUrl);
-				}
 
-				elOut.textContent  = link;
+				elOut.textContent      = link;
+				elSrc.textContent      = source;
 				elResult.style.display = 'block';
 				elCopied.style.display = 'none';
 			}
@@ -737,14 +765,9 @@ class TradeTrackerTab {
 						setTimeout(function() { elCopied.style.display = 'none'; }, 2000);
 					});
 				} else {
-					// Fallback voor oudere browsers
 					var ta = document.createElement('textarea');
-					ta.value = text;
-					ta.style.position = 'fixed';
-					ta.style.opacity  = '0';
-					document.body.appendChild(ta);
-					ta.select();
-					document.execCommand('copy');
+					ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+					document.body.appendChild(ta); ta.select(); document.execCommand('copy');
 					document.body.removeChild(ta);
 					elCopied.style.display = 'inline';
 					setTimeout(function() { elCopied.style.display = 'none'; }, 2000);
