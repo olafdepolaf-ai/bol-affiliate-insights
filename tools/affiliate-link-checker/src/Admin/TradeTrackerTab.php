@@ -8,11 +8,49 @@ class TradeTrackerTab {
 
 	private TradeTrackerService $service;
 
+	private static array $month_names = [
+		1 => 'Januari', 2 => 'Februari', 3 => 'Maart',     4 => 'April',
+		5 => 'Mei',     6 => 'Juni',     7 => 'Juli',       8 => 'Augustus',
+		9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'December',
+	];
+
 	public function __construct( TradeTrackerService $service ) {
 		$this->service = $service;
 	}
 
 	public function render(): void {
+		$base_url   = admin_url( 'admin.php?page=affiliate-link-checker&tab=tradetracker' );
+		$subtab     = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'settings';
+		$subtabs    = [ 'settings' => 'Instellingen', 'rapport' => 'Rapport' ];
+		?>
+		<style>
+			.alc-subtab-nav { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
+			.alc-subtab-nav a { display:inline-block; padding:6px 14px; text-decoration:none; font-size:13px; color:#2271b1; border:1px solid transparent; border-bottom:none; border-radius:3px 3px 0 0; margin-bottom:-1px; }
+			.alc-subtab-nav a:hover { background:#f0f0f1; color:#135e96; }
+			.alc-subtab-nav a.active { background:#fff; border-color:#c3c4c7; color:#1d2327; font-weight:600; }
+		</style>
+		<nav class="alc-subtab-nav">
+			<?php foreach ( $subtabs as $slug => $label ) : ?>
+			<a href="<?php echo esc_url( $base_url . '&subtab=' . $slug ); ?>"
+			   class="<?php echo $subtab === $slug ? 'active' : ''; ?>">
+				<?php echo esc_html( $label ); ?>
+			</a>
+			<?php endforeach; ?>
+		</nav>
+
+		<?php
+		if ( $subtab === 'rapport' ) {
+			$this->render_rapport_subtab( $base_url );
+		} else {
+			$this->render_settings_subtab();
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Instellingen subtab
+	// -------------------------------------------------------------------------
+
+	private function render_settings_subtab(): void {
 		$notice = '';
 
 		if ( isset( $_POST['alc_tt_save_settings'] ) && check_admin_referer( 'alc_tt_settings', 'alc_tt_nonce' ) ) {
@@ -27,16 +65,16 @@ class TradeTrackerTab {
 			$notice = '<div class="notice notice-success inline"><p>Cache gewist.</p></div>';
 		}
 
-		$customer_id  = get_option( 'alc_tt_customer_id', '' );
-		$access_key   = get_option( 'alc_tt_access_key', '' );
-		$has_creds    = ! empty( $customer_id ) && ! empty( $access_key );
+		$customer_id = get_option( 'alc_tt_customer_id', '' );
+		$access_key  = get_option( 'alc_tt_access_key', '' );
+		$has_creds   = ! empty( $customer_id ) && ! empty( $access_key );
 
 		echo wp_kses_post( $notice );
 		?>
 
-		<form method="post" style="margin-bottom:24px;">
+		<form method="post">
 			<?php wp_nonce_field( 'alc_tt_settings', 'alc_tt_nonce' ); ?>
-			<h2 style="margin-top:0;">Inloggegevens</h2>
+			<h3 style="margin-top:0;">API inloggegevens</h3>
 			<table class="form-table" style="max-width:560px;">
 				<tr>
 					<th scope="row"><label for="alc_tt_customer_id">Klant-ID</label></th>
@@ -58,42 +96,32 @@ class TradeTrackerTab {
 		</form>
 
 		<?php if ( ! $has_creds ) : ?>
-		<p><em>Vul de inloggegevens in om data op te halen.</em></p>
-		<?php return; endif; ?>
+		<p style="margin-top:16px;"><em>Vul de inloggegevens in om data op te halen.</em></p>
+		<?php return; endif;
 
-		<?php
 		$sites = $this->service->get_affiliate_sites();
-
 		if ( is_wp_error( $sites ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $sites->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>Verbindingsfout:</strong> ' . esc_html( $sites->get_error_message() ) . '</p></div>';
 			return;
 		}
-
 		if ( empty( $sites ) ) {
 			echo '<p><em>Geen affiliate sites gevonden.</em></p>';
 			return;
 		}
 
-		$primary_site = is_array( $sites ) ? reset( $sites ) : $sites;
+		$primary_site = reset( $sites );
 		$site_id      = is_object( $primary_site ) ? $primary_site->ID : ( $primary_site['ID'] ?? '' );
 
 		$this->render_account_info( $sites );
-		$this->render_campaigns( $site_id );
-		$this->render_report( $site_id );
+		$this->render_campaigns( (string) $site_id );
 	}
 
 	private function render_account_info( array $sites ): void {
 		?>
-		<h2>Account / Affiliate sites</h2>
+		<h3 style="margin-top:24px;">Affiliate sites</h3>
 		<table class="widefat striped" style="max-width:800px; margin-bottom:24px;">
 			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Naam</th>
-					<th>URL</th>
-					<th>Type</th>
-					<th>Status</th>
-				</tr>
+				<tr><th>ID</th><th>Naam</th><th>URL</th><th>Type</th><th>Status</th></tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $sites as $site ) :
@@ -102,13 +130,9 @@ class TradeTrackerTab {
 				<tr>
 					<td><?php echo esc_html( $s->ID ?? '—' ); ?></td>
 					<td><?php echo esc_html( $s->name ?? '—' ); ?></td>
-					<td>
-						<?php if ( ! empty( $s->URL ) ) : ?>
-						<a href="<?php echo esc_url( $s->URL ); ?>" target="_blank"><?php echo esc_html( $s->URL ); ?></a>
-						<?php else : ?>—<?php endif; ?>
-					</td>
-					<td><?php echo esc_html( $s->type->name ?? $s->type ?? '—' ); ?></td>
-					<td><?php echo esc_html( $s->status ?? '—' ); ?></td>
+					<td><?php if ( ! empty( $s->URL ) ) : ?><a href="<?php echo esc_url( $s->URL ); ?>" target="_blank"><?php echo esc_html( $s->URL ); ?></a><?php else : ?>—<?php endif; ?></td>
+					<td><?php echo esc_html( $s->info->type->name ?? '—' ); ?></td>
+					<td><?php echo esc_html( $s->info->status ?? '—' ); ?></td>
 				</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -117,31 +141,19 @@ class TradeTrackerTab {
 	}
 
 	private function render_campaigns( string $site_id ): void {
-		if ( empty( $site_id ) ) {
-			return;
-		}
-
 		$campaigns = $this->service->get_campaigns( $site_id );
-
 		if ( is_wp_error( $campaigns ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Campagnes fout:</strong> ' . esc_html( $campaigns->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $campaigns->get_error_message() ) . '</p></div>';
 			return;
 		}
 		?>
-		<h2>Geabonneerde campagnes (<?php echo count( $campaigns ); ?>)</h2>
+		<h3>Geabonneerde campagnes (<?php echo count( $campaigns ); ?>)</h3>
 		<?php if ( empty( $campaigns ) ) : ?>
-		<p><em>Geen geabonneerde campagnes gevonden.</em></p>
+		<p><em>Geen geabonneerde campagnes.</em></p>
 		<?php return; endif; ?>
 		<table class="widefat striped" style="max-width:900px; margin-bottom:24px;">
 			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Naam</th>
-					<th>Categorie</th>
-					<th>Commissie type</th>
-					<th>Status</th>
-					<th>URL</th>
-				</tr>
+				<tr><th>ID</th><th>Naam</th><th>Categorie</th><th>Commissie type</th><th>Status</th><th></th></tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $campaigns as $campaign ) :
@@ -150,14 +162,10 @@ class TradeTrackerTab {
 				<tr>
 					<td><?php echo esc_html( $c->ID ?? '—' ); ?></td>
 					<td><?php echo esc_html( $c->name ?? '—' ); ?></td>
-					<td><?php echo esc_html( $c->category->name ?? $c->category ?? '—' ); ?></td>
-					<td><?php echo esc_html( $c->commissionType ?? '—' ); ?></td>
-					<td><?php echo esc_html( $c->assignmentStatus ?? $c->status ?? '—' ); ?></td>
-					<td>
-						<?php if ( ! empty( $c->URL ) ) : ?>
-						<a href="<?php echo esc_url( $c->URL ); ?>" target="_blank">↗</a>
-						<?php else : ?>—<?php endif; ?>
-					</td>
+					<td><?php echo esc_html( $c->info->category->name ?? '—' ); ?></td>
+					<td><?php echo esc_html( $c->info->commission->type ?? '—' ); ?></td>
+					<td><?php echo esc_html( $c->info->assignmentStatus ?? '—' ); ?></td>
+					<td><?php if ( ! empty( $c->URL ) ) : ?><a href="<?php echo esc_url( $c->URL ); ?>" target="_blank">↗</a><?php endif; ?></td>
 				</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -165,65 +173,124 @@ class TradeTrackerTab {
 		<?php
 	}
 
-	private function render_report( string $site_id ): void {
-		if ( empty( $site_id ) ) {
+	// -------------------------------------------------------------------------
+	// Rapport subtab
+	// -------------------------------------------------------------------------
+
+	private function render_rapport_subtab( string $base_url ): void {
+		$current_year = (int) gmdate( 'Y' );
+		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
+		$selected_year = max( 2015, min( $current_year, $selected_year ) );
+
+		$customer_id = get_option( 'alc_tt_customer_id', '' );
+		$access_key  = get_option( 'alc_tt_access_key', '' );
+		if ( empty( $customer_id ) || empty( $access_key ) ) {
+			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
 			return;
 		}
 
-		$start  = gmdate( 'Y-m-01', strtotime( 'first day of last month' ) );
-		$end    = gmdate( 'Y-m-t', strtotime( 'last day of last month' ) );
-		$report = $this->service->get_report_last_month( $site_id );
-
-		if ( is_wp_error( $report ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Rapport fout:</strong> ' . esc_html( $report->get_error_message() ) . '</p></div>';
+		$sites = $this->service->get_affiliate_sites();
+		if ( is_wp_error( $sites ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $sites->get_error_message() ) . '</p></div>';
 			return;
 		}
+		$primary_site = reset( $sites );
+		$site_id      = (string) ( is_object( $primary_site ) ? $primary_site->ID : ( $primary_site['ID'] ?? '' ) );
+
 		?>
-		<h2>Rapport vorige maand (<?php echo esc_html( $start ); ?> t/m <?php echo esc_html( $end ); ?>)</h2>
-		<?php if ( empty( $report ) ) : ?>
-		<p><em>Geen rapportdata beschikbaar.</em></p>
-		<?php return; endif; ?>
+		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+			<input type="hidden" name="page" value="affiliate-link-checker" />
+			<input type="hidden" name="tab" value="tradetracker" />
+			<input type="hidden" name="subtab" value="rapport" />
+			<label for="alc_jaar" style="font-weight:600;">Jaar:</label>
+			<select id="alc_jaar" name="jaar" onchange="this.form.submit()">
+				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
+				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
+				<?php endfor; ?>
+			</select>
+		</form>
 
 		<?php
-		$r = (object) $report;
+		$months_data = $this->service->get_report_year( $site_id, $selected_year );
 
-		$metrics = [
-			'impressions'         => 'Impressies',
-			'clicks'              => 'Kliks',
-			'leads'               => 'Leads',
-			'sales'               => 'Sales',
-			'revenue'             => 'Omzet (adverteerder)',
-			'commission'          => 'Commissie (jouw verdienste)',
-			'openLeadsCommission' => 'Open leads commissie',
-			'openSalesCommission' => 'Open sales commissie',
-			'fixedCommission'     => 'Vaste commissie',
+		if ( is_wp_error( $months_data ) ) {
+			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $months_data->get_error_message() ) . '</p></div>';
+			return;
+		}
+
+		$cols = [
+			'overallClickCount' => 'Kliks',
+			'uniqueClickCount'  => 'Kliks uniek',
+			'leadCount'         => 'Leads #',
+			'leadCommission'    => 'Leads €',
+			'saleCount'         => 'Sales #',
+			'saleCommission'    => 'Sales €',
+			'totalCommission'   => 'Totaal €',
 		];
+		$money_cols = [ 'leadCommission', 'saleCommission', 'totalCommission' ];
+
+		// Totalen berekenen
+		$totals = array_fill_keys( array_keys( $cols ), 0.0 );
 		?>
-		<table class="widefat striped" style="max-width:480px; margin-bottom:24px;">
+
+		<style>
+			.alc-report th, .alc-report td { padding:7px 12px; border:1px solid #e0e0e0; text-align:right; white-space:nowrap; }
+			.alc-report th { background:#f6f7f7; font-weight:600; }
+			.alc-report td:first-child, .alc-report th:first-child { text-align:left; }
+			.alc-report tr.alc-future td { color:#bbb; }
+			.alc-report tr.alc-total td { background:#f0f6fc; font-weight:700; border-top:2px solid #2271b1; }
+			.alc-report td.alc-zero { color:#bbb; }
+		</style>
+
+		<table class="widefat alc-report" style="max-width:900px; border-collapse:collapse;">
 			<thead>
-				<tr><th>Metriek</th><th>Waarde</th></tr>
+				<tr>
+					<th>Maand</th>
+					<?php foreach ( $cols as $key => $label ) : ?>
+					<th><?php echo esc_html( $label ); ?></th>
+					<?php endforeach; ?>
+				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $metrics as $key => $label ) :
-					if ( ! isset( $r->$key ) ) continue;
-					$val = $r->$key;
-					$formatted = is_numeric( $val ) && strpos( $key, 'ommission' ) !== false || $key === 'revenue'
-						? '€ ' . number_format( (float) $val, 2, ',', '.' )
-						: number_format( (float) $val, 0, ',', '.' );
+				<?php for ( $m = 1; $m <= 12; $m++ ) :
+					$r      = isset( $months_data[ $m ] ) ? (object) $months_data[ $m ] : null;
+					$future = is_null( $r );
 				?>
-				<tr>
-					<td><?php echo esc_html( $label ); ?></td>
-					<td><?php echo esc_html( $formatted ); ?></td>
+				<tr class="<?php echo $future ? 'alc-future' : ''; ?>">
+					<td><?php echo esc_html( self::$month_names[ $m ] ); ?></td>
+					<?php foreach ( $cols as $key => $label ) :
+						if ( $future ) {
+							echo '<td>—</td>';
+							continue;
+						}
+						$val = isset( $r->$key ) ? (float) $r->$key : 0.0;
+						$totals[ $key ] += $val;
+						$is_money = in_array( $key, $money_cols, true );
+						$zero     = $val == 0.0;
+						$display  = $is_money
+							? ( $zero ? '—' : '€ ' . number_format( $val, 2, ',', '.' ) )
+							: ( $zero ? '—' : number_format( (int) $val, 0, ',', '.' ) );
+					?>
+					<td class="<?php echo $zero ? 'alc-zero' : ''; ?>"><?php echo esc_html( $display ); ?></td>
+					<?php endforeach; ?>
 				</tr>
-				<?php endforeach; ?>
+				<?php endfor; ?>
 			</tbody>
+			<tfoot>
+				<tr class="alc-total">
+					<td>Totaal</td>
+					<?php foreach ( $cols as $key => $label ) :
+						$val      = $totals[ $key ];
+						$is_money = in_array( $key, $money_cols, true );
+						$display  = $is_money
+							? '€ ' . number_format( $val, 2, ',', '.' )
+							: number_format( (int) $val, 0, ',', '.' );
+					?>
+					<td><?php echo esc_html( $display ); ?></td>
+					<?php endforeach; ?>
+				</tr>
+			</tfoot>
 		</table>
 		<?php
-
-		// Raw debug dump for PoC — shows all fields returned by API
-		echo '<details style="margin-bottom:24px;"><summary style="cursor:pointer; color:#646970;">Ruwe API response (debug)</summary>';
-		echo '<pre style="background:#f6f7f7; padding:12px; overflow:auto; font-size:12px;">';
-		echo esc_html( print_r( $report, true ) );
-		echo '</pre></details>';
 	}
 }

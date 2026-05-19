@@ -15,12 +15,14 @@ class ScanPage {
 	}
 
 	public function render(): void {
-		// Handle manual update check request
+		// Handle manual update check request — gebruik JS redirect want headers zijn al verstuurd
+		$update_notice = '';
 		if ( isset( $_GET['alc_check_updates'] ) && check_admin_referer( 'alc_check_updates' ) ) {
 			delete_transient( 'alc_github_update' );
 			delete_site_transient( 'update_plugins' );
-			wp_redirect( remove_query_arg( [ 'alc_check_updates', '_wpnonce' ] ) );
-			exit;
+			$clean_url     = esc_url( remove_query_arg( [ 'alc_check_updates', '_wpnonce' ] ) );
+			$update_notice = '<div class="notice notice-success"><p>Cache gewist. WordPress controleert nu op updates.</p></div>'
+				. '<script>setTimeout(function(){ window.location.href = "' . $clean_url . '"; }, 1200);</script>';
 		}
 
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'scanner';
@@ -51,6 +53,8 @@ class ScanPage {
 					↻ Controleer op updates
 				</a>
 			</h1>
+
+			<?php echo wp_kses_post( $update_notice ); ?>
 
 			<nav class="nav-tab-wrapper" style="margin-bottom:20px;">
 				<?php foreach ( $tabs as $slug => $label ) : ?>

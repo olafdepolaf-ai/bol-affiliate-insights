@@ -92,8 +92,14 @@ class TradeTrackerService {
 		}
 	}
 
-	public function get_report_last_month( string $site_id ): mixed {
-		$cache_key = 'alc_tt_report_' . md5( $site_id );
+	/**
+	 * Haalt rapport op voor elk afgelopen maand van het opgegeven jaar.
+	 * Retourneert array geïndexeerd op maandnummer (1–12), null voor toekomstige maanden.
+	 *
+	 * @return array|\WP_Error  array[1..12] => ReportData object|null
+	 */
+	public function get_report_year( string $site_id, int $year ): array|\WP_Error {
+		$cache_key = 'alc_tt_year_' . md5( $site_id . '_' . $year );
 		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
@@ -104,20 +110,37 @@ class TradeTrackerService {
 			return $client;
 		}
 
-		$start = gmdate( 'Y-m-01', strtotime( 'first day of last month' ) );
-		$end   = gmdate( 'Y-m-t', strtotime( 'last day of last month' ) );
+		$current_year  = (int) gmdate( 'Y' );
+		$current_month = (int) gmdate( 'n' );
+		$max_month     = ( $year === $current_year ) ? $current_month : 12;
 
-		try {
-			$result = $client->getReportAffiliateSite( $site_id, $start, $end );
-			set_transient( $cache_key, $result, 15 * MINUTE_IN_SECONDS );
-			return $result;
-		} catch ( \Exception $e ) {
-			return new \WP_Error( 'soap_error', $e->getMessage() );
+		$months = [];
+		for ( $m = 1; $m <= 12; $m++ ) {
+			if ( $m > $max_month ) {
+				$months[ $m ] = null;
+				continue;
+			}
+
+			$days_in_month = (int) gmdate( 't', mktime( 0, 0, 0, $m, 1, $year ) );
+			$filter           = new \stdClass();
+			$filter->dateFrom = sprintf( '%04d-%02d-01', $year, $m );
+			$filter->dateTo   = sprintf( '%04d-%02d-%02d', $year, $m, $days_in_month );
+
+			try {
+				$months[ $m ] = $client->getReportAffiliateSite( $site_id, $filter );
+			} catch ( \Exception $e ) {
+				$months[ $m ] = null;
+			}
 		}
+
+		// Voorbije jaren langer cachen
+		$ttl = ( $year < $current_year ) ? 86400 : 3600;
+		set_transient( $cache_key, $months, $ttl );
+
+		return $months;
 	}
 
 	public function clear_cache(): void {
-		delete_transient( 'alc_tt_sites' );
 		global $wpdb;
 		$wpdb->query(
 			"DELETE FROM {$wpdb->options}
