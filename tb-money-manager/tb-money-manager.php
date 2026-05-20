@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TB Money Manager
  * Description: Beheert affiliate inkomstenbronnen van tuinenbalkon.nl — rapportage en linkbeheer voor Bol.com, TradeTracker en andere partnerprogramma's.
- * Version: 0.2.13
+ * Version: 0.2.14
  * Update URI: https://github.com/olafdepolaf-ai/bol-affiliate-insights
  * Author: olafdepolaf-ai
  * Author URI: https://github.com/olafdepolaf-ai/bol-affiliate-insights
