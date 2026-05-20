@@ -93,10 +93,10 @@ class ToolsTab {
 				</label>
 			<?php endforeach; ?>
 			</form>
-			<div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+			<div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
 				<button type="button" id="tbmm-scan-btn" class="button button-primary"
 					data-nonce="<?php echo esc_attr( $nonce ); ?>">
-					&#128270; Scan starten
+					<?php echo empty( $meta ) ? '&#128270; Scan starten' : '&#128270; Herscan'; ?>
 				</button>
 				<span id="tbmm-scan-status" style="font-size:13px;color:#646970;">
 				<?php if ( ! empty( $meta['scanned_at'] ) ) : ?>
@@ -105,7 +105,12 @@ class ToolsTab {
 					Nog niet gescand.
 				<?php endif; ?>
 				</span>
-				<span id="tbmm-scan-spinner" class="spinner" style="float:none;display:none;margin:0;"></span>
+			</div>
+			<div id="tbmm-scan-progress-wrap" style="display:none;margin-top:10px;">
+				<div style="background:#e0e0e0;border-radius:3px;height:10px;width:100%;max-width:500px;overflow:hidden;">
+					<div id="tbmm-scan-bar" style="background:#2271b1;height:100%;width:0%;transition:width 0.2s;"></div>
+				</div>
+				<p id="tbmm-scan-label" style="font-size:13px;color:#646970;margin-top:6px;"></p>
 			</div>
 		</div>
 
@@ -205,9 +210,50 @@ class ToolsTab {
 		?>
 		<script>
 		(function() {
-			var scanBtn     = document.getElementById('tbmm-scan-btn');
-			var scanStatus  = document.getElementById('tbmm-scan-status');
-			var scanSpinner = document.getElementById('tbmm-scan-spinner');
+			var BATCH_SIZE   = 15;
+			var scanBtn      = document.getElementById('tbmm-scan-btn');
+			var scanStatus   = document.getElementById('tbmm-scan-status');
+			var progressWrap = document.getElementById('tbmm-scan-progress-wrap');
+			var barEl        = document.getElementById('tbmm-scan-bar');
+			var labelEl      = document.getElementById('tbmm-scan-label');
+
+			function setProgress(done, total) {
+				var pct = total > 0 ? Math.round((done / total) * 100) : 100;
+				barEl.style.width = pct + '%';
+				labelEl.textContent = 'Artikel ' + Math.min(done, total) + ' van ' + total + '…';
+			}
+
+			function runBatch(offset, totalPosts, activeTypes, nonce) {
+				setProgress(offset, totalPosts);
+				if (offset >= totalPosts) {
+					scanStatus.textContent = 'Scan klaar. Pagina wordt herladen…';
+					setTimeout(function() { window.location.reload(); }, 1000);
+					return;
+				}
+
+				var body = new URLSearchParams();
+				body.append('action', 'tbmm_unmanaged_batch');
+				body.append('nonce', nonce);
+				body.append('offset', offset);
+				body.append('limit', BATCH_SIZE);
+				activeTypes.forEach(function(t) { body.append('types[]', t); });
+
+				fetch(ajaxurl, { method: 'POST', body: body })
+					.then(function(r) { return r.json(); })
+					.then(function(data) {
+						if (data.success) {
+							runBatch(offset + BATCH_SIZE, totalPosts, activeTypes, nonce);
+						} else {
+							var msg = data.data && data.data.message ? data.data.message : 'onbekend';
+							scanStatus.textContent = 'Fout: ' + msg;
+							scanBtn.disabled = false;
+						}
+					})
+					.catch(function(err) {
+						scanStatus.textContent = 'Netwerkfout: ' + err;
+						scanBtn.disabled = false;
+					});
+			}
 
 			if (scanBtn) {
 				scanBtn.addEventListener('click', function() {
@@ -219,31 +265,36 @@ class ToolsTab {
 						return;
 					}
 
+					var nonce = scanBtn.dataset.nonce;
 					scanBtn.disabled = true;
-					scanSpinner.style.display = 'inline-block';
-					scanStatus.textContent = 'Bezig met scannen…';
+					scanStatus.textContent = 'Initialiseren…';
+					progressWrap.style.display = 'block';
+					setProgress(0, 1);
 
 					var body = new URLSearchParams();
-					body.append('action', 'tbmm_scan_unmanaged');
-					body.append('nonce', scanBtn.dataset.nonce);
+					body.append('action', 'tbmm_unmanaged_init');
+					body.append('nonce', nonce);
 					types.forEach(function(t) { body.append('types[]', t); });
 
 					fetch(ajaxurl, { method: 'POST', body: body })
 						.then(function(r) { return r.json(); })
 						.then(function(data) {
 							if (data.success) {
-								scanStatus.textContent = 'Scan klaar — ' + data.data.total + ' links gevonden. Pagina wordt herladen…';
-								setTimeout(function() { window.location.reload(); }, 1200);
+								var totalPosts  = data.data.total_posts;
+								var activeTypes = data.data.active_types;
+								scanStatus.textContent = 'Scannen…';
+								runBatch(0, totalPosts, activeTypes, nonce);
 							} else {
-								scanStatus.textContent = 'Fout: ' + (data.data && data.data.message ? data.data.message : 'onbekend');
+								var msg = data.data && data.data.message ? data.data.message : 'onbekend';
+								scanStatus.textContent = 'Fout: ' + msg;
 								scanBtn.disabled = false;
-								scanSpinner.style.display = 'none';
+								progressWrap.style.display = 'none';
 							}
 						})
 						.catch(function(err) {
 							scanStatus.textContent = 'Netwerkfout: ' + err;
 							scanBtn.disabled = false;
-							scanSpinner.style.display = 'none';
+							progressWrap.style.display = 'none';
 						});
 				});
 			}

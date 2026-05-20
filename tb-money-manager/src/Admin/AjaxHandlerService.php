@@ -39,7 +39,8 @@ class AjaxHandlerService {
 		add_action( 'wp_ajax_tbmm_orphan_save',              [ $this, 'handle_orphan_save' ] );
 		add_action( 'wp_ajax_tbmm_orphan_find_articles',     [ $this, 'handle_orphan_find_articles' ] );
 		add_action( 'wp_ajax_tbmm_feed_search',              [ $this, 'handle_feed_search' ] );
-		add_action( 'wp_ajax_tbmm_scan_unmanaged',           [ $this, 'handle_scan_unmanaged' ] );
+		add_action( 'wp_ajax_tbmm_unmanaged_init',           [ $this, 'handle_unmanaged_init' ] );
+		add_action( 'wp_ajax_tbmm_unmanaged_batch',          [ $this, 'handle_unmanaged_batch' ] );
 		add_action( 'wp_ajax_tbmm_replace_unmanaged_link',   [ $this, 'handle_replace_unmanaged_link' ] );
 	}
 
@@ -279,7 +280,7 @@ class AjaxHandlerService {
 	 * @param  mixed[] $raw
 	 * @return array[]
 	 */
-	public function handle_scan_unmanaged(): void {
+	public function handle_unmanaged_init(): void {
 		$this->authorize( 'tbmm_unmanaged_nonce' );
 
 		$all_types    = array_keys( UnmanagedLinkScanner::TYPES );
@@ -290,9 +291,28 @@ class AjaxHandlerService {
 			wp_send_json_error( [ 'message' => 'Geen geldige patronen geselecteerd.' ] );
 		}
 
-		$total = $this->unmanaged_scanner->scan( $active_types );
+		$total_posts = $this->unmanaged_scanner->scan_init( $active_types );
 
-		wp_send_json_success( [ 'total' => $total ] );
+		wp_send_json_success( [
+			'total_posts'  => $total_posts,
+			'active_types' => $active_types,
+		] );
+	}
+
+	public function handle_unmanaged_batch(): void {
+		$this->authorize( 'tbmm_unmanaged_nonce' );
+
+		$offset = isset( $_POST['offset'] ) ? (int) $_POST['offset'] : 0;
+		$limit  = isset( $_POST['limit'] )  ? (int) $_POST['limit']  : 15;
+		$limit  = min( max( $limit, 1 ), 50 );
+
+		$all_types    = array_keys( UnmanagedLinkScanner::TYPES );
+		$raw_types    = isset( $_POST['types'] ) && is_array( $_POST['types'] ) ? $_POST['types'] : $all_types;
+		$active_types = array_values( array_intersect( array_map( 'sanitize_key', $raw_types ), $all_types ) );
+
+		$found = $this->unmanaged_scanner->scan_batch( $offset, $limit, $active_types );
+
+		wp_send_json_success( [ 'found' => $found ] );
 	}
 
 	public function handle_replace_unmanaged_link(): void {

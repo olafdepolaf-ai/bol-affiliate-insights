@@ -8,8 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class UnmanagedLinkScanner {
 
-	const TABLE      = 'tbmm_unmanaged_links';
-	const META_OPTION = 'tbmm_unmanaged_scan_meta';
+	const TABLE = 'tbmm_unmanaged_links';
 
 	// Patroontypen die gescand worden
 	const TYPES = array(
@@ -20,27 +19,47 @@ class UnmanagedLinkScanner {
 		'amazon_direct'   => 'Amazon (geen affiliate tag!) ⚠',
 	);
 
-	public function scan( array $active_types ): int {
+	public function scan_init( array $active_types ): int {
 		global $wpdb;
 		$table = $wpdb->prefix . self::TABLE;
 
 		$wpdb->query( "TRUNCATE TABLE {$table}" );
 
 		$ta_index = $this->build_ta_index();
+		set_transient( 'tbmm_unmanaged_ta_index',    $ta_index,    600 );
+		set_transient( 'tbmm_unmanaged_active_types', $active_types, 600 );
 
-		$posts = $wpdb->get_results(
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts}
+			 WHERE post_status = 'publish' AND post_type IN ('post', 'page')"
+		);
+	}
+
+	public function scan_batch( int $offset, int $limit, array $active_types ): int {
+		global $wpdb;
+		$table = $wpdb->prefix . self::TABLE;
+
+		$ta_index = get_transient( 'tbmm_unmanaged_ta_index' );
+		if ( ! is_array( $ta_index ) ) {
+			$ta_index = $this->build_ta_index();
+		}
+
+		$posts = $wpdb->get_results( $wpdb->prepare(
 			"SELECT ID, post_title, post_content
 			 FROM {$wpdb->posts}
-			 WHERE post_status = 'publish'
-			   AND post_type IN ('post', 'page')
-			 ORDER BY ID ASC"
-		);
+			 WHERE post_status = 'publish' AND post_type IN ('post', 'page')
+			 ORDER BY ID ASC
+			 LIMIT %d OFFSET %d",
+			$limit,
+			$offset
+		) );
 
-		$total = 0;
+		$found = 0;
+		$now   = current_time( 'mysql' );
 
 		foreach ( $posts as $post ) {
-			$found = $this->extract_links( $post->post_content );
-			foreach ( $found as $link ) {
+			$links = $this->extract_links( $post->post_content );
+			foreach ( $links as $link ) {
 				$type = $this->classify_url( $link['url'] );
 				if ( ! $type || ! in_array( $type, $active_types, true ) ) {
 					continue;
@@ -58,20 +77,15 @@ class UnmanagedLinkScanner {
 						'ta_link_id'      => $ta_match ? $ta_match['id'] : null,
 						'ta_link_name'    => $ta_match ? $ta_match['name'] : null,
 						'ta_redirect_url' => $ta_match ? $ta_match['redirect_url'] : null,
+						'scanned_at'      => $now,
 					),
-					array( '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+					array( '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' )
 				);
-				$total++;
+				$found++;
 			}
 		}
 
-		update_option( self::META_OPTION, array(
-			'scanned_at'   => current_time( 'mysql' ),
-			'total'        => $total,
-			'active_types' => $active_types,
-		), false );
-
-		return $total;
+		return $found;
 	}
 
 	public function get_results( array $type_filter = array() ): array {
@@ -96,7 +110,22 @@ class UnmanagedLinkScanner {
 	}
 
 	public function get_scan_meta(): array {
-		return (array) get_option( self::META_OPTION, array() );
+		global $wpdb;
+		$table = $wpdb->prefix . self::TABLE;
+
+		$row = $wpdb->get_row(
+			"SELECT COUNT(*) as total, MAX(scanned_at) as scanned_at FROM {$table}",
+			ARRAY_A
+		);
+
+		if ( ! $row || $row['scanned_at'] === null ) {
+			return array();
+		}
+
+		return array(
+			'scanned_at' => $row['scanned_at'],
+			'total'      => (int) $row['total'],
+		);
 	}
 
 	public function replace_link( int $row_id ): array|\WP_Error {

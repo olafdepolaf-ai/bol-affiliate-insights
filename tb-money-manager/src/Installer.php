@@ -36,6 +36,7 @@ class Installer {
 			ta_link_id      BIGINT UNSIGNED NULL,
 			ta_link_name    VARCHAR(500)    NULL,
 			ta_redirect_url TEXT            NULL,
+			scanned_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY post_id (post_id),
 			KEY link_type (link_type)
@@ -49,6 +50,7 @@ class Installer {
 		$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . ScanCacheService::TABLE );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . UnmanagedLinkScanner::TABLE );
-		delete_option( UnmanagedLinkScanner::META_OPTION );
+		delete_transient( 'tbmm_unmanaged_ta_index' );
+		delete_transient( 'tbmm_unmanaged_active_types' );
 	}
 }
