@@ -7,6 +7,7 @@ use TuinenBalkon\TBMoneyManager\Service\OrphanedLinkScanner;
 use TuinenBalkon\TBMoneyManager\Service\ScanCacheService;
 use TuinenBalkon\TBMoneyManager\Service\ThirstyAffiliatesService;
 use TuinenBalkon\TBMoneyManager\Service\TradeTrackerService;
+use TuinenBalkon\TBMoneyManager\Service\UnmanagedLinkScanner;
 
 class AjaxHandlerService {
 
@@ -15,26 +16,31 @@ class AjaxHandlerService {
 	private ScanCacheService         $scan_cache;
 	private ThirstyAffiliatesService $ta_service;
 	private TradeTrackerService      $tt_service;
+	private UnmanagedLinkScanner     $unmanaged_scanner;
 
 	public function __construct(
 		LinkScanner $link_scanner,
 		OrphanedLinkScanner $orphaned_scanner,
 		ScanCacheService $scan_cache,
 		ThirstyAffiliatesService $ta_service,
-		TradeTrackerService $tt_service
+		TradeTrackerService $tt_service,
+		UnmanagedLinkScanner $unmanaged_scanner
 	) {
-		$this->link_scanner     = $link_scanner;
-		$this->orphaned_scanner = $orphaned_scanner;
-		$this->scan_cache       = $scan_cache;
-		$this->ta_service       = $ta_service;
-		$this->tt_service       = $tt_service;
+		$this->link_scanner      = $link_scanner;
+		$this->orphaned_scanner  = $orphaned_scanner;
+		$this->scan_cache        = $scan_cache;
+		$this->ta_service        = $ta_service;
+		$this->tt_service        = $tt_service;
+		$this->unmanaged_scanner = $unmanaged_scanner;
 
-		add_action( 'wp_ajax_tbmm_check_link',            [ $this, 'handle_check_link' ] );
-		add_action( 'wp_ajax_tbmm_orphan_init',           [ $this, 'handle_orphan_init' ] );
-		add_action( 'wp_ajax_tbmm_orphan_batch',          [ $this, 'handle_orphan_batch' ] );
-		add_action( 'wp_ajax_tbmm_orphan_save',           [ $this, 'handle_orphan_save' ] );
-		add_action( 'wp_ajax_tbmm_orphan_find_articles',  [ $this, 'handle_orphan_find_articles' ] );
-		add_action( 'wp_ajax_tbmm_feed_search',           [ $this, 'handle_feed_search' ] );
+		add_action( 'wp_ajax_tbmm_check_link',               [ $this, 'handle_check_link' ] );
+		add_action( 'wp_ajax_tbmm_orphan_init',              [ $this, 'handle_orphan_init' ] );
+		add_action( 'wp_ajax_tbmm_orphan_batch',             [ $this, 'handle_orphan_batch' ] );
+		add_action( 'wp_ajax_tbmm_orphan_save',              [ $this, 'handle_orphan_save' ] );
+		add_action( 'wp_ajax_tbmm_orphan_find_articles',     [ $this, 'handle_orphan_find_articles' ] );
+		add_action( 'wp_ajax_tbmm_feed_search',              [ $this, 'handle_feed_search' ] );
+		add_action( 'wp_ajax_tbmm_scan_unmanaged',           [ $this, 'handle_scan_unmanaged' ] );
+		add_action( 'wp_ajax_tbmm_replace_unmanaged_link',   [ $this, 'handle_replace_unmanaged_link' ] );
 	}
 
 	/**
@@ -273,6 +279,39 @@ class AjaxHandlerService {
 	 * @param  mixed[] $raw
 	 * @return array[]
 	 */
+	public function handle_scan_unmanaged(): void {
+		$this->authorize( 'tbmm_unmanaged_nonce' );
+
+		$all_types    = array_keys( UnmanagedLinkScanner::TYPES );
+		$raw_types    = isset( $_POST['types'] ) && is_array( $_POST['types'] ) ? $_POST['types'] : $all_types;
+		$active_types = array_values( array_intersect( array_map( 'sanitize_key', $raw_types ), $all_types ) );
+
+		if ( empty( $active_types ) ) {
+			wp_send_json_error( [ 'message' => 'Geen geldige patronen geselecteerd.' ] );
+		}
+
+		$total = $this->unmanaged_scanner->scan( $active_types );
+
+		wp_send_json_success( [ 'total' => $total ] );
+	}
+
+	public function handle_replace_unmanaged_link(): void {
+		$this->authorize( 'tbmm_unmanaged_nonce' );
+
+		$row_id = isset( $_POST['row_id'] ) ? (int) $_POST['row_id'] : 0;
+		if ( $row_id <= 0 ) {
+			wp_send_json_error( [ 'message' => 'Ongeldig row-ID.' ] );
+		}
+
+		$result = $this->unmanaged_scanner->replace_link( $row_id );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+		}
+
+		wp_send_json_success( $result );
+	}
+
 	private function normalize_products( array $raw ): array {
 		$products = [];
 		foreach ( $raw as $item ) {

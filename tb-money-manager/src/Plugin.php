@@ -4,6 +4,7 @@ namespace TuinenBalkon\TBMoneyManager;
 
 use TuinenBalkon\TBMoneyManager\Admin\AjaxHandlerService;
 use TuinenBalkon\TBMoneyManager\Admin\BolTab;
+use TuinenBalkon\TBMoneyManager\Admin\ToolsTab;
 use TuinenBalkon\TBMoneyManager\Admin\DashboardWidget;
 use TuinenBalkon\TBMoneyManager\Admin\MenuService;
 use TuinenBalkon\TBMoneyManager\Admin\ScanPage;
@@ -15,6 +16,7 @@ use TuinenBalkon\TBMoneyManager\Service\PostFinder;
 use TuinenBalkon\TBMoneyManager\Service\ScanCacheService;
 use TuinenBalkon\TBMoneyManager\Service\ThirstyAffiliatesService;
 use TuinenBalkon\TBMoneyManager\Service\TradeTrackerService;
+use TuinenBalkon\TBMoneyManager\Service\UnmanagedLinkScanner;
 
 class Plugin {
 
@@ -26,6 +28,16 @@ class Plugin {
 
 		// Al het overige initialiseert alleen voor ingelogde administrators.
 		add_action( 'init', [ $this, 'init_for_admins' ] );
+		add_action( 'admin_init', [ $this, 'maybe_upgrade_db' ] );
+	}
+
+	public function maybe_upgrade_db(): void {
+		$installed = (int) get_option( 'tbmm_db_version', 0 );
+		if ( $installed >= 2 ) {
+			return;
+		}
+		Installer::activate();
+		update_option( 'tbmm_db_version', 2, false );
 	}
 
 	public function init_for_admins(): void {
@@ -44,9 +56,11 @@ class Plugin {
 		$tt_tab           = new TradeTrackerTab( $tt_service, $ta_service, $orphaned_scanner );
 		$ta_tab           = new TATab( $ta_service, $orphaned_scanner, $scan_cache );
 		$bol_tab          = new BolTab();
-		$scan_page        = new ScanPage( $link_scanner, $tt_tab, $ta_tab, $bol_tab );
+		$unmanaged        = new UnmanagedLinkScanner();
+		$tools_tab        = new ToolsTab( $unmanaged );
+		$scan_page        = new ScanPage( $link_scanner, $tt_tab, $ta_tab, $bol_tab, $tools_tab );
 		new MenuService( $scan_page );
-		new AjaxHandlerService( $link_scanner, $orphaned_scanner, $scan_cache, $ta_service, $tt_service );
+		new AjaxHandlerService( $link_scanner, $orphaned_scanner, $scan_cache, $ta_service, $tt_service, $unmanaged );
 
 		add_filter(
 			'plugin_action_links_' . plugin_basename( TBMM_FILE ),

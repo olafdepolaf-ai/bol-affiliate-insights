@@ -3,6 +3,7 @@
 namespace TuinenBalkon\TBMoneyManager\Admin;
 
 use TuinenBalkon\TBMoneyManager\Service\LinkScanner;
+use TuinenBalkon\TBMoneyManager\Admin\ToolsTab;
 
 class ScanPage {
 
@@ -10,12 +11,14 @@ class ScanPage {
 	private TradeTrackerTab $tt_tab;
 	private TATab $ta_tab;
 	private BolTab $bol_tab;
+	private ToolsTab $tools_tab;
 
-	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab ) {
+	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, ToolsTab $tools_tab ) {
 		$this->link_scanner = $link_scanner;
 		$this->tt_tab       = $tt_tab;
 		$this->ta_tab       = $ta_tab;
 		$this->bol_tab      = $bol_tab;
+		$this->tools_tab    = $tools_tab;
 	}
 
 	public function render(): void {
@@ -43,6 +46,7 @@ class ScanPage {
 			'tradetracker' => 'TradeTracker',
 			'ta'           => 'ThirstyAffiliates',
 			'bol'          => 'Bol.com',
+			'tools'        => 'Tools',
 		];
 
 		if ( ! function_exists( 'get_plugin_data' ) ) {
@@ -86,6 +90,8 @@ class ScanPage {
 				<?php $this->ta_tab->render(); ?>
 			<?php elseif ( $current_tab === 'bol' ) : ?>
 				<?php $this->bol_tab->render(); ?>
+			<?php elseif ( $current_tab === 'tools' ) : ?>
+				<?php $this->tools_tab->render(); ?>
 			<?php else : ?>
 				<?php $this->render_scanner(); ?>
 			<?php endif; ?>
