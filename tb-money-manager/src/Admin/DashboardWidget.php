@@ -17,10 +17,18 @@ class DashboardWidget {
 	}
 
 	public function register(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		wp_add_dashboard_widget(
 			'tbmm_earnings_widget',
 			'TB Money Manager — Verdiensten laatste 30 dagen',
-			[ $this, 'render' ]
+			[ $this, 'render' ],
+			null,
+			null,
+			'side',
+			'high'
 		);
 	}
 
