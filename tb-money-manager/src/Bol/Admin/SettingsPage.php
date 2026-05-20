@@ -703,6 +703,191 @@ class SettingsPage {
 				echo '</tbody></table>';
 			}
 
+		} elseif ( $active_tab === 'link_generator' ) {
+			$site_id = trim( (string) get_option( 'tbmm_bol_site_id', '' ) );
+			?>
+			<h3>Bol.com Linkgenerator</h3>
+			<p>Plak een bol.com URL en genereer direct een schone affiliate-trackinglink.</p>
+			<?php if ( empty( $site_id ) ) : ?>
+			<div class="notice notice-warning inline" style="margin-bottom:16px;"><p><strong>Site ID niet ingesteld.</strong> Ga naar <a href="<?php echo esc_url( admin_url( 'admin.php?page=tb-money-manager&tab=bol&subtab=settings' ) ); ?>">Instellingen</a> om je Affiliate Site ID in te vullen.</p></div>
+			<?php endif; ?>
+
+			<div id="tbmm-link-generator" style="max-width:720px;">
+				<table class="form-table" role="presentation" style="margin-bottom:0;">
+					<tr>
+						<th scope="row"><label for="lg-url">Bol.com URL</label></th>
+						<td><input type="url" id="lg-url" class="large-text" placeholder="Plak hier de URL uit je browser..."></td>
+					</tr>
+					<tr>
+						<th scope="row">Type</th>
+						<td>
+							<label style="margin-right:16px;"><input type="radio" name="lg-type" value="text" checked> Tekstlink</label>
+							<label style="margin-right:16px;"><input type="radio" name="lg-type" value="html"> HTML-link</label>
+							<label><input type="radio" name="lg-type" value="product"> Productlink</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lg-name">Link naam</label></th>
+						<td>
+							<input type="text" id="lg-name" class="regular-text" placeholder="Automatisch gegenereerd...">
+							<p class="description">Wordt gebruikt voor rapportage (<code>name=</code>). Automatisch ingevuld op basis van de URL — pas aan indien gewenst.</p>
+						</td>
+					</tr>
+					<tr id="lg-anchor-row" style="display:none;">
+						<th scope="row"><label for="lg-anchor">Ankertekst</label></th>
+						<td><input type="text" id="lg-anchor" class="regular-text" placeholder="Tekst die de bezoeker ziet..."></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lg-subid">SubID</label></th>
+						<td>
+							<input type="text" id="lg-subid" class="regular-text" placeholder="bijv. sidebar, review-pagina...">
+							<p class="description">Optioneel. Gebruik je voor tracking per plaatsing (<code>subid=</code>).</p>
+						</td>
+					</tr>
+				</table>
+				<p style="margin-top:8px;"><button type="button" id="lg-generate-btn" class="button button-primary">Genereer link</button></p>
+
+				<div id="lg-result" style="display:none;margin-top:20px;padding:16px;background:#fff;border:1px solid #c3c4c7;border-radius:3px;">
+					<h4 style="margin:0 0 8px;">Resultaat</h4>
+					<textarea id="lg-output" rows="3" class="large-text" readonly style="font-family:monospace;font-size:12px;background:#f9f9f9;resize:vertical;"></textarea>
+					<div style="margin-top:8px;display:flex;align-items:center;gap:12px;">
+						<button type="button" id="lg-copy-btn" class="button">&#128203; Kopieer</button>
+						<span id="lg-copy-confirm" style="color:green;display:none;">✔ Gekopieerd!</span>
+					</div>
+					<div id="lg-preview" style="display:none;margin-top:12px;padding:8px 12px;background:#f0f6fc;border-left:3px solid #2271b1;border-radius:0 3px 3px 0;">
+						<strong style="font-size:12px;color:#646970;">Preview:</strong><br>
+						<span id="lg-preview-link" style="font-size:13px;"></span>
+					</div>
+					<div id="lg-clean-url-info" style="margin-top:8px;font-size:11px;color:#646970;"></div>
+				</div>
+			</div>
+
+			<script>
+			(function() {
+				var siteId = <?php echo wp_json_encode( $site_id ); ?>;
+
+				function slugToTitle( slug ) {
+					var parts = slug.replace( /\/$/, '' ).split( '/' ).filter( function( p ) {
+						return p && !/^\d+$/.test( p );
+					} );
+					var last = parts[ parts.length - 1 ] || '';
+					return last.split( '-' ).filter( Boolean ).slice( 0, 4 ).map( function( w ) {
+						return w.charAt(0).toUpperCase() + w.slice(1);
+					} ).join( ' ' );
+				}
+
+				function cleanBolUrl( rawUrl ) {
+					try {
+						var url = new URL( rawUrl );
+						if ( ! url.hostname.includes( 'bol.com' ) ) return null;
+						url.hostname = 'www.bol.com';
+						var path = url.pathname;
+						if ( path !== '/' && ! path.endsWith( '/' ) ) path += '/';
+						if ( path.includes( '/s/' ) ) {
+							var search = ( url.searchParams.get( 'searchtext' ) || '' ).replace( /\+/g, ' ' );
+							if ( ! search ) return 'https://www.bol.com' + path;
+							return 'https://www.bol.com' + path + '?searchtext=' + encodeURIComponent( search );
+						}
+						return 'https://www.bol.com' + path;
+					} catch(e) { return null; }
+				}
+
+				function autoName( rawUrl ) {
+					try {
+						var url = new URL( rawUrl );
+						var path = url.pathname;
+						if ( path === '/' || path === '' ) return '';
+						if ( path.includes( '/s/' ) ) {
+							var s = ( url.searchParams.get( 'searchtext' ) || '' ).replace( /\+/g, ' ' ).trim();
+							return s.split( ' ' ).filter(Boolean).slice( 0, 4 ).map( function(w) {
+								return w.charAt(0).toUpperCase() + w.slice(1);
+							} ).join( ' ' );
+						}
+						return slugToTitle( path );
+					} catch(e) { return ''; }
+				}
+
+				function buildAffiliateUrl( cleanUrl, name, subId ) {
+					var encoded = encodeURIComponent( cleanUrl );
+					var qs = 'p=2&t=url&s=' + encodeURIComponent( siteId ) + '&f=TXL&url=' + encoded + '&name=' + encodeURIComponent( name );
+					if ( subId ) qs += '&subid=' + encodeURIComponent( subId );
+					return 'https://partner.bol.com/click/click?' + qs;
+				}
+
+				var urlInput  = document.getElementById( 'lg-url' );
+				var nameInput = document.getElementById( 'lg-name' );
+				var anchorInput = document.getElementById( 'lg-anchor' );
+
+				urlInput.addEventListener( 'input', function() {
+					if ( nameInput.dataset.manuallyEdited ) return;
+					var name = autoName( this.value );
+					nameInput.value  = name;
+					if ( ! anchorInput.dataset.manuallyEdited ) anchorInput.value = name;
+				} );
+
+				nameInput.addEventListener( 'input', function() {
+					this.dataset.manuallyEdited = '1';
+				} );
+
+				anchorInput.addEventListener( 'input', function() {
+					this.dataset.manuallyEdited = '1';
+				} );
+
+				document.querySelectorAll( 'input[name="lg-type"]' ).forEach( function( radio ) {
+					radio.addEventListener( 'change', function() {
+						document.getElementById( 'lg-anchor-row' ).style.display = ( this.value === 'html' ) ? '' : 'none';
+					} );
+				} );
+
+				document.getElementById( 'lg-generate-btn' ).addEventListener( 'click', function() {
+					if ( ! siteId ) { alert( 'Site ID is niet ingesteld. Ga naar Instellingen en vul je Affiliate Site ID in.' ); return; }
+					var rawUrl = urlInput.value.trim();
+					if ( ! rawUrl ) { alert( 'Vul eerst een bol.com URL in.' ); return; }
+					var cleanUrl = cleanBolUrl( rawUrl );
+					if ( ! cleanUrl ) { alert( 'Dit lijkt geen geldige bol.com URL te zijn.' ); return; }
+
+					var name   = nameInput.value.trim();
+					var subId  = document.getElementById( 'lg-subid' ).value.trim();
+					var type   = document.querySelector( 'input[name="lg-type"]:checked' ).value;
+					var anchor = anchorInput.value.trim() || name || 'Bekijk op bol.com';
+
+					var affUrl = buildAffiliateUrl( cleanUrl, name, subId );
+					var output, showPreview = false;
+
+					if ( type === 'html' ) {
+						output = '<a href="' + affUrl + '">' + anchor + '</a>';
+						document.getElementById( 'lg-preview-link' ).innerHTML =
+							'<a href="' + affUrl + '" target="_blank" rel="noopener noreferrer">' + anchor + '</a>';
+						showPreview = true;
+					} else {
+						output = affUrl;
+					}
+
+					document.getElementById( 'lg-output' ).value  = output;
+					document.getElementById( 'lg-result' ).style.display = '';
+					document.getElementById( 'lg-preview' ).style.display = showPreview ? '' : 'none';
+					document.getElementById( 'lg-copy-confirm' ).style.display = 'none';
+					document.getElementById( 'lg-clean-url-info' ).textContent =
+						'Opgeschoonde doel-URL: ' + cleanUrl;
+				} );
+
+				document.getElementById( 'lg-copy-btn' ).addEventListener( 'click', function() {
+					var ta = document.getElementById( 'lg-output' );
+					ta.select();
+					ta.setSelectionRange( 0, 99999 );
+					try {
+						document.execCommand( 'copy' );
+					} catch(e) {
+						navigator.clipboard && navigator.clipboard.writeText( ta.value );
+					}
+					var confirm = document.getElementById( 'lg-copy-confirm' );
+					confirm.style.display = 'inline';
+					setTimeout( function() { confirm.style.display = 'none'; }, 2500 );
+				} );
+			})();
+			</script>
+			<?php
+
 		} elseif ( $active_tab === 'settings' ) {
 			?>
 			<form action="options.php" method="post">

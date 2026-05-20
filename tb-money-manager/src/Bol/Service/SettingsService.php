@@ -21,12 +21,14 @@ class SettingsService {
 		register_setting( $options_group, 'bol_affiliate_insights_credentials', array( $this, 'sanitize_credentials' ) );
 		register_setting( $options_group, 'bol_affiliate_insights_selected_website', 'sanitize_text_field' );
 		register_setting( $options_group, 'bol_affiliate_insights_debug_enabled', array( $this, 'sanitize_debug_flag' ) );
+		register_setting( $options_group, 'tbmm_bol_site_id', 'sanitize_text_field' );
 
 		$page = 'bol-affiliate-insights-settings';
 
 		add_settings_section( 'bol_api_credentials_section', 'API Credentials', array( $this, 'render_api_credentials_section_text' ), $page );
 		add_settings_field( 'bol_client_id', 'Client ID', array( $this, 'render_client_id_field' ), $page, 'bol_api_credentials_section', array( 'label_for' => 'bol_client_id_field' ) );
 		add_settings_field( 'bol_client_secret', 'Client Secret', array( $this, 'render_client_secret_field' ), $page, 'bol_api_credentials_section', array( 'label_for' => 'bol_client_secret_field' ) );
+		add_settings_field( 'tbmm_bol_site_id', 'Affiliate Site ID', array( $this, 'render_site_id_field' ), $page, 'bol_api_credentials_section', array( 'label_for' => 'tbmm_bol_site_id_field' ) );
 
 		add_settings_section( 'bol_data_filters_section', 'Data Filters', array( $this, 'render_data_filters_section_text' ), $page );
 		add_settings_field( 'bol_selected_website', 'Filter data by Website', array( $this, 'render_selected_website_field' ), $page, 'bol_data_filters_section', array( 'label_for' => 'bol_selected_website_field' ) );
@@ -49,6 +51,12 @@ class SettingsService {
 		$options = get_option( 'bol_affiliate_insights_credentials' );
 		$value   = isset( $options['client_secret'] ) ? $options['client_secret'] : '';
 		echo "<input type='password' id='bol_client_secret_field' name='bol_affiliate_insights_credentials[client_secret]' value='" . esc_attr( $value ) . "' class='regular-text'>";
+	}
+
+	public function render_site_id_field(): void {
+		$value = get_option( 'tbmm_bol_site_id', '' );
+		echo "<input type='text' id='tbmm_bol_site_id_field' name='tbmm_bol_site_id' value='" . esc_attr( $value ) . "' class='regular-text' placeholder='bijv. 10048'>";
+		echo "<p class='description'>Je unieke Site ID voor de <a href='https://partner.bol.com' target='_blank' rel='noopener'>bol.com partner.bol.com</a> tracking-links (te vinden in je partnerportaal).</p>";
 	}
 
 	public function render_data_filters_section_text(): void {

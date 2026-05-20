@@ -47,6 +47,7 @@ class BolTab {
 			'analysis'           => 'Analyse',
 			'drop_analysis'      => 'Klik-drop',
 			'affiliate_links'    => 'Affiliate Links',
+			'link_generator'     => 'Linkgenerator',
 		);
 		?>
 		<style>
