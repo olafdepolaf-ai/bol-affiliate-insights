@@ -704,16 +704,67 @@ class SettingsPage {
 			}
 
 		} elseif ( $active_tab === 'link_generator' ) {
-			$site_id = trim( (string) get_option( 'tbmm_bol_site_id', '' ) );
+			// Resolve Site ID — priority: selected website > single available site > manual fallback
+			$selected_website = get_option( 'bol_affiliate_insights_selected_website', 'all_sites' );
+			$available_sites  = array();
+			$resolved_site_id = '';
+			$site_source      = '';
+
+			if ( $selected_website !== 'all_sites' ) {
+				$resolved_site_id = $selected_website;
+				$site_source      = 'selected';
+			} else {
+				$sites_cache_key = 'bol_available_sites_' . date( 'Y-m-d' );
+				$available_sites = get_transient( $sites_cache_key );
+				if ( false === $available_sites ) {
+					$fetched         = $api_client->get_available_sites();
+					$available_sites = ( ! empty( $fetched ) && is_array( $fetched ) ) ? $fetched : array();
+					set_transient( $sites_cache_key, $available_sites, DAY_IN_SECONDS );
+				}
+
+				if ( count( $available_sites ) === 1 ) {
+					$resolved_site_id = (string) array_key_first( $available_sites );
+					$site_source      = 'auto';
+				} elseif ( count( $available_sites ) > 1 ) {
+					$site_source = 'choose'; // user picks in the generator form
+				} else {
+					$resolved_site_id = trim( (string) get_option( 'tbmm_bol_site_id', '' ) );
+					$site_source      = $resolved_site_id ? 'manual' : '';
+				}
+			}
+
+			$settings_url = esc_url( admin_url( 'admin.php?page=tb-money-manager&tab=bol&subtab=settings' ) );
 			?>
 			<h3>Bol.com Linkgenerator</h3>
 			<p>Plak een bol.com URL en genereer direct een schone affiliate-trackinglink.</p>
-			<?php if ( empty( $site_id ) ) : ?>
-			<div class="notice notice-warning inline" style="margin-bottom:16px;"><p><strong>Site ID niet ingesteld.</strong> Ga naar <a href="<?php echo esc_url( admin_url( 'admin.php?page=tb-money-manager&tab=bol&subtab=settings' ) ); ?>">Instellingen</a> om je Affiliate Site ID in te vullen.</p></div>
+
+			<?php if ( $site_source === 'selected' ) : ?>
+				<div class="notice notice-success inline" style="margin-bottom:16px;"><p>Site ID <strong><?php echo esc_html( $resolved_site_id ); ?></strong> — afkomstig uit je geselecteerde website-instelling.</p></div>
+			<?php elseif ( $site_source === 'auto' ) :
+				$auto_name = reset( $available_sites ); ?>
+				<div class="notice notice-success inline" style="margin-bottom:16px;"><p>Site ID <strong><?php echo esc_html( $resolved_site_id ); ?></strong> — automatisch bepaald (<?php echo esc_html( $auto_name ); ?>, enige gekoppelde website).</p></div>
+			<?php elseif ( $site_source === 'manual' ) : ?>
+				<div class="notice notice-info inline" style="margin-bottom:16px;"><p>Site ID <strong><?php echo esc_html( $resolved_site_id ); ?></strong> — handmatig ingesteld. Koppel de <a href="<?php echo $settings_url; ?>">Bol.com API</a> voor automatische detectie.</p></div>
+			<?php elseif ( $site_source === 'choose' ) : ?>
+				<div class="notice notice-info inline" style="margin-bottom:16px;"><p>Je hebt meerdere gekoppelde websites. Kies hieronder welke je wilt gebruiken, of selecteer een specifieke website via <a href="<?php echo $settings_url; ?>">Instellingen</a>.</p></div>
+			<?php else : ?>
+				<div class="notice notice-warning inline" style="margin-bottom:16px;"><p><strong>Geen Site ID beschikbaar.</strong> <a href="<?php echo $settings_url; ?>">Koppel de Bol.com API</a> of vul het Site ID handmatig in via Instellingen.</p></div>
 			<?php endif; ?>
 
 			<div id="tbmm-link-generator" style="max-width:720px;">
 				<table class="form-table" role="presentation" style="margin-bottom:0;">
+					<?php if ( $site_source === 'choose' ) : ?>
+					<tr>
+						<th scope="row"><label for="lg-site">Website</label></th>
+						<td>
+							<select id="lg-site">
+								<?php foreach ( $available_sites as $code => $name ) : ?>
+									<option value="<?php echo esc_attr( $code ); ?>"><?php echo esc_html( $name ); ?> — Site ID: <?php echo esc_html( $code ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<?php endif; ?>
 					<tr>
 						<th scope="row"><label for="lg-url">Bol.com URL</label></th>
 						<td><input type="url" id="lg-url" class="large-text" placeholder="Plak hier de URL uit je browser..."></td>
@@ -764,7 +815,16 @@ class SettingsPage {
 
 			<script>
 			(function() {
-				var siteId = <?php echo wp_json_encode( $site_id ); ?>;
+				var resolvedSiteId = <?php echo wp_json_encode( $resolved_site_id ); ?>;
+				var siteSource     = <?php echo wp_json_encode( $site_source ); ?>;
+
+				function getActiveSiteId() {
+					if ( siteSource === 'choose' ) {
+						var sel = document.getElementById( 'lg-site' );
+						return sel ? sel.value : '';
+					}
+					return resolvedSiteId;
+				}
 
 				function slugToTitle( slug ) {
 					var parts = slug.replace( /\/$/, '' ).split( '/' ).filter( function( p ) {
@@ -807,21 +867,21 @@ class SettingsPage {
 					} catch(e) { return ''; }
 				}
 
-				function buildAffiliateUrl( cleanUrl, name, subId ) {
+				function buildAffiliateUrl( siteId, cleanUrl, name, subId ) {
 					var encoded = encodeURIComponent( cleanUrl );
 					var qs = 'p=2&t=url&s=' + encodeURIComponent( siteId ) + '&f=TXL&url=' + encoded + '&name=' + encodeURIComponent( name );
 					if ( subId ) qs += '&subid=' + encodeURIComponent( subId );
 					return 'https://partner.bol.com/click/click?' + qs;
 				}
 
-				var urlInput  = document.getElementById( 'lg-url' );
-				var nameInput = document.getElementById( 'lg-name' );
+				var urlInput    = document.getElementById( 'lg-url' );
+				var nameInput   = document.getElementById( 'lg-name' );
 				var anchorInput = document.getElementById( 'lg-anchor' );
 
 				urlInput.addEventListener( 'input', function() {
 					if ( nameInput.dataset.manuallyEdited ) return;
 					var name = autoName( this.value );
-					nameInput.value  = name;
+					nameInput.value = name;
 					if ( ! anchorInput.dataset.manuallyEdited ) anchorInput.value = name;
 				} );
 
@@ -840,7 +900,8 @@ class SettingsPage {
 				} );
 
 				document.getElementById( 'lg-generate-btn' ).addEventListener( 'click', function() {
-					if ( ! siteId ) { alert( 'Site ID is niet ingesteld. Ga naar Instellingen en vul je Affiliate Site ID in.' ); return; }
+					var siteId = getActiveSiteId();
+					if ( ! siteId ) { alert( 'Geen Site ID beschikbaar. Ga naar Instellingen om de API te koppelen of het Site ID handmatig in te vullen.' ); return; }
 					var rawUrl = urlInput.value.trim();
 					if ( ! rawUrl ) { alert( 'Vul eerst een bol.com URL in.' ); return; }
 					var cleanUrl = cleanBolUrl( rawUrl );
@@ -851,7 +912,7 @@ class SettingsPage {
 					var type   = document.querySelector( 'input[name="lg-type"]:checked' ).value;
 					var anchor = anchorInput.value.trim() || name || 'Bekijk op bol.com';
 
-					var affUrl = buildAffiliateUrl( cleanUrl, name, subId );
+					var affUrl = buildAffiliateUrl( siteId, cleanUrl, name, subId );
 					var output, showPreview = false;
 
 					if ( type === 'html' ) {
@@ -863,12 +924,12 @@ class SettingsPage {
 						output = affUrl;
 					}
 
-					document.getElementById( 'lg-output' ).value  = output;
+					document.getElementById( 'lg-output' ).value = output;
 					document.getElementById( 'lg-result' ).style.display = '';
 					document.getElementById( 'lg-preview' ).style.display = showPreview ? '' : 'none';
 					document.getElementById( 'lg-copy-confirm' ).style.display = 'none';
 					document.getElementById( 'lg-clean-url-info' ).textContent =
-						'Opgeschoonde doel-URL: ' + cleanUrl;
+						'Opgeschoonde doel-URL: ' + cleanUrl + ' · Site ID: ' + siteId;
 				} );
 
 				document.getElementById( 'lg-copy-btn' ).addEventListener( 'click', function() {
