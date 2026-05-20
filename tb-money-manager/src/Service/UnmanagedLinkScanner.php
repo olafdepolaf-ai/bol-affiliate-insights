@@ -232,9 +232,9 @@ class UnmanagedLinkScanner {
 		if ( preg_match( '~^https?://(?:www\.)?bol\.com/~i', $url ) ) {
 			return 'bol_direct';
 		}
-		if ( preg_match( '~^https?://(?:www\.)?amazon\.(nl|de|com)/|^https?://amzn\.to/~i', $url ) ) {
-			// Link heeft een affiliate tag (bijv. tag=tuinennl-21) → al getrackt via Amazon Associates
-			// Link heeft geen tag → helemaal geen commissie
+		if ( preg_match( '~^https?://(?:www\.)?amazon\.(nl|de|com|co\.uk|fr|it|es|ca)/|^https?://amzn\.to/~i', $url ) ) {
+			// tag=tuinennl-21 (NL) of tag=tuienbal-21 (DE) → getrackt via Amazon Associates
+			// Geen tag → helemaal geen commissie
 			parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $params );
 			return isset( $params['tag'] ) && $params['tag'] !== '' ? 'amazon_tracked' : 'amazon_direct';
 		}
