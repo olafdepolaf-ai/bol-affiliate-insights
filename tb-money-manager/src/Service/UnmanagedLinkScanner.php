@@ -54,11 +54,13 @@ class UnmanagedLinkScanner {
 			$offset
 		) );
 
-		$found = 0;
-		$now   = current_time( 'mysql' );
+		$found       = 0;
+		$now         = current_time( 'mysql' );
+		$block_cache = array(); // wp_block post_content keyed by ref ID, shared across batch
 
 		foreach ( $posts as $post ) {
-			$links = $this->extract_links( $post->post_content );
+			$content = $this->resolve_block_refs( $post->post_content, $block_cache );
+			$links   = $this->extract_links( $content );
 			foreach ( $links as $link ) {
 				$type = $this->classify_url( $link['url'] );
 				if ( ! $type || ! in_array( $type, $active_types, true ) ) {
@@ -271,6 +273,25 @@ class UnmanagedLinkScanner {
 		}
 
 		return $index;
+	}
+
+	private function resolve_block_refs( string $content, array &$block_cache ): string {
+		if ( ! preg_match_all( '/<!--\s*wp:block\s+{"ref":(\d+)}/', $content, $matches ) ) {
+			return $content;
+		}
+		foreach ( array_unique( $matches[1] ) as $ref_id ) {
+			$ref_id = (int) $ref_id;
+			if ( ! isset( $block_cache[ $ref_id ] ) ) {
+				$block_post               = get_post( $ref_id );
+				$block_cache[ $ref_id ]   = ( $block_post && $block_post->post_type === 'wp_block' )
+					? $block_post->post_content
+					: '';
+			}
+			if ( $block_cache[ $ref_id ] ) {
+				$content .= "\n" . $block_cache[ $ref_id ];
+			}
+		}
+		return $content;
 	}
 
 	private function find_ta_match( string $url, array $ta_index ): ?array {
