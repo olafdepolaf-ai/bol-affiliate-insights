@@ -44,9 +44,10 @@ class MenuService {
 			'alc-bol-admin-settings',
 			'bol_settings_params',
 			array(
-				'nonce'             => wp_create_nonce( 'bol_test_connection_nonce' ),
-				'chart_nonce'       => wp_create_nonce( 'bol_fetch_chart_data_nonce' ),
-				'clear_cache_nonce' => wp_create_nonce( 'bol_clear_cache_nonce' ),
+				'nonce'                => wp_create_nonce( 'bol_test_connection_nonce' ),
+				'marketing_test_nonce' => wp_create_nonce( 'tbmm_bol_marketing_test_nonce' ),
+				'chart_nonce'          => wp_create_nonce( 'bol_fetch_chart_data_nonce' ),
+				'clear_cache_nonce'    => wp_create_nonce( 'bol_clear_cache_nonce' ),
 			)
 		);
 	}

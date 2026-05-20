@@ -34,42 +34,54 @@ jQuery(document).ready(function($) {
     }
 
 
-    $('#bol-test-connection-button').on('click', function() {
-        var resultsDiv = $('#bol-test-connection-results');
-        resultsDiv
+    function testApiConnection(buttonId, resultsId, action, nonce) {
+        var $button = $('#' + buttonId);
+        var $results = $('#' + resultsId);
+        $results
             .removeClass('bol-status-success bol-status-error')
-            .html('<span class="spinner is-active" style="float:none;margin:0 6px 0 0;"></span>Testing connection...');
-        $('#bol-test-connection-button').prop('disabled', true);
+            .html('<span class="spinner is-active" style="float:none;margin:0 6px 0 0;"></span>Verbinding testen…');
+        $button.prop('disabled', true);
 
         $.ajax({
-            url: ajaxurl, // WordPress global variable for AJAX URL
+            url: ajaxurl,
             type: 'POST',
-            data: {
-                action: 'bol_test_connection', // Matches the add_action hook
-                nonce: bol_settings_params.nonce // Nonce for security (will be localized)
-            },
+            data: { action: action, nonce: nonce },
             success: function(response) {
-                resultsDiv.removeClass('bol-status-success bol-status-error');
+                $results.removeClass('bol-status-success bol-status-error');
                 if (response.success) {
-                    resultsDiv
-                        .addClass('bol-status-success')
-                        .text(response.data.message);
+                    $results.addClass('bol-status-success').text('✔ ' + response.data.message);
                 } else {
-                    resultsDiv
-                        .addClass('bol-status-error')
-                        .text(response.data.message);
+                    $results.addClass('bol-status-error').text('✘ ' + response.data.message);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                resultsDiv
+                $results
                     .removeClass('bol-status-success')
                     .addClass('bol-status-error')
-                    .text('AJAX Error: ' + textStatus + ' - ' + errorThrown);
+                    .text('AJAX fout: ' + textStatus + ' — ' + errorThrown);
             },
             complete: function() {
-                $('#bol-test-connection-button').prop('disabled', false);
+                $button.prop('disabled', false);
             }
         });
+    }
+
+    $('#bol-test-connection-button').on('click', function() {
+        testApiConnection(
+            'bol-test-connection-button',
+            'bol-test-connection-results',
+            'bol_test_connection',
+            bol_settings_params.nonce
+        );
+    });
+
+    $('#bol-test-marketing-connection-button').on('click', function() {
+        testApiConnection(
+            'bol-test-marketing-connection-button',
+            'bol-test-marketing-connection-results',
+            'tbmm_bol_test_marketing_connection',
+            bol_settings_params.marketing_test_nonce
+        );
     });
 
     $('#bol-update-chart-button').on('click', function() {

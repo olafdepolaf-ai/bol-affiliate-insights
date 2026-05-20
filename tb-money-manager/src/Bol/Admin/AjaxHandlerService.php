@@ -22,7 +22,8 @@ class AjaxHandlerService {
 		$this->api_auth_service    = $api_auth_service;
 		$this->api_client          = $api_client;
 
-		add_action( 'wp_ajax_bol_test_connection',       array( $this, 'handle_test_connection_ajax' ) );
+		add_action( 'wp_ajax_bol_test_connection',                    array( $this, 'handle_test_connection_ajax' ) );
+		add_action( 'wp_ajax_tbmm_bol_test_marketing_connection',    array( $this, 'handle_test_marketing_connection_ajax' ) );
 		add_action( 'wp_ajax_bol_fetch_chart_data',      array( $this, 'handle_fetch_chart_data_ajax' ) );
 		add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
 		add_action( 'wp_ajax_bol_clear_cache',           array( $this, 'handle_clear_cache_ajax' ) );
@@ -45,6 +46,48 @@ class AjaxHandlerService {
 			wp_send_json_success( array( 'message' => 'Connection Successful! Access token obtained.' ) );
 		} else {
 			wp_send_json_error( array( 'message' => 'Connection Failed: Unknown error retrieving access token.' ) );
+		}
+	}
+
+	public function handle_test_marketing_connection_ajax(): void {
+		check_ajax_referer( 'tbmm_bol_marketing_test_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$credentials   = get_option( 'tbmm_bol_marketing_credentials', array() );
+		$client_id     = isset( $credentials['client_id'] )     ? trim( $credentials['client_id'] )     : '';
+		$client_secret = isset( $credentials['client_secret'] ) ? trim( $credentials['client_secret'] ) : '';
+
+		if ( empty( $client_id ) || empty( $client_secret ) ) {
+			wp_send_json_error( array( 'message' => 'Marketing API credentials zijn niet ingesteld. Vul Client ID en Client Secret in via de instellingen.' ) );
+			return;
+		}
+
+		$response = wp_remote_post(
+			'https://login.bol.com/token?grant_type=client_credentials',
+			array(
+				'headers' => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $client_secret ),
+				),
+				'timeout' => 20,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( array( 'message' => 'Verbindingsfout: ' . $response->get_error_message() ) );
+			return;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( 200 === $code && isset( $body['access_token'] ) ) {
+			wp_send_json_success( array( 'message' => 'Verbinding geslaagd! Access token ontvangen van Marketing Catalog API.' ) );
+		} else {
+			$detail = isset( $body['error_description'] ) ? $body['error_description'] : "HTTP $code";
+			wp_send_json_error( array( 'message' => 'Verbinding mislukt: ' . $detail ) );
 		}
 	}
 

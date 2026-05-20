@@ -27,7 +27,7 @@ class SettingsService {
 
 		$page = 'bol-affiliate-insights-settings';
 
-		add_settings_section( 'bol_api_credentials_section', 'API Credentials', array( $this, 'render_api_credentials_section_text' ), $page );
+		add_settings_section( 'bol_api_credentials_section', 'Reporting API — Credentials', array( $this, 'render_api_credentials_section_text' ), $page );
 		add_settings_field( 'bol_client_id', 'Client ID', array( $this, 'render_client_id_field' ), $page, 'bol_api_credentials_section', array( 'label_for' => 'bol_client_id_field' ) );
 		add_settings_field( 'bol_client_secret', 'Client Secret', array( $this, 'render_client_secret_field' ), $page, 'bol_api_credentials_section', array( 'label_for' => 'bol_client_secret_field' ) );
 
@@ -37,7 +37,7 @@ class SettingsService {
 		add_settings_section( 'bol_linkgenerator_section', 'Linkgenerator — handmatig Site ID', array( $this, 'render_linkgenerator_section_text' ), $page );
 		add_settings_field( 'tbmm_bol_site_id', 'Handmatig Site ID', array( $this, 'render_site_id_field' ), $page, 'bol_linkgenerator_section', array( 'label_for' => 'tbmm_bol_site_id_field' ) );
 
-		add_settings_section( 'bol_marketing_api_section', 'Marketing Catalog API', array( $this, 'render_marketing_api_section_text' ), $page );
+		add_settings_section( 'bol_marketing_api_section', 'Marketing Catalog API — Credentials', array( $this, 'render_marketing_api_section_text' ), $page );
 		add_settings_field( 'tbmm_marketing_client_id', 'Client ID', array( $this, 'render_marketing_client_id_field' ), $page, 'bol_marketing_api_section', array( 'label_for' => 'tbmm_marketing_client_id_field' ) );
 		add_settings_field( 'tbmm_marketing_client_secret', 'Client Secret', array( $this, 'render_marketing_client_secret_field' ), $page, 'bol_marketing_api_section', array( 'label_for' => 'tbmm_marketing_client_secret_field' ) );
 

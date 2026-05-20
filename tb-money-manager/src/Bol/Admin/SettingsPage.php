@@ -955,21 +955,34 @@ class SettingsPage {
 				<?php
 				settings_fields( 'bol_affiliate_insights_options_group' );
 				do_settings_sections( 'bol-affiliate-insights-settings' );
-				submit_button( 'Save Settings' );
+				submit_button( 'Instellingen opslaan' );
 				?>
 			</form>
 			<hr>
-			<h2>Test API Connection</h2>
-			<button type="button" id="bol-test-connection-button" class="button">Test Connection</button>
-			<div id="bol-test-connection-results"></div>
+			<h2>API verbindingen testen</h2>
+			<p>Test of de ingevoerde credentials een geldig access token kunnen ophalen bij bol.com.</p>
+			<div style="display:flex;gap:16px;margin-top:12px;margin-bottom:4px;">
+				<div style="flex:1;border:1px solid #c3c4c7;border-radius:3px;padding:16px 20px;">
+					<h3 style="margin:0 0 4px;">Reporting API</h3>
+					<p style="margin:0 0 12px;color:#646970;font-size:13px;">Gebruikt voor orders, commissies en promotie-rapporten. Credentials staan onder <em>API Credentials</em> hierboven.</p>
+					<button type="button" id="bol-test-connection-button" class="button">Verbinding testen</button>
+					<div id="bol-test-connection-results" style="margin-top:10px;font-size:13px;"></div>
+				</div>
+				<div style="flex:1;border:1px solid #c3c4c7;border-radius:3px;padding:16px 20px;">
+					<h3 style="margin:0 0 4px;">Marketing Catalog API</h3>
+					<p style="margin:0 0 12px;color:#646970;font-size:13px;">Gebruikt voor productdata op EAN (prijs, afbeeldingen, ratings). Credentials staan onder <em>Marketing Catalog API</em> hierboven.</p>
+					<button type="button" id="bol-test-marketing-connection-button" class="button">Verbinding testen</button>
+					<div id="bol-test-marketing-connection-results" style="margin-top:10px;font-size:13px;"></div>
+				</div>
+			</div>
 			<hr>
 			<h2>Cache</h2>
 			<p>API-data wordt tot 1 uur gecached. Gebruik deze knop om de cache te legen en verse data op te halen bij de volgende paginabezoek.</p>
 			<button type="button" id="bol-clear-cache-button" class="button button-secondary">Cache legen</button>
 			<span id="bol-clear-cache-result" style="margin-left:10px;"></span>
 			<hr>
-			<h2>Getting Your API Credentials</h2>
-			<p>To obtain your Bol.com Client ID and Client Secret, log in to your Bol.com Partner Program account, go to Account → Open API, and add or view your credentials.</p>
+			<h2>API credentials aanvragen</h2>
+			<p>Log in op het <a href="https://partnerplatform.bol.com" target="_blank" rel="noopener">bol.com partnerplatform</a>, ga naar <strong>Account → Open API</strong> en voeg de gewenste API-toegang toe. Je vindt daar Client ID en Client Secret per API-koppeling.</p>
 			<?php
 		}
 	}
