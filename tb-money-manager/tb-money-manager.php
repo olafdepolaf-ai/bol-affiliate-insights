@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: TB Money Manager
- * Description: Scant ThirstyAffiliates destination URLs op 404s en serverfouten.
+ * Description: Beheert affiliate inkomstenbronnen van tuinenbalkon.nl — rapportage en linkbeheer voor Bol.com, TradeTracker en andere partnerprogramma's.
  * Version: 0.2.13
  * Update URI: https://github.com/olafdepolaf-ai/bol-affiliate-insights
  * Author: olafdepolaf-ai
