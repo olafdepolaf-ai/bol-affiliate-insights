@@ -781,7 +781,7 @@ class SettingsPage {
 						<th scope="row"><label for="lg-name">Link naam</label></th>
 						<td>
 							<input type="text" id="lg-name" class="regular-text" placeholder="Automatisch gegenereerd...">
-							<p class="description">Wordt gebruikt voor rapportage (<code>name=</code>). Automatisch ingevuld op basis van de URL — pas aan indien gewenst.</p>
+							<p class="description">Wordt gebruikt voor rapportage (<code>name=</code>). Automatisch ingevuld — pas aan indien gewenst.</p>
 						</td>
 					</tr>
 					<tr id="lg-anchor-row" style="display:none;">
@@ -796,21 +796,23 @@ class SettingsPage {
 						</td>
 					</tr>
 				</table>
-				<p style="margin-top:8px;"><button type="button" id="lg-generate-btn" class="button button-primary">Genereer link</button></p>
 
 				<div id="lg-result" style="display:none;margin-top:20px;padding:16px;background:#fff;border:1px solid #c3c4c7;border-radius:3px;">
-					<h4 style="margin:0 0 8px;">Resultaat</h4>
-					<textarea id="lg-output" rows="3" class="large-text" readonly style="font-family:monospace;font-size:12px;background:#f9f9f9;resize:vertical;"></textarea>
-					<div style="margin-top:8px;display:flex;align-items:center;gap:12px;">
-						<button type="button" id="lg-copy-btn" class="button">&#128203; Kopieer</button>
-						<span id="lg-copy-confirm" style="color:green;display:none;">✔ Gekopieerd!</span>
+					<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+						<h4 style="margin:0;">Affiliate link</h4>
+						<div style="display:flex;align-items:center;gap:10px;">
+							<button type="button" id="lg-copy-btn" class="button button-primary">&#128203; Kopieer</button>
+							<span id="lg-copy-confirm" style="color:green;display:none;font-size:13px;">✔ Gekopieerd!</span>
+						</div>
 					</div>
-					<div id="lg-preview" style="display:none;margin-top:12px;padding:8px 12px;background:#f0f6fc;border-left:3px solid #2271b1;border-radius:0 3px 3px 0;">
+					<textarea id="lg-output" rows="3" class="large-text" readonly style="font-family:monospace;font-size:12px;background:#f9f9f9;resize:vertical;cursor:text;"></textarea>
+					<div id="lg-preview" style="display:none;margin-top:10px;padding:8px 12px;background:#f0f6fc;border-left:3px solid #2271b1;border-radius:0 3px 3px 0;">
 						<strong style="font-size:12px;color:#646970;">Preview:</strong><br>
 						<span id="lg-preview-link" style="font-size:13px;"></span>
 					</div>
 					<div id="lg-clean-url-info" style="margin-top:8px;font-size:11px;color:#646970;"></div>
 				</div>
+				<div id="lg-invalid-notice" style="display:none;margin-top:16px;color:#d63638;font-size:13px;"></div>
 			</div>
 
 			<script>
@@ -859,7 +861,7 @@ class SettingsPage {
 						if ( path === '/' || path === '' ) return '';
 						if ( path.includes( '/s/' ) ) {
 							var s = ( url.searchParams.get( 'searchtext' ) || '' ).replace( /\+/g, ' ' ).trim();
-							return s.split( ' ' ).filter(Boolean).slice( 0, 4 ).map( function(w) {
+							return s.split( ' ' ).filter( Boolean ).slice( 0, 4 ).map( function( w ) {
 								return w.charAt(0).toUpperCase() + w.slice(1);
 							} ).join( ' ' );
 						}
@@ -868,8 +870,9 @@ class SettingsPage {
 				}
 
 				function buildAffiliateUrl( siteId, cleanUrl, name, subId ) {
-					var encoded = encodeURIComponent( cleanUrl );
-					var qs = 'p=2&t=url&s=' + encodeURIComponent( siteId ) + '&f=TXL&url=' + encoded + '&name=' + encodeURIComponent( name );
+					var qs = 'p=2&t=url&s=' + encodeURIComponent( siteId )
+						+ '&f=TXL&url=' + encodeURIComponent( cleanUrl )
+						+ '&name=' + encodeURIComponent( name );
 					if ( subId ) qs += '&subid=' + encodeURIComponent( subId );
 					return 'https://partner.bol.com/click/click?' + qs;
 				}
@@ -877,60 +880,88 @@ class SettingsPage {
 				var urlInput    = document.getElementById( 'lg-url' );
 				var nameInput   = document.getElementById( 'lg-name' );
 				var anchorInput = document.getElementById( 'lg-anchor' );
+				var subidInput  = document.getElementById( 'lg-subid' );
+				var resultDiv   = document.getElementById( 'lg-result' );
+				var invalidDiv  = document.getElementById( 'lg-invalid-notice' );
 
-				urlInput.addEventListener( 'input', function() {
-					if ( nameInput.dataset.manuallyEdited ) return;
-					var name = autoName( this.value );
-					nameInput.value = name;
-					if ( ! anchorInput.dataset.manuallyEdited ) anchorInput.value = name;
-				} );
+				function render() {
+					var siteId   = getActiveSiteId();
+					var rawUrl   = urlInput.value.trim();
+					var cleanUrl = rawUrl ? cleanBolUrl( rawUrl ) : null;
 
-				nameInput.addEventListener( 'input', function() {
-					this.dataset.manuallyEdited = '1';
-				} );
+					// Hide both panels by default, show appropriate one
+					resultDiv.style.display  = 'none';
+					invalidDiv.style.display = 'none';
 
-				anchorInput.addEventListener( 'input', function() {
-					this.dataset.manuallyEdited = '1';
-				} );
+					if ( ! rawUrl ) return;
 
-				document.querySelectorAll( 'input[name="lg-type"]' ).forEach( function( radio ) {
-					radio.addEventListener( 'change', function() {
-						document.getElementById( 'lg-anchor-row' ).style.display = ( this.value === 'html' ) ? '' : 'none';
-					} );
-				} );
+					if ( ! siteId ) {
+						invalidDiv.textContent = 'Geen Site ID beschikbaar — ga naar Instellingen om de Bol.com API te koppelen.';
+						invalidDiv.style.display = 'block';
+						return;
+					}
 
-				document.getElementById( 'lg-generate-btn' ).addEventListener( 'click', function() {
-					var siteId = getActiveSiteId();
-					if ( ! siteId ) { alert( 'Geen Site ID beschikbaar. Ga naar Instellingen om de API te koppelen of het Site ID handmatig in te vullen.' ); return; }
-					var rawUrl = urlInput.value.trim();
-					if ( ! rawUrl ) { alert( 'Vul eerst een bol.com URL in.' ); return; }
-					var cleanUrl = cleanBolUrl( rawUrl );
-					if ( ! cleanUrl ) { alert( 'Dit lijkt geen geldige bol.com URL te zijn.' ); return; }
+					if ( ! cleanUrl ) {
+						invalidDiv.textContent = 'Dit lijkt geen geldige bol.com URL te zijn.';
+						invalidDiv.style.display = 'block';
+						return;
+					}
 
 					var name   = nameInput.value.trim();
-					var subId  = document.getElementById( 'lg-subid' ).value.trim();
+					var subId  = subidInput.value.trim();
 					var type   = document.querySelector( 'input[name="lg-type"]:checked' ).value;
 					var anchor = anchorInput.value.trim() || name || 'Bekijk op bol.com';
-
 					var affUrl = buildAffiliateUrl( siteId, cleanUrl, name, subId );
-					var output, showPreview = false;
+					var output;
 
 					if ( type === 'html' ) {
 						output = '<a href="' + affUrl + '">' + anchor + '</a>';
 						document.getElementById( 'lg-preview-link' ).innerHTML =
 							'<a href="' + affUrl + '" target="_blank" rel="noopener noreferrer">' + anchor + '</a>';
-						showPreview = true;
+						document.getElementById( 'lg-preview' ).style.display = '';
 					} else {
 						output = affUrl;
+						document.getElementById( 'lg-preview' ).style.display = 'none';
 					}
 
 					document.getElementById( 'lg-output' ).value = output;
-					document.getElementById( 'lg-result' ).style.display = '';
-					document.getElementById( 'lg-preview' ).style.display = showPreview ? '' : 'none';
-					document.getElementById( 'lg-copy-confirm' ).style.display = 'none';
 					document.getElementById( 'lg-clean-url-info' ).textContent =
 						'Opgeschoonde doel-URL: ' + cleanUrl + ' · Site ID: ' + siteId;
+					document.getElementById( 'lg-copy-confirm' ).style.display = 'none';
+					resultDiv.style.display = '';
+				}
+
+				// URL input: also auto-fill name/anchor on paste/input
+				urlInput.addEventListener( 'input', function() {
+					if ( ! nameInput.dataset.manuallyEdited ) {
+						var name = autoName( this.value );
+						nameInput.value = name;
+						if ( ! anchorInput.dataset.manuallyEdited ) anchorInput.value = name;
+					}
+					render();
 				} );
+
+				nameInput.addEventListener( 'input', function() {
+					this.dataset.manuallyEdited = '1';
+					render();
+				} );
+
+				anchorInput.addEventListener( 'input', function() {
+					this.dataset.manuallyEdited = '1';
+					render();
+				} );
+
+				subidInput.addEventListener( 'input', render );
+
+				document.querySelectorAll( 'input[name="lg-type"]' ).forEach( function( radio ) {
+					radio.addEventListener( 'change', function() {
+						document.getElementById( 'lg-anchor-row' ).style.display = ( this.value === 'html' ) ? '' : 'none';
+						render();
+					} );
+				} );
+
+				var siteSelect = document.getElementById( 'lg-site' );
+				if ( siteSelect ) siteSelect.addEventListener( 'change', render );
 
 				document.getElementById( 'lg-copy-btn' ).addEventListener( 'click', function() {
 					var ta = document.getElementById( 'lg-output' );
