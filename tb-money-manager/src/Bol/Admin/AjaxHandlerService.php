@@ -30,6 +30,9 @@ class AjaxHandlerService {
 
 	public function handle_test_connection_ajax(): void {
 		check_ajax_referer( 'bol_test_connection_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => 'Insufficient permissions.' ] );
+		}
 		$token_data = $this->api_auth_service->get_access_token();
 
 		if ( is_wp_error( $token_data ) ) {
@@ -46,6 +49,9 @@ class AjaxHandlerService {
 
 	public function handle_fetch_chart_data_ajax(): void {
 		check_ajax_referer( 'bol_fetch_chart_data_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => 'Insufficient permissions.' ] );
+		}
 		$metric      = isset( $_POST['metric'] )      ? sanitize_key( $_POST['metric'] )      : 'orders';
 		$period      = isset( $_POST['period'] )      ? sanitize_key( $_POST['period'] )      : 'last_4_weeks';
 		$granularity = isset( $_POST['granularity'] ) ? sanitize_key( $_POST['granularity'] ) : 'auto';
@@ -61,6 +67,9 @@ class AjaxHandlerService {
 
 	public function handle_fetch_available_sites_ajax(): void {
 		check_ajax_referer( 'bol_fetch_sites_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => 'Insufficient permissions.' ] );
+		}
 		$sites = $this->api_client->get_available_sites();
 
 		if ( is_wp_error( $sites ) ) {

@@ -21,27 +21,37 @@ class Plugin {
 	private static ?Plugin $instance = null;
 
 	private function __construct() {
+		// UpdateChecker werkt update-detectie af voor alle gebruikers (WP core vereist dit).
 		new UpdateChecker( TBMM_FILE );
+
+		// Al het overige initialiseert alleen voor ingelogde administrators.
+		add_action( 'init', [ $this, 'init_for_admins' ] );
+	}
+
+	public function init_for_admins(): void {
+		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		new DashboardWidget();
 
-		$post_finder        = new PostFinder();
-		$link_scanner       = new LinkScanner( $post_finder );
-		$tt_service         = new TradeTrackerService();
-		$ta_service         = new ThirstyAffiliatesService();
-		$orphaned_scanner   = new OrphanedLinkScanner();
-		$scan_cache         = new ScanCacheService();
-		$tt_tab             = new TradeTrackerTab( $tt_service, $ta_service, $orphaned_scanner );
-		$ta_tab             = new TATab( $ta_service, $orphaned_scanner, $scan_cache );
-		$bol_tab            = new BolTab();
-		$scan_page          = new ScanPage( $link_scanner, $tt_tab, $ta_tab, $bol_tab );
+		$post_finder      = new PostFinder();
+		$link_scanner     = new LinkScanner( $post_finder );
+		$tt_service       = new TradeTrackerService();
+		$ta_service       = new ThirstyAffiliatesService();
+		$orphaned_scanner = new OrphanedLinkScanner();
+		$scan_cache       = new ScanCacheService();
+		$tt_tab           = new TradeTrackerTab( $tt_service, $ta_service, $orphaned_scanner );
+		$ta_tab           = new TATab( $ta_service, $orphaned_scanner, $scan_cache );
+		$bol_tab          = new BolTab();
+		$scan_page        = new ScanPage( $link_scanner, $tt_tab, $ta_tab, $bol_tab );
 		new MenuService( $scan_page );
 		new AjaxHandlerService( $link_scanner, $orphaned_scanner, $scan_cache, $ta_service, $tt_service );
 
 		add_filter(
 			'plugin_action_links_' . plugin_basename( TBMM_FILE ),
 			function( array $links ): array {
-				$settings = '<a href="' . admin_url( 'admin.php?page=tb-money-manager' ) . '">Instellingen</a>';
-				array_unshift( $links, $settings );
+				$links[] = '<a href="' . admin_url( 'admin.php?page=tb-money-manager' ) . '">Instellingen</a>';
 				return $links;
 			}
 		);
