@@ -19,6 +19,8 @@ thirstyaffiliates/
 .env
 .env.*
 *.env
+*.local
+client_secret_*.json
 
 # Logs
 *.log
