@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SettingsService {
 
 	private ApiClient $api_client;
+	private ?array $cached_sites = null;
 
 	public function __construct( ApiClient $api_client ) {
 		$this->api_client = $api_client;
@@ -64,9 +65,17 @@ class SettingsService {
 		echo '<p>Selecteer de website waarvoor je data wilt bekijken. Deze keuze filtert alle rapportagetabs én bepaalt het Site ID dat de Linkgenerator gebruikt om affiliate-links te bouwen.</p>';
 	}
 
+	private function get_sites(): array {
+		if ( $this->cached_sites === null ) {
+			$fetched            = $this->api_client->get_available_sites();
+			$this->cached_sites = ( is_array( $fetched ) && ! empty( $fetched ) ) ? $fetched : array();
+		}
+		return $this->cached_sites;
+	}
+
 	public function render_selected_website_field(): void {
 		$current_value = get_option( 'bol_affiliate_insights_selected_website', 'all_sites' );
-		$sites         = $this->api_client->get_available_sites();
+		$sites         = $this->get_sites();
 
 		echo "<select id='bol_selected_website_field' name='bol_affiliate_insights_selected_website'>";
 		echo "<option value='all_sites'" . selected( $current_value, 'all_sites', false ) . ">Alle websites</option>";
@@ -99,7 +108,7 @@ class SettingsService {
 	public function render_site_id_field(): void {
 		$value            = get_option( 'tbmm_bol_site_id', '' );
 		$selected_website = get_option( 'bol_affiliate_insights_selected_website', 'all_sites' );
-		$sites            = $this->api_client->get_available_sites();
+		$sites            = $this->get_sites();
 		$auto_resolved    = ( $selected_website !== 'all_sites' ) || ( ! empty( $sites ) && count( $sites ) === 1 );
 
 		echo "<input type='text' id='tbmm_bol_site_id_field' name='tbmm_bol_site_id' value='" . esc_attr( $value ) . "' class='regular-text' placeholder='bijv. 10048'"
@@ -142,7 +151,10 @@ class SettingsService {
 		echo '</label>';
 	}
 
-	public function sanitize_credentials( array $input ): array {
+	public function sanitize_credentials( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return array( 'client_id' => '', 'client_secret' => '' );
+		}
 		return array(
 			'client_id'     => isset( $input['client_id'] ) ? sanitize_text_field( $input['client_id'] ) : '',
 			'client_secret' => isset( $input['client_secret'] ) ? sanitize_text_field( $input['client_secret'] ) : '',
