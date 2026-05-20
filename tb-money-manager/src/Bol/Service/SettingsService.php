@@ -22,6 +22,7 @@ class SettingsService {
 		register_setting( $options_group, 'bol_affiliate_insights_selected_website', 'sanitize_text_field' );
 		register_setting( $options_group, 'bol_affiliate_insights_debug_enabled', array( $this, 'sanitize_debug_flag' ) );
 		register_setting( $options_group, 'tbmm_bol_site_id', 'sanitize_text_field' );
+		register_setting( $options_group, 'tbmm_bol_marketing_credentials', array( $this, 'sanitize_credentials' ) );
 
 		$page = 'bol-affiliate-insights-settings';
 
@@ -34,6 +35,10 @@ class SettingsService {
 
 		add_settings_section( 'bol_linkgenerator_section', 'Linkgenerator — handmatig Site ID', array( $this, 'render_linkgenerator_section_text' ), $page );
 		add_settings_field( 'tbmm_bol_site_id', 'Handmatig Site ID', array( $this, 'render_site_id_field' ), $page, 'bol_linkgenerator_section', array( 'label_for' => 'tbmm_bol_site_id_field' ) );
+
+		add_settings_section( 'bol_marketing_api_section', 'Marketing Catalog API', array( $this, 'render_marketing_api_section_text' ), $page );
+		add_settings_field( 'tbmm_marketing_client_id', 'Client ID', array( $this, 'render_marketing_client_id_field' ), $page, 'bol_marketing_api_section', array( 'label_for' => 'tbmm_marketing_client_id_field' ) );
+		add_settings_field( 'tbmm_marketing_client_secret', 'Client Secret', array( $this, 'render_marketing_client_secret_field' ), $page, 'bol_marketing_api_section', array( 'label_for' => 'tbmm_marketing_client_secret_field' ) );
 
 		add_settings_section( 'bol_debug_section', 'Debug & Logging', array( $this, 'render_debug_section_text' ), $page );
 		add_settings_field( 'bol_debug_enabled', 'Enable debug logging', array( $this, 'render_debug_enabled_field' ), $page, 'bol_debug_section', array( 'label_for' => 'bol_debug_enabled_field' ) );
@@ -105,6 +110,24 @@ class SettingsService {
 		} else {
 			echo "<p class='description'>Je Site ID vind je in het <a href='https://partnerplatform.bol.com' target='_blank' rel='noopener'>bol.com partnerplatform</a> onder je website-instellingen.</p>";
 		}
+	}
+
+	public function render_marketing_api_section_text(): void {
+		echo '<p>Credentials voor de <strong>Bol.com Marketing Catalog API</strong>. Deze API geeft toegang tot productdata (prijs, afbeeldingen, ratings, varianten) op basis van EAN-nummers. '
+			. 'Aanvragen via het <a href="https://partnerplatform.bol.com" target="_blank" rel="noopener">bol.com partnerplatform</a> onder Open API → Marketing Catalog API.</p>';
+	}
+
+	public function render_marketing_client_id_field(): void {
+		$options = get_option( 'tbmm_bol_marketing_credentials', array() );
+		$value   = $options['client_id'] ?? '';
+		echo "<input type='text' id='tbmm_marketing_client_id_field' name='tbmm_bol_marketing_credentials[client_id]' value='" . esc_attr( $value ) . "' class='regular-text' autocomplete='off'>";
+	}
+
+	public function render_marketing_client_secret_field(): void {
+		$options = get_option( 'tbmm_bol_marketing_credentials', array() );
+		$value   = $options['client_secret'] ?? '';
+		echo "<input type='password' id='tbmm_marketing_client_secret_field' name='tbmm_bol_marketing_credentials[client_secret]' value='" . esc_attr( $value ) . "' class='regular-text' autocomplete='off'>";
+		echo "<p class='description'>Wordt alleen opgeslagen in je WordPress-database en nooit meegestuurd naar GitHub.</p>";
 	}
 
 	public function render_debug_section_text(): void {
