@@ -4,6 +4,7 @@ namespace TuinenBalkon\TBMoneyManager;
 
 use TuinenBalkon\TBMoneyManager\Admin\AjaxHandlerService;
 use TuinenBalkon\TBMoneyManager\Admin\BolTab;
+use TuinenBalkon\TBMoneyManager\Admin\DashboardWidget;
 use TuinenBalkon\TBMoneyManager\Admin\MenuService;
 use TuinenBalkon\TBMoneyManager\Admin\ScanPage;
 use TuinenBalkon\TBMoneyManager\Admin\TATab;
@@ -21,6 +22,7 @@ class Plugin {
 
 	private function __construct() {
 		new UpdateChecker( TBMM_FILE );
+		new DashboardWidget();
 
 		$post_finder        = new PostFinder();
 		$link_scanner       = new LinkScanner( $post_finder );

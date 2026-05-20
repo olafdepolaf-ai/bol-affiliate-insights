@@ -54,12 +54,22 @@ class MenuService {
 	public function add_admin_menu(): void {
 		add_menu_page(
 			'TB Money Manager',
-			'Link Checker',
+			'TB Money Manager',
 			'manage_options',
 			'tb-money-manager',
 			[ $this->scan_page, 'render' ],
-			'dashicons-search',
-			26
+			'dashicons-money-alt',
+			24
 		);
+
+		// Submenu-items per tab — vervangt het automatisch aangemaakte duplicaat
+		global $submenu;
+		$base = 'admin.php?page=tb-money-manager';
+		$submenu['tb-money-manager'] = [
+			[ 'Link Scanner',      'manage_options', $base . '&tab=scanner'      ],
+			[ 'TradeTracker',      'manage_options', $base . '&tab=tradetracker' ],
+			[ 'ThirstyAffiliates', 'manage_options', $base . '&tab=ta'           ],
+			[ 'Bol.com',           'manage_options', $base . '&tab=bol'          ],
+		];
 	}
 }
