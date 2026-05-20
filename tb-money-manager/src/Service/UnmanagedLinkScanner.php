@@ -13,10 +13,11 @@ class UnmanagedLinkScanner {
 
 	// Patroontypen die gescand worden
 	const TYPES = array(
-		'bol_tracked'  => 'Bol.com (partner-link)',
-		'tradetracker' => 'TradeTracker',
-		'bol_direct'   => 'Bol.com (directe link)',
-		'amazon'       => 'Amazon (nl/de)',
+		'bol_tracked'     => 'Bol.com (partner-link)',
+		'tradetracker'    => 'TradeTracker',
+		'bol_direct'      => 'Bol.com (directe link)',
+		'amazon_tracked'  => 'Amazon (met affiliate tag)',
+		'amazon_direct'   => 'Amazon (geen affiliate tag!) ⚠',
 	);
 
 	public function scan( array $active_types ): int {
@@ -203,7 +204,10 @@ class UnmanagedLinkScanner {
 			return 'bol_direct';
 		}
 		if ( preg_match( '~^https?://(?:www\.)?amazon\.(nl|de|com)/|^https?://amzn\.to/~i', $url ) ) {
-			return 'amazon';
+			// Link heeft een affiliate tag (bijv. tag=tuinennl-21) → al getrackt via Amazon Associates
+			// Link heeft geen tag → helemaal geen commissie
+			parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $params );
+			return isset( $params['tag'] ) && $params['tag'] !== '' ? 'amazon_tracked' : 'amazon_direct';
 		}
 		return null;
 	}

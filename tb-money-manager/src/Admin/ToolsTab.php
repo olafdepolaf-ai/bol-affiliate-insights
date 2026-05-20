@@ -30,10 +30,11 @@ class ToolsTab {
 			.tbmm-subtab-nav a:hover { background:#f0f0f1; }
 			.tbmm-subtab-nav a.active { background:#fff; border-color:#c3c4c7; color:#1d2327; font-weight:600; }
 			.tbmm-type-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
-			.tbmm-badge-bol_tracked  { background:#dbeafe; color:#1d4ed8; }
-			.tbmm-badge-tradetracker { background:#fef9c3; color:#92400e; }
-			.tbmm-badge-bol_direct   { background:#fee2e2; color:#991b1b; }
-			.tbmm-badge-amazon       { background:#ffedd5; color:#9a3412; }
+			.tbmm-badge-bol_tracked    { background:#dbeafe; color:#1d4ed8; }
+			.tbmm-badge-tradetracker   { background:#fef9c3; color:#92400e; }
+			.tbmm-badge-bol_direct     { background:#fee2e2; color:#991b1b; }
+			.tbmm-badge-amazon_tracked { background:#ffedd5; color:#9a3412; }
+			.tbmm-badge-amazon_direct  { background:#b32d2e; color:#fff; font-weight:700; }
 			.tbmm-match-yes { color:#00a32a; font-weight:600; }
 			.tbmm-match-no  { color:#b32d2e; }
 			.tbmm-url-cell  { font-size:11px; word-break:break-all; max-width:280px; color:#444; }
