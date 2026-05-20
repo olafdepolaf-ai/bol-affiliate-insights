@@ -119,15 +119,28 @@ class UnmanagedLinkScanner {
 			return new \WP_Error( 'no_post', 'Artikel niet gevonden (ID ' . $row['post_id'] . ').' );
 		}
 
-		$old_url     = $row['url'];
-		$new_url     = $row['ta_redirect_url'];
-		$content     = $post->post_content;
-		$new_content = str_replace(
-			array( 'href="' . $old_url . '"', "href='" . $old_url . "'" ),
-			array( 'href="' . $new_url . '"', "href='" . $new_url . "'" ),
-			$content,
-			$count
+		$old_url          = $row['url'];
+		$old_url_encoded  = htmlspecialchars( $old_url, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$new_url          = $row['ta_redirect_url'];
+		$content          = $post->post_content;
+
+		// Probeer zowel de rauwe URL als de HTML-entity-encoded variant,
+		// want WordPress slaat href-waarden op als &amp; in de post_content.
+		$search  = array(
+			'href="' . $old_url_encoded . '"',
+			"href='" . $old_url_encoded . "'",
+			'href="' . $old_url . '"',
+			"href='" . $old_url . "'",
 		);
+		$replace = array(
+			'href="' . $new_url . '"',
+			"href='" . $new_url . "'",
+			'href="' . $new_url . '"',
+			"href='" . $new_url . "'",
+		);
+
+		$count       = 0;
+		$new_content = str_replace( $search, $replace, $content, $count );
 
 		if ( $count === 0 ) {
 			return new \WP_Error( 'not_replaced', 'URL niet gevonden in post-inhoud — mogelijk al vervangen of URL is anders gecodeerd.' );
@@ -166,7 +179,9 @@ class UnmanagedLinkScanner {
 		);
 		$links = array();
 		foreach ( $matches as $m ) {
-			$url = trim( $m[1] );
+			// WordPress slaat href-waarden op met HTML-entities (&amp; ipv &).
+			// Decodeer naar echte URL zodat matching met TA destination URLs klopt.
+			$url = html_entity_decode( trim( $m[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 			if ( $url && ! str_starts_with( $url, '#' ) && ! str_starts_with( $url, 'mailto:' ) ) {
 				$links[] = array(
 					'url'    => $url,

@@ -109,9 +109,13 @@ class ToolsTab {
 		</div>
 
 		<?php if ( empty( $meta ) ) : ?>
-			<div class="notice notice-info"><p>Klik op <strong>Scan starten</strong> om te beginnen.</p></div>
+			<div style="background:#f0f6fc;border-left:4px solid #72aee6;padding:10px 14px;margin:8px 0 16px;font-size:13px;">
+				Klik op <strong>Scan starten</strong> om te beginnen.
+			</div>
 		<?php elseif ( empty( $rows ) ) : ?>
-			<div class="notice notice-success"><p>&#10003; Geen onbeheerde links gevonden voor de geselecteerde patronen.</p></div>
+			<div style="background:#edfaef;border-left:4px solid #00a32a;padding:10px 14px;margin:8px 0 16px;font-size:13px;">
+				&#10003; Geen onbeheerde links gevonden voor de geselecteerde patronen.
+			</div>
 		<?php else : ?>
 
 		<?php
