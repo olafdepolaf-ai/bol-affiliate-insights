@@ -83,16 +83,10 @@ Voorstel: **Bol.com eerst** (of aanpasbaar maken), want dat is de primaire use c
 
 ---
 
-## 🧹 Opruimen (tijdelijk — inplannen voor over ~3 releases)
-
-### Verwijder alc_ migratiecode uit Installer.php
-Na de herbenoeming van "Affiliate Link Checker" naar "TB Money Manager" draait `Installer::migrate_from_alc()` bij elke activatie om oude `alc_` data op te ruimen. Zodra het aannemelijk is dat alle actieve installaties al ge-upgrade zijn (na ~3 releases), kan deze code weg.
-
-**Wat te verwijderen:** `migrate_from_alc()` methode + de aanroep in `activate()` in `src/Installer.php`.
-
----
-
 ## ✅ Gedaan
+
+### ✅ 2026-05-20 — alc_ migratiecode verwijderd uit Installer.php (v0.2.19)
+`migrate_from_alc()` en de aanroep in `activate()` verwijderd na meerdere releases.
 
 ### ✅ 2026-05-20 — Plugin hernoemd naar TB Money Manager, gereorganiseerd
 Plugin hernoemd van "Affiliate Link Checker" naar "TB Money Manager". Directory verplaatst van `tools/affiliate-link-checker/` naar `tb-money-manager/` in de root. Namespace gewijzigd naar `TuinenBalkon\TBMoneyManager\`, constanten naar `TBMM_`, DB-sleutels naar `tbmm_`. Migratiecode toegevoegd die oude `alc_` data (tabel + opties + transients) opruimt bij activatie. Oude Bol Affiliate Insights code gearchiveerd in `archief/`.
