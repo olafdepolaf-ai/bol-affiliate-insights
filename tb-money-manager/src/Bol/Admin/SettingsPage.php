@@ -42,7 +42,7 @@ class SettingsPage {
 		$credentials             = get_option( 'bol_affiliate_insights_credentials' );
 		$global_selected_site_filter = get_option( 'bol_affiliate_insights_selected_website', 'all_sites' );
 
-		$tabs_needing_sites          = array( 'dashboard', 'commission_revenue', 'promotion_methods', 'analysis' );
+		$tabs_needing_sites          = array( 'dashboard', 'commission_revenue', 'promotion_methods', 'analysis', 'drop_analysis' );
 		$available_sites_for_dropdown = array();
 		if ( in_array( $active_tab, $tabs_needing_sites, true ) ) {
 			$sites_cache_key = 'bol_available_sites_' . date( 'Y-m-d' );
@@ -63,6 +63,20 @@ class SettingsPage {
 		}
 
 		$base_page = 'admin.php?page=tb-money-manager&tab=bol';
+
+		$csv_export_button = function ( string $label, string $type, string $start, string $end ): void {
+			$url = add_query_arg( array(
+				'action' => 'tbmm_bol_export_csv',
+				'type'   => $type,
+				'start'  => $start,
+				'end'    => $end,
+				'_nonce' => wp_create_nonce( 'tbmm_bol_csv_export' ),
+			), admin_url( 'admin-ajax.php' ) );
+			echo '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+			echo '<h3 style="margin:0">' . esc_html( $label ) . '</h3>';
+			echo '<a href="' . esc_url( $url ) . '" class="button button-secondary" style="font-size:12px;">&#11015; Download CSV</a>';
+			echo '</div>';
+		};
 
 		if ( $active_tab === 'dashboard' ) {
 			$current_period = isset( $_GET['period'] ) ? sanitize_key( $_GET['period'] ) : 'last_7_days';
@@ -254,7 +268,7 @@ class SettingsPage {
 				} else {
 					$orders_list_table = new OrdersListTable();
 					$orders_list_table->prepare_items( $orders_data_response['items'] );
-					echo '<h3>Orders Data</h3>';
+					$csv_export_button( 'Orders Data', 'orders', $current_start_date, $current_end_date );
 					$orders_list_table->display();
 				}
 			} else {
@@ -298,7 +312,7 @@ class SettingsPage {
 					}
 					$cr_list_table = new CommissionRevenueListTable();
 					$cr_list_table->prepare_items( $cr_items );
-					echo '<h3>Commission &amp; Revenue Data</h3>';
+					$csv_export_button( 'Commission & Revenue Data', 'commission-revenue', $current_start_date, $current_end_date );
 					$cr_list_table->display();
 				}
 			} else {
@@ -355,7 +369,7 @@ class SettingsPage {
 					$pm_list_table->set_affiliate_link_index( $affiliate_adapter->build_bol_params_index() );
 					$pm_list_table->set_hide_site_column( $global_selected_site_filter !== 'all_sites' );
 					$pm_list_table->prepare_items( $pm_items );
-					echo '<h3>Promotion Methods Data</h3>';
+					$csv_export_button( 'Promotion Methods Data', 'promotion-methods', $current_start_date, $current_end_date );
 					if ( $only_with_orders ) {
 						echo '<p><em>Filter active: only showing rows with at least 1 order.</em></p>';
 					}
@@ -508,6 +522,148 @@ class SettingsPage {
 				$render_table( 'Veel kliks, 0 orders (mogelijk probleem / optimalisatie-kans)', $insights['high_clicks_no_orders'] ?? array() );
 				$render_table( 'Kans om op te schalen: hoge EPC, laag volume (10–150 clicks, >0 orders)', $insights['scale_candidates'] ?? array() );
 				$render_table( 'Optimalisatie: veel clicks, lage EPC (≥200 clicks, >0 orders)', $insights['high_volume_low_epc'] ?? array() );
+			}
+
+		} elseif ( $active_tab === 'drop_analysis' ) {
+			echo '<h3>Klik-drop analyse</h3>';
+			echo '<p>Vergelijkt kliks <strong>vóór</strong> vs <strong>ná</strong> een opgegeven breekdatum, per promotionmethod. Kliks/dag maakt de periodes vergelijkbaar ongeacht lengte.</p>';
+
+			$default_break  = '2026-04-12';
+			$default_before = '2026-01-01';
+			$default_after  = current_time( 'Y-m-d' );
+
+			$da_before_start = isset( $_GET['da_before_start'] ) ? sanitize_text_field( $_GET['da_before_start'] ) : $default_before;
+			$da_before_end   = isset( $_GET['da_before_end']   ) ? sanitize_text_field( $_GET['da_before_end']   ) : date( 'Y-m-d', strtotime( $default_break . ' -1 day' ) );
+			$da_after_start  = isset( $_GET['da_after_start']  ) ? sanitize_text_field( $_GET['da_after_start']  ) : $default_break;
+			$da_after_end    = isset( $_GET['da_after_end']    ) ? sanitize_text_field( $_GET['da_after_end']    ) : $default_after;
+			?>
+			<form method="GET" action="">
+				<input type="hidden" name="page" value="tb-money-manager">
+				<input type="hidden" name="tab" value="bol">
+				<input type="hidden" name="subtab" value="drop_analysis">
+				<?php wp_nonce_field( 'bol_da_filters', 'bol_da_nonce' ); ?>
+				<table style="border-collapse:collapse;margin-bottom:12px;">
+					<tr>
+						<td style="padding:4px 12px 4px 0;font-weight:600;">Periode vóór:</td>
+						<td style="padding:4px 8px 4px 0;"><label>Van <input type="text" name="da_before_start" class="datepicker" value="<?php echo esc_attr( $da_before_start ); ?>" style="width:120px;"></label></td>
+						<td style="padding:4px 8px 4px 0;"><label>t/m <input type="text" name="da_before_end" class="datepicker" value="<?php echo esc_attr( $da_before_end ); ?>" style="width:120px;"></label></td>
+					</tr>
+					<tr>
+						<td style="padding:4px 12px 4px 0;font-weight:600;">Periode ná:</td>
+						<td style="padding:4px 8px 4px 0;"><label>Van <input type="text" name="da_after_start" class="datepicker" value="<?php echo esc_attr( $da_after_start ); ?>" style="width:120px;"></label></td>
+						<td style="padding:4px 8px 4px 0;"><label>t/m <input type="text" name="da_after_end" class="datepicker" value="<?php echo esc_attr( $da_after_end ); ?>" style="width:120px;"></label></td>
+					</tr>
+				</table>
+				<input type="submit" value="Analyseer" class="button button-primary">
+			</form>
+			<hr>
+			<?php
+			$run_da = isset( $_GET['bol_da_nonce'] )
+				? wp_verify_nonce( $_GET['bol_da_nonce'], 'bol_da_filters' )
+				: true; // toon direct bij eerste load met defaults
+
+			if ( $run_da ) {
+				$days_before = max( 1, (int) ( ( strtotime( $da_before_end ) - strtotime( $da_before_start ) ) / DAY_IN_SECONDS ) + 1 );
+				$days_after  = max( 1, (int) ( ( strtotime( $da_after_end )  - strtotime( $da_after_start )  ) / DAY_IN_SECONDS ) + 1 );
+
+				$raw_before = $api_client->get_promotion_methods_report( $da_before_start, $da_before_end );
+				$raw_after  = $api_client->get_promotion_methods_report( $da_after_start,  $da_after_end  );
+
+				$da_error = null;
+				if ( is_wp_error( $raw_before ) ) $da_error = 'Periode vóór: ' . $raw_before->get_error_message();
+				if ( is_wp_error( $raw_after  ) ) $da_error = 'Periode ná: '   . $raw_after->get_error_message();
+
+				if ( $da_error ) {
+					echo '<div class="notice notice-error"><p>' . esc_html( $da_error ) . '</p></div>';
+				} else {
+					// Aggregeer kliks per (name||subId) sleutel
+					$aggregate = function ( array $items ) use ( $global_selected_site_filter ): array {
+						$out = array();
+						foreach ( $items as $item ) {
+							if ( $global_selected_site_filter !== 'all_sites' && ( $item['siteCode'] ?? '' ) != $global_selected_site_filter ) continue;
+							$name  = (string) ( $item['name']  ?? '' );
+							$subid = (string) ( $item['subId'] ?? '' );
+							$key   = $name . '||' . $subid;
+							if ( ! isset( $out[ $key ] ) ) {
+								$out[ $key ] = array( 'name' => $name, 'subId' => $subid, 'clicks' => 0 );
+							}
+							$out[ $key ]['clicks'] += (int) ( $item['clicks'] ?? 0 );
+						}
+						return $out;
+					};
+
+					$agg_before = $aggregate( $raw_before['items'] ?? array() );
+					$agg_after  = $aggregate( $raw_after['items']  ?? array() );
+					$all_keys   = array_unique( array_merge( array_keys( $agg_before ), array_keys( $agg_after ) ) );
+
+					$rows = array();
+					foreach ( $all_keys as $key ) {
+						$c_before = $agg_before[ $key ]['clicks'] ?? 0;
+						$c_after  = $agg_after[ $key ]['clicks']  ?? 0;
+						if ( $c_before === 0 && $c_after === 0 ) continue;
+
+						$cpd_before  = round( $c_before / $days_before, 2 );
+						$cpd_after   = round( $c_after  / $days_after,  2 );
+						$delta       = round( $cpd_after - $cpd_before, 2 );
+						$pct         = $cpd_before > 0 ? (int) round( ( $delta / $cpd_before ) * 100 ) : ( $cpd_after > 0 ? PHP_INT_MAX : 0 );
+						$name        = $agg_before[ $key ]['name']  ?? $agg_after[ $key ]['name']  ?? '';
+						$subid       = $agg_before[ $key ]['subId'] ?? $agg_after[ $key ]['subId'] ?? '';
+
+						$rows[] = array( 'name' => $name, 'subId' => $subid, 'c_before' => $c_before, 'c_after' => $c_after, 'cpd_before' => $cpd_before, 'cpd_after' => $cpd_after, 'delta' => $delta, 'pct' => $pct );
+					}
+
+					usort( $rows, fn( $a, $b ) => $a['delta'] <=> $b['delta'] );
+
+					$total_before = array_sum( array_column( $rows, 'c_before' ) );
+					$total_after  = array_sum( array_column( $rows, 'c_after' ) );
+
+					// Samenvatting
+					echo '<table class="widefat" style="max-width:560px;margin-bottom:20px;"><tbody>';
+					printf( '<tr><th>Periode vóór</th><td>%s – %s (%d dagen, %d kliks totaal, %.1f/dag)</td></tr>', esc_html( $da_before_start ), esc_html( $da_before_end ), $days_before, $total_before, $total_before / $days_before );
+					printf( '<tr><th>Periode ná</th><td>%s – %s (%d dagen, %d kliks totaal, %.1f/dag)</td></tr>', esc_html( $da_after_start  ), esc_html( $da_after_end   ), $days_after,  $total_after,  $total_after  / $days_after  );
+					printf( '<tr><th>Totale daling</th><td><strong>%.1f kliks/dag</strong> (%.0f%%)</td></tr>', ( $total_after / $days_after ) - ( $total_before / $days_before ), $total_before > 0 ? ( ( ( $total_after / $days_after ) - ( $total_before / $days_before ) ) / ( $total_before / $days_before ) ) * 100 : 0 );
+					echo '</tbody></table>';
+
+					// Hoofdtabel
+					echo '<table class="wp-list-table widefat fixed striped" style="table-layout:auto;">';
+					echo '<thead><tr>';
+					echo '<th>#</th>';
+					echo '<th>Link (name)</th>';
+					echo '<th>SubID</th>';
+					echo '<th style="text-align:right;">Kliks vóór</th>';
+					echo '<th style="text-align:right;">Kliks ná</th>';
+					echo '<th style="text-align:right;">Kliks/dag vóór</th>';
+					echo '<th style="text-align:right;">Kliks/dag ná</th>';
+					echo '<th style="text-align:right;">Δ/dag</th>';
+					echo '<th style="text-align:right;">%</th>';
+					echo '</tr></thead><tbody>';
+
+					$i = 1;
+					foreach ( $rows as $r ) {
+						$is_drop = $r['delta'] < -0.1;
+						$is_rise = $r['delta'] > 0.1;
+						$color   = $is_drop ? '#b32d2e' : ( $is_rise ? '#00a32a' : '#646970' );
+						$bg      = ( $is_drop && $r['cpd_before'] >= 0.5 ) ? ' style="background:#fff5f5"' : '';
+						$pct_str = $r['pct'] === PHP_INT_MAX ? 'nieuw' : $r['pct'] . '%';
+						$delta_s = ( $r['delta'] >= 0 ? '+' : '' ) . $r['delta'];
+
+						echo '<tr' . $bg . '>';
+						echo '<td style="color:#aaa">' . $i . '</td>';
+						echo '<td><strong>' . esc_html( $r['name']  ) . '</strong></td>';
+						echo '<td><code style="font-size:11px;background:#f0f0f0;padding:1px 4px;border-radius:3px;">' . esc_html( $r['subId'] ) . '</code></td>';
+						echo '<td style="text-align:right;">' . number_format_i18n( $r['c_before']   ) . '</td>';
+						echo '<td style="text-align:right;">' . number_format_i18n( $r['c_after']    ) . '</td>';
+						echo '<td style="text-align:right;">' . number_format_i18n( $r['cpd_before'], 2 ) . '</td>';
+						echo '<td style="text-align:right;">' . number_format_i18n( $r['cpd_after'],  2 ) . '</td>';
+						echo '<td style="text-align:right;font-weight:600;color:' . $color . '">' . esc_html( $delta_s ) . '</td>';
+						echo '<td style="text-align:right;color:' . $color . '">' . esc_html( $pct_str ) . '</td>';
+						echo '</tr>';
+						$i++;
+					}
+
+					echo '</tbody></table>';
+					echo '<p style="margin-top:8px;color:#646970;font-size:12px;">Gesorteerd op grootste klik-daling bovenaan. Rood gemarkeerd = significante dalers (≥0,5 kliks/dag vóór).</p>';
+				}
 			}
 
 		} elseif ( $active_tab === 'affiliate_links' ) {

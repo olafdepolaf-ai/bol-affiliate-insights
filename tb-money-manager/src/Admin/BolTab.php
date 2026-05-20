@@ -45,6 +45,7 @@ class BolTab {
 			'commission_revenue' => 'Commission & Revenue',
 			'promotion_methods'  => 'Promotion Methods',
 			'analysis'           => 'Analyse',
+			'drop_analysis'      => 'Klik-drop',
 			'affiliate_links'    => 'Affiliate Links',
 		);
 		?>

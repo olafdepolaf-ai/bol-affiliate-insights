@@ -22,10 +22,11 @@ class AjaxHandlerService {
 		$this->api_auth_service    = $api_auth_service;
 		$this->api_client          = $api_client;
 
-		add_action( 'wp_ajax_bol_test_connection',      array( $this, 'handle_test_connection_ajax' ) );
-		add_action( 'wp_ajax_bol_fetch_chart_data',     array( $this, 'handle_fetch_chart_data_ajax' ) );
+		add_action( 'wp_ajax_bol_test_connection',       array( $this, 'handle_test_connection_ajax' ) );
+		add_action( 'wp_ajax_bol_fetch_chart_data',      array( $this, 'handle_fetch_chart_data_ajax' ) );
 		add_action( 'wp_ajax_bol_fetch_available_sites', array( $this, 'handle_fetch_available_sites_ajax' ) );
-		add_action( 'wp_ajax_bol_clear_cache',          array( $this, 'handle_clear_cache_ajax' ) );
+		add_action( 'wp_ajax_bol_clear_cache',           array( $this, 'handle_clear_cache_ajax' ) );
+		add_action( 'wp_ajax_tbmm_bol_export_csv',       array( $this, 'handle_export_csv_ajax' ) );
 	}
 
 	public function handle_test_connection_ajax(): void {
@@ -100,5 +101,113 @@ class AjaxHandlerService {
 		wp_send_json_success( array(
 			'message' => sprintf( 'Cache geleegd. %d item(s) verwijderd.', (int) $deleted ),
 		) );
+	}
+
+	public function handle_export_csv_ajax(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Geen toegang.', 403 );
+		}
+
+		check_ajax_referer( 'tbmm_bol_csv_export', '_nonce' );
+
+		$type       = isset( $_GET['type'] )  ? sanitize_key( $_GET['type'] )                : '';
+		$start_date = isset( $_GET['start'] ) ? sanitize_text_field( $_GET['start'] )        : '';
+		$end_date   = isset( $_GET['end'] )   ? sanitize_text_field( $_GET['end'] )          : '';
+
+		if ( ! $type || ! $start_date || ! $end_date ) {
+			wp_die( 'Ongeldige parameters.', 400 );
+		}
+
+		$allowed_types = array( 'orders', 'commission-revenue', 'promotion-methods' );
+		if ( ! in_array( $type, $allowed_types, true ) ) {
+			wp_die( 'Onbekend type.', 400 );
+		}
+
+		switch ( $type ) {
+			case 'orders':
+				$response = $this->api_client->get_orders_report( $start_date, $end_date );
+				$columns  = array(
+					'orderDate'    => 'Datum',
+					'orderId'      => 'Order ID',
+					'orderItemId'  => 'Order Item ID',
+					'productTitle' => 'Product',
+					'quantity'     => 'Aantal',
+					'priceInclVat' => 'Prijs incl. BTW',
+					'commission'   => 'Commissie',
+					'status'       => 'Status',
+				);
+				break;
+
+			case 'commission-revenue':
+				$response = $this->api_client->get_commission_revenue_report( $start_date, $end_date );
+				$columns  = array(
+					'orderDate'              => 'Datum',
+					'siteName'               => 'Site',
+					'frameType'              => 'Frame Type',
+					'name'                   => 'Link naam',
+					'subId'                  => 'SubID',
+					'commissionPercentage'   => 'Commissie %',
+					'commissionOriginal'     => 'Commissie origineel',
+					'commissionApproved'     => 'Commissie goedgekeurd',
+					'commissionOpen'         => 'Commissie open',
+					'revenueOriginalInclVat' => 'Omzet origineel incl. BTW',
+					'revenueApprovedInclVat' => 'Omzet goedgekeurd incl. BTW',
+					'quantityPayable'        => 'Aantal betaalbaar',
+				);
+				break;
+
+			case 'promotion-methods':
+				$response = $this->api_client->get_promotion_methods_report( $start_date, $end_date );
+				$columns  = array(
+					'date'              => 'Datum',
+					'siteName'          => 'Site',
+					'name'              => 'Link naam',
+					'subId'             => 'SubID',
+					'clicks'            => 'Kliks',
+					'impressions'       => 'Impressies',
+					'clickThroughRate'  => 'CTR (%)',
+					'earningsPerClick'  => 'EPC (€)',
+					'orders'            => 'Orders',
+					'conversion'        => 'Conversie (%)',
+					'revenueInclVat'    => 'Omzet incl. BTW (€)',
+					'averageOrderValue' => 'Gem. orderwaarde (€)',
+				);
+				break;
+		}
+
+		if ( is_wp_error( $response ) ) {
+			wp_die( 'API-fout: ' . esc_html( $response->get_error_message() ), 500 );
+		}
+
+		if ( ! isset( $response['items'] ) || ! is_array( $response['items'] ) ) {
+			wp_die( 'Geen data ontvangen van Bol.com API.', 500 );
+		}
+
+		$filename = $type . '_' . $start_date . '_' . $end_date . '.csv';
+
+		header( 'Content-Type: text/csv; charset=UTF-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		$out = fopen( 'php://output', 'w' );
+
+		// UTF-8 BOM zodat Excel correct opent
+		fputs( $out, "\xEF\xBB\xBF" );
+
+		// Headerrij
+		fputcsv( $out, array_values( $columns ), ';' );
+
+		foreach ( $response['items'] as $item ) {
+			$row = array();
+			foreach ( array_keys( $columns ) as $key ) {
+				$row[] = $item[ $key ] ?? '';
+			}
+			fputcsv( $out, $row, ';' );
+		}
+
+		fclose( $out );
+		exit;
 	}
 }
