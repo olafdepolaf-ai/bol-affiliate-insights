@@ -42,14 +42,12 @@ zip -r tb-money-manager.zip tb-money-manager/ \
 echo "Zip gebouwd: tb-money-manager.zip"
 cd tb-money-manager
 
-# Commit en tag
-git -C ../.. add \
-    "tb-money-manager/$PLUGIN_FILE" \
-    "tb-money-manager.zip"
-git -C ../.. commit -m "chore(tbmm): bump version to $NEW_VERSION"
-git -C ../.. tag "$TAG"
-git -C ../.. push origin main
-git -C ../.. push origin "$TAG"
+# Commit en tag — git -C .. = tuinenbalkon/ (de repo root)
+git -C .. add tb-money-manager/ tb-money-manager.zip
+git -C .. commit -m "chore(tbmm): bump versie naar $NEW_VERSION"
+git -C .. tag "$TAG"
+git -C .. push origin main
+git -C .. push origin "$TAG"
 echo "Gepusht naar GitHub met tag $TAG"
 
 # GitHub Release aanmaken met de zip als asset
