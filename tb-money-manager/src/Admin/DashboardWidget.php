@@ -229,15 +229,14 @@ class DashboardWidget {
 			#tbmm_earnings_widget .tbmm-trend.down  { color:#b32d2e; }
 			#tbmm_earnings_widget .tbmm-divider { border:none; border-top:1px solid #f0f0f1; margin:8px 0; }
 			#tbmm_earnings_widget .tbmm-uitbetaling {
-				background:#f6f7f7; border:1px solid #e0e0e0; padding:8px 10px;
-				margin-top:10px; font-size:12px;
+				font-size:12px; margin-top:2px;
 			}
 			#tbmm_earnings_widget .tbmm-uitbetaling-title {
 				font-size:10px; font-weight:700; text-transform:uppercase;
 				letter-spacing:.07em; color:#646970; margin:0 0 5px;
 			}
-			#tbmm_earnings_widget .tbmm-uitbetaling-total {
-				font-size:14px; font-weight:700; color:#2271b1; margin-top:4px;
+			#tbmm_earnings_widget .tbmm-uitbetaling-note {
+				font-size:11px; color:#949494; font-style:italic;
 			}
 			#tbmm_earnings_widget .tbmm-footer {
 				margin-top:8px; font-size:11px; color:#949494;
@@ -327,26 +326,33 @@ class DashboardWidget {
 
 		<?php
 		// --- Uitbetaling sectie ---
-		$show_bol_saldo     = $has_bol && ( ( $bol['saldo_approved'] ?? 0 ) + ( $bol['saldo_pending'] ?? 0 ) ) > 0;
-		if ( $show_bol_saldo ) :
-			$approved = (float) ( $bol['saldo_approved'] ?? 0 );
-			$pending  = (float) ( $bol['saldo_pending']  ?? 0 );
-			$total    = $approved + $pending;
+		$approved      = (float) ( $bol['saldo_approved'] ?? 0 );
+		$pending       = (float) ( $bol['saldo_pending']  ?? 0 );
+		$bol_total     = $approved + $pending;
+		$show_uitbet   = $has_bol && $bol_total > 0;
+
+		if ( $show_uitbet ) :
 			?>
 			<hr class="tbmm-divider">
 			<div class="tbmm-uitbetaling">
-				<p class="tbmm-uitbetaling-title">Uitbetaling Bol.com</p>
+				<p class="tbmm-uitbetaling-title">Uitbetaling</p>
 				<div class="tbmm-rows">
 					<div class="tbmm-row">
-						<span class="tbmm-lbl">Goedgekeurd</span>
-						<span class="tbmm-val"><?php echo esc_html( $this->fmt( $approved ) ); ?></span>
+						<span class="tbmm-lbl">🟠 Bol.com</span>
+						<span class="tbmm-val has-value">
+							<?php echo esc_html( $this->fmt( $bol_total ) ); ?>
+							<span style="font-weight:400; color:#646970; font-size:11px;">
+								(<?php echo esc_html( $this->fmt( $approved ) ); ?> goed · <?php echo esc_html( $this->fmt( $pending ) ); ?> open)
+							</span>
+						</span>
 					</div>
+					<?php if ( $has_adsense ) : ?>
 					<div class="tbmm-row">
-						<span class="tbmm-lbl">Open</span>
-						<span class="tbmm-val"><?php echo esc_html( $this->fmt( $pending ) ); ?></span>
+						<span class="tbmm-lbl">🟡 AdSense</span>
+						<span class="tbmm-uitbetaling-note">Balance niet beschikbaar via Site Kit</span>
 					</div>
+					<?php endif; ?>
 				</div>
-				<div class="tbmm-uitbetaling-total"><?php echo esc_html( $this->fmt( $total ) ); ?></div>
 			</div>
 		<?php endif; ?>
 
