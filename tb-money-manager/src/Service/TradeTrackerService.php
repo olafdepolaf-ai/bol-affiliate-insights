@@ -21,6 +21,8 @@ class TradeTrackerService {
 	const TTL_MATERIALS     = 21600;  // 6h  — text link materials rarely change
 	const TTL_FEEDS         = 86400;  // 24h — feed-catalogus verandert hooguit dagelijks
 	const TTL_FEED_PRODUCTS = 86400;  // 24h — productcatalogus verandert niet intraday
+	const TTL_PENDING       = 3600;   // 1h
+	const TTL_PAYMENTS      = 3600;   // 1h
 
 	private $client = null;
 
@@ -438,6 +440,96 @@ class TradeTrackerService {
 
 			$this->cache_set( $cache_key, $products, self::TTL_FEED_PRODUCTS );
 			return $products;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Geeft de totale openstaande (pending) commissie terug.
+	 * Kijkt maximaal 365 dagen terug voor transacties met status 'pending'.
+	 *
+	 * @return array{ commission: float, count: int }|\WP_Error
+	 */
+	public function get_pending_commission( string $site_id ) {
+		$cache_key = 'pending_' . md5( $site_id );
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		$filter                        = new \stdClass();
+		$filter->transactionStatus     = 'pending';
+		$filter->registrationDateFrom  = gmdate( 'Y-01-01T00:00:00', strtotime( '-1 year' ) );
+		$filter->registrationDateTo    = gmdate( 'Y-m-d\T23:59:59' );
+		$filter->limit                 = 500;
+
+		try {
+			$result       = $client->getConversionTransactions( $site_id, $filter );
+			$transactions = $this->to_array( $result );
+
+			$commission = 0.0;
+			foreach ( $transactions as $t ) {
+				$t = is_object( $t ) ? $t : (object) $t;
+				$commission += (float) ( $t->commission ?? 0 );
+			}
+
+			$data = [ 'commission' => $commission, 'count' => count( $transactions ) ];
+			$this->cache_set( $cache_key, $data, self::TTL_PENDING );
+			return $data;
+		} catch ( \Exception $e ) {
+			return new \WP_Error( 'soap_error', $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Geeft de meest recente betaling terug.
+	 * Retourneert [ 'amount' => float, 'date' => 'Y-m-d' ] of null als geen betaling.
+	 */
+	public function get_last_payment() {
+		$cache_key = 'last_payment';
+		$cached    = $this->cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$client = $this->get_client();
+		if ( is_wp_error( $client ) ) {
+			return $client;
+		}
+
+		$filter               = new \stdClass();
+		$filter->billDateFrom = gmdate( 'Y-m-d', strtotime( '-2 years' ) );
+		$filter->billDateTo   = gmdate( 'Y-m-d' );
+
+		try {
+			$result   = $client->getPayments( $filter );
+			$payments = $this->to_array( $result );
+
+			// Zoek de meest recente betaling met een payDate.
+			$last = null;
+			foreach ( $payments as $p ) {
+				$p = is_object( $p ) ? $p : (object) $p;
+				if ( empty( $p->payDate ) ) {
+					continue;
+				}
+				$pay_date = substr( (string) $p->payDate, 0, 10 );
+				if ( $last === null || $pay_date > $last['date'] ) {
+					$last = [
+						'amount'   => (float) ( $p->subTotal ?? $p->endTotal ?? 0 ),
+						'date'     => $pay_date,
+					];
+				}
+			}
+
+			$result_data = $last ?? [ 'amount' => 0.0, 'date' => '' ];
+			$this->cache_set( $cache_key, $result_data, self::TTL_PAYMENTS );
+			return $result_data;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
 		}

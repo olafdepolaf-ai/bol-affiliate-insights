@@ -156,7 +156,17 @@ class DashboardWidget {
 			}
 		}
 
-		return [ 'configured' => true ] + $buckets;
+		$pending      = $tt->get_pending_commission( $site_id );
+		$last_payment = $tt->get_last_payment();
+
+		return array_merge(
+			[ 'configured' => true ],
+			$buckets,
+			[
+				'pending'      => is_wp_error( $pending )      ? null : $pending,
+				'last_payment' => is_wp_error( $last_payment ) ? null : $last_payment,
+			]
+		);
 	}
 
 	private function fetch_adsense(): array {
@@ -326,10 +336,14 @@ class DashboardWidget {
 
 		<?php
 		// --- Uitbetaling sectie ---
-		$approved      = (float) ( $bol['saldo_approved'] ?? 0 );
-		$pending       = (float) ( $bol['saldo_pending']  ?? 0 );
-		$bol_total     = $approved + $pending;
-		$show_uitbet   = $has_bol && $bol_total > 0;
+		$bol_approved  = (float) ( $bol['saldo_approved'] ?? 0 );
+		$bol_pending   = (float) ( $bol['saldo_pending']  ?? 0 );
+		$bol_total     = $bol_approved + $bol_pending;
+		$tt_pending    = $has_tt ? ( $tt['pending'] ?? null ) : null;
+		$tt_last_pay   = $has_tt ? ( $tt['last_payment'] ?? null ) : null;
+
+		$show_uitbet = ( $has_bol && $bol_total > 0 )
+			|| ( $tt_pending && $tt_pending['commission'] > 0 );
 
 		if ( $show_uitbet ) :
 			?>
@@ -337,19 +351,31 @@ class DashboardWidget {
 			<div class="tbmm-uitbetaling">
 				<p class="tbmm-uitbetaling-title">Uitbetaling</p>
 				<div class="tbmm-rows">
+					<?php if ( $has_bol && $bol_total > 0 ) : ?>
 					<div class="tbmm-row">
 						<span class="tbmm-lbl">🟠 Bol.com</span>
 						<span class="tbmm-val has-value">
 							<?php echo esc_html( $this->fmt( $bol_total ) ); ?>
-							<span style="font-weight:400; color:#646970; font-size:11px;">
-								(<?php echo esc_html( $this->fmt( $approved ) ); ?> goed · <?php echo esc_html( $this->fmt( $pending ) ); ?> open)
+							<span style="font-weight:400;color:#646970;font-size:11px;">
+								(<?php echo esc_html( $this->fmt( $bol_approved ) ); ?> goed · <?php echo esc_html( $this->fmt( $bol_pending ) ); ?> open)
 							</span>
 						</span>
 					</div>
-					<?php if ( $has_adsense ) : ?>
+					<?php endif; ?>
+
+					<?php if ( $tt_pending && $tt_pending['commission'] > 0 ) : ?>
 					<div class="tbmm-row">
-						<span class="tbmm-lbl">🟡 AdSense</span>
-						<span class="tbmm-uitbetaling-note">Balance niet beschikbaar via Site Kit</span>
+						<span class="tbmm-lbl">🔵 TradeTracker</span>
+						<span class="tbmm-val has-value">
+							<?php echo esc_html( $this->fmt( $tt_pending['commission'] ) ); ?>
+							<span style="font-weight:400;color:#646970;font-size:11px;">
+								(<?php echo esc_html( $tt_pending['count'] ); ?> pending)<?php
+								if ( $tt_last_pay && ! empty( $tt_last_pay['date'] ) ) {
+									echo ' · laatste: ' . esc_html( $this->fmt( $tt_last_pay['amount'] ) ) . ' op ' . esc_html( $tt_last_pay['date'] );
+								}
+								?>
+							</span>
+						</span>
 					</div>
 					<?php endif; ?>
 				</div>
