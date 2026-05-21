@@ -28,9 +28,13 @@ class Plugin {
 		// UpdateChecker werkt update-detectie af voor alle gebruikers (WP core vereist dit).
 		new UpdateChecker( TBMM_FILE );
 
-		// Al het overige initialiseert alleen voor ingelogde administrators.
+		add_action( 'init', [ $this, 'load_textdomain' ] );
 		add_action( 'init', [ $this, 'init_for_admins' ] );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade_db' ] );
+	}
+
+	public function load_textdomain(): void {
+		load_plugin_textdomain( 'tbmm', false, dirname( plugin_basename( TBMM_FILE ) ) . '/languages' );
 	}
 
 	public function maybe_upgrade_db(): void {

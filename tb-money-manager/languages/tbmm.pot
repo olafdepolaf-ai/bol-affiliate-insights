@@ -1,0 +1,891 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the TB Money Manager package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: TB Money Manager 0.2.52\n"
+"Report-Msgid-Bugs-To: olaflemmers@gmail.com\n"
+"POT-Creation-Date: 2026-05-21 16:37+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: src/Admin/BolTab.php:43
+msgid "Dashboard"
+msgstr ""
+
+#: src/Admin/BolTab.php:44 src/Bol/Admin/SettingsPage.php:175
+#: src/Bol/Admin/SettingsPage.php:203 src/Bol/Admin/SettingsPage.php:283
+#: src/Bol/Admin/SettingsPage.php:488
+msgid "Orders"
+msgstr ""
+
+#: src/Admin/BolTab.php:45 src/Bol/Admin/SettingsPage.php:329
+msgid "Commissie & Omzet"
+msgstr ""
+
+#: src/Admin/BolTab.php:46 src/Bol/Admin/SettingsPage.php:388
+msgid "Promotiemethoden"
+msgstr ""
+
+#: src/Admin/BolTab.php:47 src/Bol/Admin/SettingsPage.php:399
+msgid "Analyse"
+msgstr ""
+
+#: src/Admin/BolTab.php:48
+msgid "Klik-drop"
+msgstr ""
+
+#: src/Admin/BolTab.php:49
+msgid "Affiliate links"
+msgstr ""
+
+#: src/Admin/BolTab.php:50
+msgid "Linkgenerator"
+msgstr ""
+
+#: src/Admin/BolTab.php:71 src/Admin/ScanPage.php:43
+#: src/Bol/Admin/SettingsPage.php:67
+msgid "Instellingen"
+msgstr ""
+
+#: src/Admin/DashboardWidget.php:279
+msgid "order"
+msgid_plural "orders"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/DashboardWidget.php:294
+msgid "sale"
+msgid_plural "sales"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/GoogleTab.php:40
+msgid "Search Console"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:41
+msgid "AdSense"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:47 src/Admin/TradeTrackerTab.php:122
+msgid "Cache gewist."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:53
+msgid "Google Site Kit is niet actief."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:57
+#, php-format
+msgid "Installeer en activeer de %s om Google-data te tonen."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:58
+msgid "Google Site Kit plugin"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:92
+msgid "Search Console is niet verbonden in Site Kit."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:95
+#, php-format
+msgid "Ga naar %s en activeer de Search Console module."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:96 src/Admin/GoogleTab.php:204
+msgid "Site Kit → Dashboard"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:107 src/Admin/GoogleTab.php:250
+msgid "Gisteren"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:108 src/Admin/GoogleTab.php:262
+#: src/Bol/Admin/SettingsPage.php:118 src/Bol/Admin/SettingsPage.php:217
+msgid "Laatste 7 dagen"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:109 src/Bol/Admin/SettingsPage.php:120
+#: src/Bol/Admin/SettingsPage.php:216 src/Bol/Admin/SettingsPage.php:441
+msgid "Laatste 30 dagen"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:110 src/Bol/Admin/SettingsPage.php:122
+#: src/Bol/Admin/SettingsPage.php:218
+msgid "Dit jaar"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:111
+msgid "Laatste 12 maanden"
+msgstr ""
+
+#. translators: %s = period label (e.g. "Laatste 30 dagen")
+#: src/Admin/GoogleTab.php:130
+#, php-format
+msgid "Top pagina's — %s"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:133 src/Admin/GoogleTab.php:235
+msgid "Cache wissen"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:148
+msgid "Fout:"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:150
+msgid ""
+"Geen data beschikbaar. Mogelijk heeft Search Console nog geen data voor deze "
+"periode."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:155
+msgid "Pagina"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:156
+msgid "Klikken"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:157
+msgid "Vertoningen"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:158
+msgid "CTR"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:159
+msgid "Positie"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:188
+msgid "Gecached voor 6 uur."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:200
+msgid "AdSense is niet verbonden in Site Kit."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:203
+#, php-format
+msgid "Ga naar %s en activeer de AdSense module."
+msgstr ""
+
+#: src/Admin/GoogleTab.php:214
+msgid "Fout bij ophalen AdSense data:"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:234
+msgid "Geschatte inkomsten"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:240 src/Bol/Admin/SettingsPage.php:116
+msgid "Vandaag"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:246
+msgid "vs zelfde dag vorige week"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:259
+msgid "vs vorige 7 dagen"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:265 src/Bol/Admin/SettingsPage.php:214
+msgid "Deze maand"
+msgstr ""
+
+#: src/Admin/GoogleTab.php:268
+msgid "Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense."
+msgstr ""
+
+#: src/Admin/ScanPage.php:32
+msgid "Cache gewist. WordPress controleert nu op updates."
+msgstr ""
+
+#: src/Admin/ScanPage.php:39 src/Admin/SettingsTab.php:20
+msgid "Bol.com"
+msgstr ""
+
+#: src/Admin/ScanPage.php:40 src/Admin/SettingsTab.php:21
+msgid "TradeTracker"
+msgstr ""
+
+#: src/Admin/ScanPage.php:41
+msgid "Google"
+msgstr ""
+
+#: src/Admin/ScanPage.php:42
+msgid "ThirstyAffiliates"
+msgstr ""
+
+#: src/Admin/ScanPage.php:58
+msgid "TB Money Manager"
+msgstr ""
+
+#: src/Admin/ScanPage.php:63
+msgid "Controleer op updates"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:117
+msgid "Instellingen opgeslagen en cache gewist."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:267 src/Admin/TradeTrackerTab.php:605
+msgid "Cache gewist — data wordt opnieuw opgehaald bij TradeTracker."
+msgstr ""
+
+#. translators: %s = link to settings page
+#: src/Bol/Admin/SettingsPage.php:66
+#, php-format
+msgid ""
+"API credentials niet ingesteld. Ga naar %s en voeg je Client ID en Client "
+"Secret toe."
+msgstr ""
+
+#. translators: download button label
+#: src/Bol/Admin/SettingsPage.php:85
+msgid "Download CSV"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:112
+msgid "Dashboard statistieken"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:114 src/Bol/Admin/SettingsPage.php:211
+#: src/Bol/Admin/SettingsPage.php:439
+msgid "Periode:"
+msgstr ""
+
+#. translators: %s = API error message
+#: src/Bol/Admin/SettingsPage.php:137
+#, php-format
+msgid "Fout bij ophalen promotiedata: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:139
+msgid "Onverwacht API-antwoord voor promotiedata."
+msgstr ""
+
+#. translators: %s = API error message
+#: src/Bol/Admin/SettingsPage.php:157
+#, php-format
+msgid "Fout bij ophalen orders voor commissie: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:159
+msgid "Onverwacht API-antwoord voor orders."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:176 src/Bol/Admin/SettingsPage.php:204
+#: src/Bol/Admin/SettingsPage.php:487
+msgid "Kliks"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:177 src/Bol/Admin/SettingsPage.php:205
+#: src/Bol/Admin/SettingsPage.php:489
+msgid "Omzet"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:178 src/Bol/Admin/SettingsPage.php:206
+msgid "Commissie"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:179 src/Bol/Admin/SettingsPage.php:207
+msgid "Conversieratio"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:190
+msgid "Goedgekeurd saldo"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:191
+msgid "Openstaand saldo"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:192
+msgid "Totaal verwacht saldo"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:197
+msgid "Prestaties"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:201
+msgid "Metriek:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:213
+msgid "Laatste 4 weken"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:215
+msgid "Vorige maand"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:219
+msgid "Vorig jaar"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:223
+msgid "Per:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:225
+msgid "Automatisch"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:226
+msgid "Maand"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:227
+msgid "Week"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:228
+msgid "Dag"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:232
+msgid "Website:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:234
+msgid "Alle websites"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:242
+msgid "Grafiek bijwerken"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:254
+msgid "Orders rapport"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:263 src/Bol/Admin/SettingsPage.php:302
+#: src/Bol/Admin/SettingsPage.php:349 src/Bol/Admin/SettingsPage.php:446
+msgid "Van:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:265 src/Bol/Admin/SettingsPage.php:304
+#: src/Bol/Admin/SettingsPage.php:351 src/Bol/Admin/SettingsPage.php:448
+msgid "t/m:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:267 src/Bol/Admin/SettingsPage.php:306
+#: src/Bol/Admin/SettingsPage.php:357
+msgid "Ophalen"
+msgstr ""
+
+#. translators: 1: start date, 2: end date
+#: src/Bol/Admin/SettingsPage.php:273
+#, php-format
+msgid "Orders van %1$s t/m %2$s"
+msgstr ""
+
+#. translators: %s = error message
+#: src/Bol/Admin/SettingsPage.php:277 src/Bol/Admin/SettingsPage.php:317
+#: src/Bol/Admin/SettingsPage.php:368 src/Bol/Admin/SettingsPage.php:465
+#, php-format
+msgid "Fout: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:279 src/Bol/Admin/SettingsPage.php:319
+#: src/Bol/Admin/SettingsPage.php:370
+msgid "API-respons heeft een onverwacht formaat."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:287 src/Bol/Admin/SettingsPage.php:333
+#: src/Bol/Admin/SettingsPage.php:395
+msgid "Kies een datumbereik en klik op Ophalen."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:291
+msgid "Commissie & Omzet rapport"
+msgstr ""
+
+#. translators: 1: start date, 2: end date
+#: src/Bol/Admin/SettingsPage.php:312 src/Bol/Admin/SettingsPage.php:363
+#, php-format
+msgid "Rapport van %1$s t/m %2$s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:337
+msgid "Promotiemethoden rapport"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:355
+msgid "Alleen rijen met orders"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:390
+msgid "Filter actief: alleen rijen met minstens 1 order."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:442
+msgid "Laatste 60 dagen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:443
+msgid "Laatste 90 dagen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:444
+msgid "Aangepast"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:450
+msgid "Min. kliks (0 orders):"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:452 src/Bol/Admin/SettingsPage.php:576
+msgid "Analyseer"
+msgstr ""
+
+#. translators: %s = datetime string
+#: src/Bol/Admin/SettingsPage.php:469
+#, php-format
+msgid "Op basis van promotie-rapport. Gegenereerd om: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:478
+msgid "Geen rijen gevonden voor deze selectie."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:483
+msgid "Site"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:484
+msgid "Link"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:485 src/Bol/Admin/SettingsPage.php:650
+#: src/Bol/Admin/SettingsPage.php:844
+msgid "SubID"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:486
+msgid "Aff. link"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:490
+msgid "EPC"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:491
+msgid "Conversie"
+msgstr ""
+
+#. translators: link title attribute
+#: src/Bol/Admin/SettingsPage.php:522
+#, php-format
+msgid "Bekijk: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:523
+#, php-format
+msgid "Bewerk: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:540
+msgid "Top links op opbrengst (laatste periode)"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:541
+msgid "Veel kliks, 0 orders (mogelijk probleem / optimalisatie-kans)"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:542
+msgid "Kans om op te schalen: hoge EPC, laag volume (10–150 kliks, >0 orders)"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:543
+msgid "Optimalisatie: veel kliks, lage EPC (≥200 kliks, >0 orders)"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:547
+msgid "Klik-drop analyse"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:548
+msgid ""
+"Vergelijkt kliks <strong>vóór</strong> vs <strong>ná</strong> een opgegeven "
+"breekdatum, per promotionmethod. Kliks/dag maakt de periodes vergelijkbaar "
+"ongeacht lengte."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:566
+msgid "Periode vóór:"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:567 src/Bol/Admin/SettingsPage.php:572
+msgid "Van"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:568 src/Bol/Admin/SettingsPage.php:573
+msgid "t/m"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:571
+msgid "Periode ná:"
+msgstr ""
+
+#. translators: %s = error message
+#: src/Bol/Admin/SettingsPage.php:593
+#, php-format
+msgid "Periode vóór: %s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:594
+#, php-format
+msgid "Periode ná: %s"
+msgstr ""
+
+#. translators: 1: start date, 2: end date, 3: days, 4: clicks, 5: clicks/day
+#: src/Bol/Admin/SettingsPage.php:641
+msgid "Periode vóór"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:641 src/Bol/Admin/SettingsPage.php:642
+msgid "dagen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:641 src/Bol/Admin/SettingsPage.php:642
+msgid "kliks totaal"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:642
+msgid "Periode ná"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:643
+msgid "Totale daling"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:643
+msgid "kliks/dag"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:649
+msgid "Link (name)"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:651
+msgid "Kliks vóór"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:652
+msgid "Kliks ná"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:653
+msgid "Kliks/dag vóór"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:654
+msgid "Kliks/dag ná"
+msgstr ""
+
+#. translators: label for a new link (no historical data)
+#: src/Bol/Admin/SettingsPage.php:666
+msgid "nieuw"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:684
+msgid ""
+"Gesorteerd op grootste klik-daling bovenaan. Rood gemarkeerd = significante "
+"dalers (≥0,5 kliks/dag vóór)."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:689
+msgid "Bol.com Affiliate Links"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:695
+msgid "Affiliate plugin"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:696
+msgid "Status"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:696
+msgid "Actief"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:696
+msgid "Niet gevonden"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:697
+msgid "Totaal links"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:698
+msgid "Bol.com links"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:702
+msgid "ThirstyAffiliates niet gevonden."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:702
+msgid "Zorg dat de plugin actief is."
+msgstr ""
+
+#. translators: %s = link to add new affiliate link
+#: src/Bol/Admin/SettingsPage.php:705
+#, php-format
+msgid "ThirstyAffiliates is actief maar er zijn nog geen links aangemaakt. %s."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:705
+msgid "Voeg een link toe"
+msgstr ""
+
+#. translators: %d = number of links found
+#: src/Bol/Admin/SettingsPage.php:708
+#, php-format
+msgid ""
+"Er zijn <strong>%d</strong> links gevonden, maar geen met een bol.com "
+"bestemming."
+msgstr ""
+
+#. translators: 1: count of bol.com links, 2: link to ThirstyAffiliates admin
+#: src/Bol/Admin/SettingsPage.php:711
+#, php-format
+msgid "%1$d bol.com link(s) gevonden. %2$s"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:711
+msgid "Beheer alle links in ThirstyAffiliates →"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:714
+msgid "Naam"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:715
+msgid "Cloaked URL"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:716
+msgid "Bestemming"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:717
+msgid "Shortcode"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:765
+msgid "Bol.com Linkgenerator"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:766
+msgid ""
+"Plak een bol.com URL en genereer direct een schone affiliate-trackinglink."
+msgstr ""
+
+#. translators: %s = site ID
+#: src/Bol/Admin/SettingsPage.php:772
+#, php-format
+msgid ""
+"Site ID <strong>%s</strong> — afkomstig uit je geselecteerde website-"
+"instelling."
+msgstr ""
+
+#. translators: 1: site ID, 2: site name
+#: src/Bol/Admin/SettingsPage.php:780
+#, php-format
+msgid ""
+"Site ID <strong>%1$s</strong> — automatisch bepaald (%2$s, enige gekoppelde "
+"website)."
+msgstr ""
+
+#. translators: 1: site ID, 2: link to settings
+#: src/Bol/Admin/SettingsPage.php:787
+#, php-format
+msgid ""
+"Site ID <strong>%1$s</strong> — handmatig ingesteld. Koppel de <a "
+"href=\"%2$s\">Bol.com API</a> voor automatische detectie."
+msgstr ""
+
+#. translators: %s = link to settings page
+#: src/Bol/Admin/SettingsPage.php:794
+#, php-format
+msgid ""
+"Je hebt meerdere gekoppelde websites. Kies hieronder welke je wilt "
+"gebruiken, of selecteer een specifieke website via <a "
+"href=\"%s\">Instellingen</a>."
+msgstr ""
+
+#. translators: %s = link to settings page
+#: src/Bol/Admin/SettingsPage.php:801
+#, php-format
+msgid ""
+"<strong>Geen Site ID beschikbaar.</strong> <a href=\"%s\">Koppel de Bol.com "
+"API</a> of vul het Site ID handmatig in via Instellingen."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:810
+msgid "Website"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:821
+msgid "Bol.com URL"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:822
+msgid "Plak hier de URL uit je browser..."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:825
+msgid "Type"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:827
+msgid "Tekstlink"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:828
+msgid "HTML-link"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:829
+msgid "Productlink"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:833
+msgid "Link naam"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:835
+msgid "Automatisch gegenereerd..."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:836
+msgid "Wordt gebruikt voor rapportage"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:836
+msgid "Automatisch ingevuld — pas aan indien gewenst."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:840
+msgid "Ankertekst"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:841
+msgid "Tekst die de bezoeker ziet..."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:846
+msgid "bijv. sidebar, review-pagina..."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:847
+msgid "Optioneel. Gebruik je voor tracking per plaatsing"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:854
+msgid "Affiliate link"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:856
+msgid "Kopieer"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:857
+msgid "Gekopieerd!"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1040
+msgid "Instellingen opslaan"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1044
+msgid "API verbindingen testen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1045
+msgid ""
+"Test of de ingevoerde credentials een geldig access token kunnen ophalen bij "
+"bol.com."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1048
+msgid "Reporting API"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1049
+msgid ""
+"Gebruikt voor orders, commissies en promotie-rapporten. Credentials staan "
+"onder"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1049
+msgid "API Credentials"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1049 src/Bol/Admin/SettingsPage.php:1055
+msgid "hierboven."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1050 src/Bol/Admin/SettingsPage.php:1056
+msgid "Verbinding testen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1054 src/Bol/Admin/SettingsPage.php:1055
+msgid "Marketing Catalog API"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1055
+msgid ""
+"Gebruikt voor productdata op EAN (prijs, afbeeldingen, ratings). Credentials "
+"staan onder"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1061
+msgid "Cache"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1062
+msgid ""
+"API-data wordt tot 1 uur gecached. Gebruik deze knop om de cache te legen en "
+"verse data op te halen bij de volgende paginabezoek."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1063
+msgid "Cache legen"
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1066
+msgid "API credentials aanvragen"
+msgstr ""
+
+#. translators: %s = link to bol.com partner platform
+#: src/Bol/Admin/SettingsPage.php:1070
+#, php-format
+msgid ""
+"Log in op het %s, ga naar <strong>Account → Open API</strong> en voeg de "
+"gewenste API-toegang toe. Je vindt daar Client ID en Client Secret per API-"
+"koppeling."
+msgstr ""
+
+#: src/Bol/Admin/SettingsPage.php:1071
+msgid "bol.com partnerplatform"
+msgstr ""

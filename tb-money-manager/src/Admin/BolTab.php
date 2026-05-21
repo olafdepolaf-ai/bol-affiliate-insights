@@ -40,14 +40,14 @@ class BolTab {
 		$subtab   = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'dashboard';
 
 		$left_subtabs = array(
-			'dashboard'          => 'Dashboard',
-			'orders'             => 'Orders',
-			'commission_revenue' => 'Commissie & Omzet',
-			'promotion_methods'  => 'Promotiemethoden',
-			'analysis'           => 'Analyse',
-			'drop_analysis'      => 'Klik-drop',
-			'affiliate_links'    => 'Affiliate links',
-			'link_generator'     => 'Linkgenerator',
+			'dashboard'          => __( 'Dashboard', 'tbmm' ),
+			'orders'             => __( 'Orders', 'tbmm' ),
+			'commission_revenue' => __( 'Commissie & Omzet', 'tbmm' ),
+			'promotion_methods'  => __( 'Promotiemethoden', 'tbmm' ),
+			'analysis'           => __( 'Analyse', 'tbmm' ),
+			'drop_analysis'      => __( 'Klik-drop', 'tbmm' ),
+			'affiliate_links'    => __( 'Affiliate links', 'tbmm' ),
+			'link_generator'     => __( 'Linkgenerator', 'tbmm' ),
 		);
 		?>
 		<style>
@@ -68,7 +68,7 @@ class BolTab {
 			<?php endforeach; ?>
 			<a href="<?php echo esc_url( $base_url . '&subtab=settings' ); ?>"
 			   class="alc-subtab-settings <?php echo $subtab === 'settings' ? 'active' : ''; ?>">
-				&#9881; Instellingen
+				&#9881; <?php esc_html_e( 'Instellingen', 'tbmm' ); ?>
 			</a>
 		</nav>
 

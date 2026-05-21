@@ -16,10 +16,10 @@ class SettingsTab {
 		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=settings' );
 		$subtab   = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'bol';
 
-		$subtabs = [
-			'bol'          => 'Bol.com',
-			'tradetracker' => 'TradeTracker',
-		];
+		$subtabs = array(
+			'bol'          => __( 'Bol.com', 'tbmm' ),
+			'tradetracker' => __( 'TradeTracker', 'tbmm' ),
+		);
 
 		if ( ! array_key_exists( $subtab, $subtabs ) ) {
 			$subtab = 'bol';

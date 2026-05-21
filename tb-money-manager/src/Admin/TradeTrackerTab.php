@@ -114,12 +114,12 @@ class TradeTrackerTab {
 			update_option( 'tbmm_tt_customer_id', sanitize_text_field( wp_unslash( $_POST['tbmm_tt_customer_id'] ?? '' ) ) );
 			update_option( 'tbmm_tt_access_key',  sanitize_text_field( wp_unslash( $_POST['tbmm_tt_access_key'] ?? '' ) ) );
 			$this->service->clear_cache();
-			$notice = '<div class="notice notice-success inline"><p>Instellingen opgeslagen en cache gewist.</p></div>';
+			$notice = '<div class="notice notice-success inline"><p>' . esc_html__( 'Instellingen opgeslagen en cache gewist.', 'tbmm' ) . '</p></div>';
 		}
 
 		if ( isset( $_POST['tbmm_tt_clear_cache'] ) && check_admin_referer( 'tbmm_tt_settings', 'tbmm_tt_nonce' ) ) {
 			$this->service->clear_cache();
-			$notice = '<div class="notice notice-success inline"><p>Cache gewist.</p></div>';
+			$notice = '<div class="notice notice-success inline"><p>' . esc_html__( 'Cache gewist.', 'tbmm' ) . '</p></div>';
 		}
 
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
@@ -264,7 +264,7 @@ class TradeTrackerTab {
 
 		if ( isset( $_GET['cache_cleared'] ) ) :
 		?>
-		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p>Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.</p></div>
+		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p><?php esc_html_e( 'Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.', 'tbmm' ); ?></p></div>
 		<?php endif; ?>
 
 		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
@@ -602,7 +602,7 @@ class TradeTrackerTab {
 		<?php
 		if ( isset( $_GET['cache_cleared'] ) ) :
 		?>
-		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p>Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.</p></div>
+		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p><?php esc_html_e( 'Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.', 'tbmm' ); ?></p></div>
 		<?php endif;
 
 		$fetched_at  = $this->service->get_clicks_fetched_at( $site_id, $selected_year );

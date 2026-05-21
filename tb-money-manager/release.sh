@@ -33,6 +33,14 @@ echo "Nieuwe versie: $NEW_VERSION (tag: $TAG)"
 sed -i '' "s/ \* Version: $CURRENT/ \* Version: $NEW_VERSION/" "$PLUGIN_FILE"
 echo "Versie bijgewerkt in $PLUGIN_FILE"
 
+# .po → .mo compileren voor alle aanwezige vertalingen
+for po_file in languages/*.po; do
+  [ -f "$po_file" ] || continue
+  mo_file="${po_file%.po}.mo"
+  msgfmt "$po_file" -o "$mo_file"
+  echo "Gecompileerd: $mo_file"
+done
+
 # Zip bouwen vanuit de root
 cd ..
 rm -f tb-money-manager.zip

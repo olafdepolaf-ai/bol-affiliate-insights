@@ -40,6 +40,8 @@ class MenuService {
 			true
 		);
 
+		wp_set_script_translations( 'alc-bol-admin-settings', 'tbmm', TBMM_PATH . 'languages' );
+
 		wp_localize_script(
 			'alc-bol-admin-settings',
 			'bol_settings_params',

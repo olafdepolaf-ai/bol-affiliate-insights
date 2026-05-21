@@ -37,21 +37,27 @@ class GoogleTab {
 		$subtab   = sanitize_key( $_GET['subtab'] ?? 'search_console' );
 
 		$subtabs = array(
-			'search_console' => 'Search Console',
-			'adsense'        => 'AdSense',
+			'search_console' => __( 'Search Console', 'tbmm' ),
+			'adsense'        => __( 'AdSense', 'tbmm' ),
 		);
 		?>
 		<div style="max-width:960px;">
 
 			<?php if ( isset( $_GET['cache_cleared'] ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>Cache gewist.</p></div>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Cache gewist.', 'tbmm' ); ?></p></div>
 			<?php endif; ?>
 
 			<?php if ( ! $this->bridge->is_available() ) : ?>
 				<div class="notice notice-warning inline">
 					<p>
-						<strong>Google Site Kit is niet actief.</strong>
-						Installeer en activeer de <a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=google-site-kit&tab=search&type=term' ) ); ?>">Google Site Kit plugin</a> om Google-data te tonen.
+						<strong><?php esc_html_e( 'Google Site Kit is niet actief.', 'tbmm' ); ?></strong>
+						<?php
+						/* translators: %s = link to WordPress plugin search */
+						printf(
+							__( 'Installeer en activeer de %s om Google-data te tonen.', 'tbmm' ),
+							'<a href="' . esc_url( admin_url( 'plugin-install.php?s=google-site-kit&tab=search&type=term' ) ) . '">' . esc_html__( 'Google Site Kit plugin', 'tbmm' ) . '</a>'
+						);
+						?>
 					</p>
 				</div>
 			<?php else : ?>
@@ -83,22 +89,26 @@ class GoogleTab {
 	private function render_search_console_subtab(): void {
 		if ( ! $this->bridge->is_search_console_connected() ) {
 			echo '<div class="notice notice-warning inline"><p>';
-			echo '<strong>Search Console is niet verbonden in Site Kit.</strong> ';
-			echo 'Ga naar <a href="' . esc_url( admin_url( 'admin.php?page=googlesitekit-dashboard' ) ) . '">Site Kit → Dashboard</a> en activeer de Search Console module.';
+			echo '<strong>' . esc_html__( 'Search Console is niet verbonden in Site Kit.', 'tbmm' ) . '</strong> ';
+			/* translators: %s = link to Site Kit dashboard */
+			printf(
+				__( 'Ga naar %s en activeer de Search Console module.', 'tbmm' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=googlesitekit-dashboard' ) ) . '">' . esc_html__( 'Site Kit → Dashboard', 'tbmm' ) . '</a>'
+			);
 			echo '</p></div>';
 			return;
 		}
 
 		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=google&subtab=search_console' );
 
-		// Periode-definities. GSC data loopt ~1 dag achter; gisteren is zeker beschikbaar.
+		// GSC data loopt ~1 dag achter; gisteren is zeker beschikbaar.
 		$end     = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
 		$periods = array(
-			'yesterday'      => array( 'start' => $end,                                           'end' => $end,  'label' => 'Gisteren' ),
-			'last_7_days'    => array( 'start' => gmdate( 'Y-m-d', strtotime( '-7 days' ) ),      'end' => $end,  'label' => 'Laatste 7 dagen' ),
-			'last_30_days'   => array( 'start' => gmdate( 'Y-m-d', strtotime( '-30 days' ) ),     'end' => $end,  'label' => 'Laatste 30 dagen' ),
-			'this_year'      => array( 'start' => gmdate( 'Y' ) . '-01-01',                       'end' => $end,  'label' => 'Dit jaar' ),
-			'last_12_months' => array( 'start' => gmdate( 'Y-m-d', strtotime( '-12 months' ) ),   'end' => $end,  'label' => 'Laatste 12 maanden' ),
+			'yesterday'      => array( 'start' => $end,                                         'end' => $end, 'label' => __( 'Gisteren', 'tbmm' ) ),
+			'last_7_days'    => array( 'start' => gmdate( 'Y-m-d', strtotime( '-7 days' ) ),    'end' => $end, 'label' => __( 'Laatste 7 dagen', 'tbmm' ) ),
+			'last_30_days'   => array( 'start' => gmdate( 'Y-m-d', strtotime( '-30 days' ) ),   'end' => $end, 'label' => __( 'Laatste 30 dagen', 'tbmm' ) ),
+			'this_year'      => array( 'start' => gmdate( 'Y' ) . '-01-01',                     'end' => $end, 'label' => __( 'Dit jaar', 'tbmm' ) ),
+			'last_12_months' => array( 'start' => gmdate( 'Y-m-d', strtotime( '-12 months' ) ), 'end' => $end, 'label' => __( 'Laatste 12 maanden', 'tbmm' ) ),
 		);
 
 		$selected_period = sanitize_key( $_GET['gsc_period'] ?? 'last_30_days' );
@@ -106,16 +116,21 @@ class GoogleTab {
 			$selected_period = 'last_30_days';
 		}
 
-		$start_date = $periods[ $selected_period ]['start'];
-		$end_date   = $periods[ $selected_period ]['end'];
+		$start_date   = $periods[ $selected_period ]['start'];
+		$end_date     = $periods[ $selected_period ]['end'];
 		$period_label = $periods[ $selected_period ]['label'];
 
 		$result    = $this->bridge->get_gsc_top_pages( $start_date, $end_date, 10 );
 		$clear_url = add_query_arg( 'gsc_period', $selected_period, $this->make_clear_url( 'search_console' ) );
 		?>
 		<div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
-			<h3 style="margin:0;">Top pagina's — <?php echo esc_html( $period_label ); ?></h3>
-			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ Cache wissen</a>
+			<h3 style="margin:0;">
+				<?php
+				/* translators: %s = period label (e.g. "Laatste 30 dagen") */
+				printf( esc_html__( 'Top pagina\'s — %s', 'tbmm' ), esc_html( $period_label ) );
+				?>
+			</h3>
+			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Cache wissen', 'tbmm' ); ?></a>
 		</div>
 
 		<div style="margin-bottom:16px; display:flex; gap:4px; flex-wrap:wrap;">
@@ -130,18 +145,18 @@ class GoogleTab {
 		</div>
 
 		<?php if ( is_wp_error( $result ) ) : ?>
-			<div class="notice notice-error inline"><p><strong>Fout:</strong> <?php echo esc_html( $result->get_error_message() ); ?></p></div>
+			<div class="notice notice-error inline"><p><strong><?php esc_html_e( 'Fout:', 'tbmm' ); ?></strong> <?php echo esc_html( $result->get_error_message() ); ?></p></div>
 		<?php elseif ( empty( $result ) ) : ?>
-			<p>Geen data beschikbaar. Mogelijk heeft Search Console nog geen data voor deze periode.</p>
+			<p><?php esc_html_e( 'Geen data beschikbaar. Mogelijk heeft Search Console nog geen data voor deze periode.', 'tbmm' ); ?></p>
 		<?php else : ?>
 			<table class="wp-list-table widefat fixed striped" style="table-layout:auto;">
 				<thead>
 					<tr>
-						<th>Pagina</th>
-						<th style="width:80px; text-align:right;">Klikken</th>
-						<th style="width:100px; text-align:right;">Vertoningen</th>
-						<th style="width:70px; text-align:right;">CTR</th>
-						<th style="width:80px; text-align:right;">Positie</th>
+						<th><?php esc_html_e( 'Pagina', 'tbmm' ); ?></th>
+						<th style="width:80px; text-align:right;"><?php esc_html_e( 'Klikken', 'tbmm' ); ?></th>
+						<th style="width:100px; text-align:right;"><?php esc_html_e( 'Vertoningen', 'tbmm' ); ?></th>
+						<th style="width:70px; text-align:right;"><?php esc_html_e( 'CTR', 'tbmm' ); ?></th>
+						<th style="width:80px; text-align:right;"><?php esc_html_e( 'Positie', 'tbmm' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -170,7 +185,7 @@ class GoogleTab {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
-			<p style="color:#646970; font-size:12px; margin-top:8px;">Gecached voor 6 uur.</p>
+			<p style="color:#646970; font-size:12px; margin-top:8px;"><?php esc_html_e( 'Gecached voor 6 uur.', 'tbmm' ); ?></p>
 		<?php endif; ?>
 		<?php
 	}
@@ -182,8 +197,12 @@ class GoogleTab {
 	private function render_adsense_subtab(): void {
 		if ( ! $this->bridge->is_adsense_connected() ) {
 			echo '<div class="notice notice-warning inline"><p>';
-			echo '<strong>AdSense is niet verbonden in Site Kit.</strong> ';
-			echo 'Ga naar <a href="' . esc_url( admin_url( 'admin.php?page=googlesitekit-dashboard' ) ) . '">Site Kit → Dashboard</a> en activeer de AdSense module.';
+			echo '<strong>' . esc_html__( 'AdSense is niet verbonden in Site Kit.', 'tbmm' ) . '</strong> ';
+			/* translators: %s = link to Site Kit dashboard */
+			printf(
+				__( 'Ga naar %s en activeer de AdSense module.', 'tbmm' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=googlesitekit-dashboard' ) ) . '">' . esc_html__( 'Site Kit → Dashboard', 'tbmm' ) . '</a>'
+			);
 			echo '</p></div>';
 			return;
 		}
@@ -192,7 +211,7 @@ class GoogleTab {
 		$clear_url = $this->make_clear_url( 'adsense' );
 
 		if ( is_wp_error( $daily ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Fout bij ophalen AdSense data:</strong> ' . esc_html( $daily->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p><strong>' . esc_html__( 'Fout bij ophalen AdSense data:', 'tbmm' ) . '</strong> ' . esc_html( $daily->get_error_message() ) . '</p></div>';
 			return;
 		}
 
@@ -212,23 +231,23 @@ class GoogleTab {
 		<?php $this->render_metric_styles(); ?>
 
 		<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-			<h3 style="margin:0;">Geschatte inkomsten</h3>
-			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ Cache wissen</a>
+			<h3 style="margin:0;"><?php esc_html_e( 'Geschatte inkomsten', 'tbmm' ); ?></h3>
+			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Cache wissen', 'tbmm' ); ?></a>
 		</div>
 
 		<div class="tbmm-metrics-row">
 			<?php if ( $today_earnings !== null ) : ?>
-				<?php $this->render_metric_box( 'Vandaag', $this->fmt_eur( $today_earnings ) ); ?>
+				<?php $this->render_metric_box( __( 'Vandaag', 'tbmm' ), $this->fmt_eur( $today_earnings ) ); ?>
 			<?php endif; ?>
 
 			<?php
 			$yday_delta = null;
 			if ( $yesterday_earnings !== null && $week_ago_earnings !== null && $week_ago_earnings > 0 ) {
-				$yday_delta = [ $yesterday_earnings - $week_ago_earnings, 'vs zelfde dag vorige week' ];
+				$yday_delta = array( $yesterday_earnings - $week_ago_earnings, __( 'vs zelfde dag vorige week', 'tbmm' ) );
 				$yday_delta[2] = round( $yday_delta[0] / $week_ago_earnings * 100 );
 			}
 			$this->render_metric_box(
-				'Gisteren',
+				__( 'Gisteren', 'tbmm' ),
 				$yesterday_earnings !== null ? $this->fmt_eur( $yesterday_earnings ) : '—',
 				$yday_delta
 			);
@@ -237,16 +256,16 @@ class GoogleTab {
 			<?php
 			$week_delta = null;
 			if ( $prev7 > 0 ) {
-				$week_delta = [ $last7 - $prev7, 'vs vorige 7 dagen' ];
+				$week_delta = array( $last7 - $prev7, __( 'vs vorige 7 dagen', 'tbmm' ) );
 				$week_delta[2] = round( $week_delta[0] / $prev7 * 100 );
 			}
-			$this->render_metric_box( 'Laatste 7 dagen', $this->fmt_eur( $last7 ), $week_delta );
+			$this->render_metric_box( __( 'Laatste 7 dagen', 'tbmm' ), $this->fmt_eur( $last7 ), $week_delta );
 			?>
 
-			<?php $this->render_metric_box( 'Deze maand', $this->fmt_eur( $month ) ); ?>
+			<?php $this->render_metric_box( __( 'Deze maand', 'tbmm' ), $this->fmt_eur( $month ) ); ?>
 		</div>
 
-		<p style="color:#646970; font-size:12px;">Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense.</p>
+		<p style="color:#646970; font-size:12px;"><?php esc_html_e( 'Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense.', 'tbmm' ); ?></p>
 		<?php
 	}
 
@@ -256,7 +275,6 @@ class GoogleTab {
 	 * @param string     $label  Box title.
 	 * @param string     $value  Formatted primary value.
 	 * @param array|null $delta  Optional: [ float $diff, string $vs_label, int $pct ].
-	 *                           Positive diff = up (green), negative = down (red).
 	 */
 	private function render_metric_box( string $label, string $value, ?array $delta = null ): void {
 		$trend_class = '';

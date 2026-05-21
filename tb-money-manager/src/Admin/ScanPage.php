@@ -28,20 +28,20 @@ class ScanPage {
 				require_once ABSPATH . 'wp-admin/includes/update.php';
 			}
 			wp_update_plugins();
-			$update_redirect = esc_url( remove_query_arg( [ 'tbmm_check_updates', '_wpnonce' ] ) );
-			$update_notice   = '<div class="notice notice-success"><p>Cache gewist. WordPress controleert nu op updates.</p></div>';
+			$update_redirect = esc_url( remove_query_arg( array( 'tbmm_check_updates', '_wpnonce' ) ) );
+			$update_notice   = '<div class="notice notice-success"><p>' . esc_html__( 'Cache gewist. WordPress controleert nu op updates.', 'tbmm' ) . '</p></div>';
 		}
 
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'bol';
 		$page_url    = admin_url( 'admin.php?page=tb-money-manager' );
 
-		$tabs = [
-			'bol'          => 'Bol.com',
-			'tradetracker' => 'TradeTracker',
-			'google'       => 'Google',
-			'ta'           => 'ThirstyAffiliates',
-			'settings'     => 'Instellingen',
-		];
+		$tabs = array(
+			'bol'          => __( 'Bol.com', 'tbmm' ),
+			'tradetracker' => __( 'TradeTracker', 'tbmm' ),
+			'google'       => __( 'Google', 'tbmm' ),
+			'ta'           => __( 'ThirstyAffiliates', 'tbmm' ),
+			'settings'     => __( 'Instellingen', 'tbmm' ),
+		);
 
 		if ( ! function_exists( 'get_plugin_data' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -55,12 +55,12 @@ class ScanPage {
 		?>
 		<div class="wrap">
 			<h1 style="display:flex; align-items:center; gap:16px;">
-				TB Money Manager
+				<?php esc_html_e( 'TB Money Manager', 'tbmm' ); ?>
 				<span style="font-size:13px; font-weight:400; color:#646970;">v<?php echo esc_html( $current_ver ); ?></span>
 				<a href="<?php echo esc_url( $check_url ); ?>"
 				   class="button button-small"
 				   style="font-size:12px; margin-top:2px;">
-					↻ Controleer op updates
+					↻ <?php esc_html_e( 'Controleer op updates', 'tbmm' ); ?>
 				</a>
 			</h1>
 
