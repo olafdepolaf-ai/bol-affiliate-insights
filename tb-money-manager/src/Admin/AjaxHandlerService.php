@@ -137,9 +137,8 @@ class AjaxHandlerService {
 			wp_send_json_error( [ 'message' => $site_id->get_error_message() ] );
 		}
 
-		// getFeedProducts met $filter->query filtert server-side, maar retourneert soms
-		// onvolledige of niet-gesorteerde resultaten. We halen een grotere batch op (200)
-		// en filteren + sorteren daarna zelf client-side voor betrouwbaardere resultaten.
+		// With a keyword: fetch 200 items and re-sort client-side for better relevance.
+		// Without a keyword: use exact page size — rely on server-side offset pagination.
 		$fetch_limit = $search !== '' ? 200 : $per_page;
 
 		if ( $feed_id ) {
@@ -174,9 +173,10 @@ class AjaxHandlerService {
 			] );
 		}
 
-		// Cross-feed zoeken — zoekterm verplicht
-		if ( $search === '' ) {
-			wp_send_json_error( [ 'message' => 'Voer een zoekwoord in om over alle feeds te zoeken.' ] );
+		// Cross-feed: require at least a campaign filter or a search keyword.
+		// Browsing all feeds without any filter would return an unmanageably large set.
+		if ( $search === '' && $campaign_id === '' ) {
+			wp_send_json_error( [ 'message' => 'Selecteer een campagne of voer een zoekwoord in.' ] );
 		}
 
 		$feeds = $this->tt_service->get_feeds( $site_id, 'accepted' );
@@ -200,30 +200,51 @@ class AjaxHandlerService {
 				}
 			}
 
-			$raw = $this->tt_service->get_feed_products( $site_id, $fid, $search, $fetch_limit, 0 );
-			if ( is_wp_error( $raw ) || empty( $raw ) ) {
-				continue;
-			}
-
-			// Filter op ruwe objecten zodat de volledige beschrijving beschikbaar is
-			$raw       = $this->filter_raw_by_search( $raw, $search );
-			$feed_name = (string) ( $f->name ?? '' );
-			foreach ( $this->normalize_products( $raw ) as $product ) {
-				$product['feed_name'] = $feed_name;
-				$all_products[]       = $product;
+			if ( $search !== '' ) {
+				// With keyword: fetch large batch from offset 0, filter + sort for relevance.
+				$raw = $this->tt_service->get_feed_products( $site_id, $fid, $search, $fetch_limit, 0 );
+				if ( is_wp_error( $raw ) || empty( $raw ) ) {
+					continue;
+				}
+				$raw       = $this->filter_raw_by_search( $raw, $search );
+				$feed_name = (string) ( $f->name ?? '' );
+				foreach ( $this->normalize_products( $raw ) as $product ) {
+					$product['feed_name'] = $feed_name;
+					$all_products[]       = $product;
+				}
+			} else {
+				// No keyword, campaign filter only: paginate via server-side offset per feed.
+				$raw = $this->tt_service->get_feed_products( $site_id, $fid, '', $per_page, $offset );
+				if ( is_wp_error( $raw ) || empty( $raw ) ) {
+					continue;
+				}
+				$feed_name = (string) ( $f->name ?? '' );
+				foreach ( $this->normalize_products( $raw ) as $product ) {
+					$product['feed_name'] = $feed_name;
+					$all_products[]       = $product;
+				}
 			}
 		}
 
-		$all_products = $this->sort_by_relevance( $all_products, $search );
-		$products     = array_slice( $all_products, 0, $per_page );
+		if ( $search !== '' ) {
+			$all_products = $this->sort_by_relevance( $all_products, $search );
+			$products     = array_slice( $all_products, 0, $per_page );
+			$has_more     = false;
+			$total_found  = count( $all_products );
+		} else {
+			// No-keyword browse: products are already at the correct offset, show them as-is.
+			$products    = array_slice( $all_products, 0, $per_page );
+			$has_more    = count( $all_products ) >= $per_page;
+			$total_found = null;
+		}
 
 		wp_send_json_success( [
 			'products'    => $products,
-			'page'        => 1,
+			'page'        => $page,
 			'per_page'    => $per_page,
-			'has_more'    => false,
+			'has_more'    => $has_more,
 			'all_feeds'   => true,
-			'total_found' => count( $all_products ),
+			'total_found' => $total_found,
 		] );
 	}
 

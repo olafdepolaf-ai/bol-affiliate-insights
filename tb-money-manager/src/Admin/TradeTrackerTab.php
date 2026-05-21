@@ -26,6 +26,36 @@ class TradeTrackerTab {
 		$this->service          = $service;
 		$this->ta_service       = $ta_service;
 		$this->orphaned_scanner = $orphaned_scanner;
+		add_action( 'admin_init', [ $this, 'handle_cache_flush' ] );
+	}
+
+	public function handle_cache_flush(): void {
+		if ( ( $_GET['page'] ?? '' ) !== 'tb-money-manager' ) {
+			return;
+		}
+
+		$site_id = $this->service->get_primary_site_id();
+		if ( is_wp_error( $site_id ) ) {
+			return;
+		}
+
+		$year = isset( $_GET['jaar'] ) ? max( 2015, min( (int) gmdate( 'Y' ), (int) $_GET['jaar'] ) ) : (int) gmdate( 'Y' );
+
+		if ( isset( $_GET['tbmm_flush_clicks'] )
+			&& wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_clicks'] ), 'tbmm_flush_clicks_' . $year )
+		) {
+			$this->service->clear_clicks_cache( $site_id, $year );
+			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $year . '&cache_cleared=1' ) );
+			exit;
+		}
+
+		if ( isset( $_GET['tbmm_flush_rapport'] )
+			&& wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_rapport'] ), 'tbmm_flush_rapport_' . $year )
+		) {
+			$this->service->clear_report_cache( $site_id, $year );
+			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=rapport&jaar=' . $year . '&cache_cleared=1' ) );
+			exit;
+		}
 	}
 
 	public function render(): void {
@@ -215,13 +245,6 @@ class TradeTrackerTab {
 		if ( is_wp_error( $site_id ) ) {
 			echo '<div class="notice notice-error inline"><p>' . esc_html( $site_id->get_error_message() ) . '</p></div>';
 			return;
-		}
-
-		// Handle cache flush request
-		if ( isset( $_GET['tbmm_flush_rapport'] ) && wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_rapport'] ), 'tbmm_flush_rapport_' . $selected_year ) ) {
-			$this->service->clear_report_cache( $site_id, $selected_year );
-			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=rapport&jaar=' . $selected_year . '&cache_cleared=1' ) );
-			exit;
 		}
 
 		$fetched_at  = $this->service->get_report_fetched_at( $site_id, $selected_year );
@@ -519,13 +542,6 @@ class TradeTrackerTab {
 		if ( is_wp_error( $site_id ) ) {
 			echo '<div class="notice notice-error inline"><p>' . esc_html( $site_id->get_error_message() ) . '</p></div>';
 			return;
-		}
-
-		// Handle cache flush request
-		if ( isset( $_GET['tbmm_flush_clicks'] ) && wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_clicks'] ), 'tbmm_flush_clicks_' . $selected_year ) ) {
-			$this->service->clear_clicks_cache( $site_id, $selected_year );
-			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year . '&cache_cleared=1' ) );
-			exit;
 		}
 
 		// Base URL for this subtab (year/page navigation)
@@ -1273,9 +1289,9 @@ class TradeTrackerTab {
 				var search  = elSearch.value.trim();
 				var perPage = parseInt(elPerPage.value, 10);
 
-				// Cross-feed search requires a keyword
-				if (feedId === '0' && !search) {
-					elResults.innerHTML = '<p class="alc-pf-status">Voer een zoekwoord in om over alle feeds te zoeken.</p>';
+				// Without a specific feed selected, at least a campaign or keyword is required
+				if (feedId === '0' && !elCampaign.value && !search) {
+					elResults.innerHTML = '<p class="alc-pf-status">Selecteer een campagne of voer een zoekwoord in.</p>';
 					return;
 				}
 
