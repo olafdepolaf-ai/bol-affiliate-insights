@@ -15,7 +15,8 @@ class GoogleTab {
 
 	public function handle_clear_cache(): void {
 		check_admin_referer( 'tbmm_google_clear_cache' );
-		$subtab = sanitize_key( $_GET['subtab'] ?? '' );
+		$subtab     = sanitize_key( $_GET['subtab'] ?? '' );
+		$gsc_period = sanitize_key( $_GET['gsc_period'] ?? '' );
 		if ( $subtab === 'adsense' ) {
 			$this->bridge->clear_adsense_cache();
 		} elseif ( $subtab === 'search_console' ) {
@@ -23,7 +24,11 @@ class GoogleTab {
 		} else {
 			$this->bridge->clear_all_cache();
 		}
-		wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=google&subtab=' . $subtab . '&cache_cleared=1' ) );
+		$redirect = admin_url( 'admin.php?page=tb-money-manager&tab=google&subtab=' . $subtab . '&cache_cleared=1' );
+		if ( $gsc_period ) {
+			$redirect = add_query_arg( 'gsc_period', $gsc_period, $redirect );
+		}
+		wp_safe_redirect( $redirect );
 		exit;
 	}
 
@@ -84,12 +89,44 @@ class GoogleTab {
 			return;
 		}
 
-		$result    = $this->bridge->get_gsc_top_pages( 10 );
-		$clear_url = $this->make_clear_url( 'search_console' );
+		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=google&subtab=search_console' );
+
+		// Periode-definities. GSC data loopt ~1 dag achter; gisteren is zeker beschikbaar.
+		$end     = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
+		$periods = array(
+			'yesterday'      => array( 'start' => $end,                                           'end' => $end,  'label' => 'Gisteren' ),
+			'last_7_days'    => array( 'start' => gmdate( 'Y-m-d', strtotime( '-7 days' ) ),      'end' => $end,  'label' => 'Laatste 7 dagen' ),
+			'last_30_days'   => array( 'start' => gmdate( 'Y-m-d', strtotime( '-30 days' ) ),     'end' => $end,  'label' => 'Laatste 30 dagen' ),
+			'this_year'      => array( 'start' => gmdate( 'Y' ) . '-01-01',                       'end' => $end,  'label' => 'Dit jaar' ),
+			'last_12_months' => array( 'start' => gmdate( 'Y-m-d', strtotime( '-12 months' ) ),   'end' => $end,  'label' => 'Laatste 12 maanden' ),
+		);
+
+		$selected_period = sanitize_key( $_GET['gsc_period'] ?? 'last_30_days' );
+		if ( ! isset( $periods[ $selected_period ] ) ) {
+			$selected_period = 'last_30_days';
+		}
+
+		$start_date = $periods[ $selected_period ]['start'];
+		$end_date   = $periods[ $selected_period ]['end'];
+		$period_label = $periods[ $selected_period ]['label'];
+
+		$result    = $this->bridge->get_gsc_top_pages( $start_date, $end_date, 10 );
+		$clear_url = add_query_arg( 'gsc_period', $selected_period, $this->make_clear_url( 'search_console' ) );
 		?>
-		<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-			<h3 style="margin:0;">Top pagina's — afgelopen 30 dagen</h3>
+		<div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
+			<h3 style="margin:0;">Top pagina's — <?php echo esc_html( $period_label ); ?></h3>
 			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ Cache wissen</a>
+		</div>
+
+		<div style="margin-bottom:16px; display:flex; gap:4px; flex-wrap:wrap;">
+			<?php foreach ( $periods as $slug => $info ) : ?>
+				<?php $active = $slug === $selected_period; ?>
+				<a href="<?php echo esc_url( $base_url . '&gsc_period=' . $slug ); ?>"
+				   class="button button-small"
+				   style="<?php echo $active ? 'font-weight:600; background:#2271b1; color:#fff; border-color:#2271b1;' : ''; ?>">
+					<?php echo esc_html( $info['label'] ); ?>
+				</a>
+			<?php endforeach; ?>
 		</div>
 
 		<?php if ( is_wp_error( $result ) ) : ?>

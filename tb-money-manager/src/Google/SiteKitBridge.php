@@ -14,7 +14,7 @@ namespace TuinenBalkon\TBMoneyManager\Google;
  */
 class SiteKitBridge {
 
-	const TRANSIENT_GSC_TOP_PAGES   = 'tbmm_gsc_top_pages';
+	const TRANSIENT_GSC_PREFIX      = 'tbmm_gsc_top_pages_';
 	const TRANSIENT_ADSENSE_DAILY   = 'tbmm_adsense_daily';
 	const CACHE_DURATION            = 6 * HOUR_IN_SECONDS;
 
@@ -53,13 +53,17 @@ class SiteKitBridge {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Returns top pages from Search Console (last 30 days), keyed by URL.
-	 * Cached for CACHE_DURATION.
+	 * Returns top pages from Search Console for the given date range.
+	 * Cached per date range for CACHE_DURATION.
 	 *
-	 * @return array|\WP_Error  Rows (Google_Service_SearchConsole_ApiDataRow[]) or error.
+	 * @param string $start_date  Y-m-d
+	 * @param string $end_date    Y-m-d
+	 * @param int    $limit
+	 * @return array|\WP_Error
 	 */
-	public function get_gsc_top_pages( int $limit = 10 ) {
-		$cached = get_transient( self::TRANSIENT_GSC_TOP_PAGES );
+	public function get_gsc_top_pages( string $start_date, string $end_date, int $limit = 10 ) {
+		$cache_key = self::TRANSIENT_GSC_PREFIX . md5( $start_date . '|' . $end_date . '|' . $limit );
+		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -67,8 +71,8 @@ class SiteKitBridge {
 		try {
 			$module = $this->make_modules()->get_module( 'search-console' );
 			$result = $module->get_data( 'searchanalytics', array(
-				'startDate'  => gmdate( 'Y-m-d', strtotime( '-30 days' ) ),
-				'endDate'    => gmdate( 'Y-m-d', strtotime( '-3 days' ) ),
+				'startDate'  => $start_date,
+				'endDate'    => $end_date,
 				'dimensions' => array( 'page' ),
 				'limit'      => $limit,
 			) );
@@ -81,7 +85,7 @@ class SiteKitBridge {
 		}
 
 		$rows = is_array( $result ) ? $result : array();
-		set_transient( self::TRANSIENT_GSC_TOP_PAGES, $rows, self::CACHE_DURATION );
+		set_transient( $cache_key, $rows, self::CACHE_DURATION );
 
 		return $rows;
 	}
@@ -129,7 +133,17 @@ class SiteKitBridge {
 	// -------------------------------------------------------------------------
 
 	public function clear_gsc_cache(): void {
-		delete_transient( self::TRANSIENT_GSC_TOP_PAGES );
+		global $wpdb;
+		$prefix = self::TRANSIENT_GSC_PREFIX;
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options}
+				 WHERE option_name LIKE %s
+				    OR option_name LIKE %s",
+				'_transient_' . $prefix . '%',
+				'_transient_timeout_' . $prefix . '%'
+			)
+		);
 	}
 
 	public function clear_adsense_cache(): void {
