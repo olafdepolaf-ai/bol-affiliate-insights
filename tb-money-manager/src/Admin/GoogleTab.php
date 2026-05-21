@@ -160,7 +160,6 @@ class GoogleTab {
 			return;
 		}
 
-		// Calculate all periods from daily data.
 		$today_key     = gmdate( 'Y-m-d' );
 		$yesterday_key = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
 		$week_ago_key  = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
@@ -169,78 +168,68 @@ class GoogleTab {
 		$today_earnings     = $daily[ $today_key ] ?? null;
 		$yesterday_earnings = $daily[ $yesterday_key ] ?? null;
 		$week_ago_earnings  = $daily[ $week_ago_key ] ?? null;
-
-		$last7  = $this->sum_range( $daily, strtotime( '-7 days' ), strtotime( '-1 day' ) );
-		$prev7  = $this->sum_range( $daily, strtotime( '-14 days' ), strtotime( '-8 days' ) );
-		$month  = $this->sum_range( $daily, strtotime( $month_start ), strtotime( 'today' ) );
-
+		$last7              = $this->sum_range( $daily, strtotime( '-7 days' ), strtotime( '-1 day' ) );
+		$prev7              = $this->sum_range( $daily, strtotime( '-14 days' ), strtotime( '-8 days' ) );
+		$month              = $this->sum_range( $daily, strtotime( $month_start ), strtotime( 'today' ) );
 		?>
-		<div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+
+		<style>
+			.tbmm-google-metrics { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:20px; }
+			.tbmm-google-metric-box {
+				border:1px solid #ccd0d4; padding:15px; min-width:140px;
+				background:#fff; box-shadow:0 1px 1px rgba(0,0,0,.04); text-align:center;
+			}
+			.tbmm-google-metric-box h4 { margin:0 0 8px; font-size:13px; color:#646970; font-weight:400; }
+			.tbmm-google-metric-box .tbmm-metric-val { font-size:1.7em; font-weight:600; margin:4px 0; }
+			.tbmm-google-metric-box .tbmm-metric-delta { font-size:12px; color:#646970; margin-top:4px; }
+			.tbmm-google-metric-box .tbmm-delta-up   { color:#00a32a; }
+			.tbmm-google-metric-box .tbmm-delta-down { color:#b32d2e; }
+		</style>
+
+		<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
 			<h3 style="margin:0;">Geschatte inkomsten</h3>
 			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ Cache wissen</a>
 		</div>
 
-		<style>
-			.tbmm-adsense-grid { display:flex; gap:16px; flex-wrap:wrap; }
-			.tbmm-adsense-card { background:#1a73e8; color:#fff; border-radius:8px; padding:20px 24px; flex:1; min-width:240px; }
-			.tbmm-adsense-card h4 { margin:0 0 16px; font-size:14px; font-weight:500; color:rgba(255,255,255,0.9); }
-			.tbmm-adsense-metrics { display:flex; gap:24px; flex-wrap:wrap; }
-			.tbmm-adsense-metric { }
-			.tbmm-adsense-metric-label { font-size:12px; color:rgba(255,255,255,0.75); margin-bottom:4px; }
-			.tbmm-adsense-metric-value { font-size:26px; font-weight:400; line-height:1.1; }
-			.tbmm-adsense-metric-delta { font-size:12px; margin-top:4px; color:rgba(255,255,255,0.85); }
-			.tbmm-adsense-delta-up   { color:#81c995; }
-			.tbmm-adsense-delta-down { color:#f28b82; }
-		</style>
+		<div class="tbmm-google-metrics">
 
-		<div class="tbmm-adsense-grid">
+			<?php if ( $today_earnings !== null ) : ?>
+			<div class="tbmm-google-metric-box">
+				<h4>Vandaag</h4>
+				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $today_earnings ) ); ?></div>
+			</div>
+			<?php endif; ?>
 
-			<div class="tbmm-adsense-card" style="flex:3;">
-				<h4>Geschatte inkomsten</h4>
-				<div class="tbmm-adsense-metrics">
-
-					<?php if ( $today_earnings !== null ) : ?>
-					<div class="tbmm-adsense-metric">
-						<div class="tbmm-adsense-metric-label">Vandaag tot nu toe</div>
-						<div class="tbmm-adsense-metric-value"><?php echo esc_html( $this->fmt_eur( $today_earnings ) ); ?></div>
+			<div class="tbmm-google-metric-box">
+				<h4>Gisteren</h4>
+				<div class="tbmm-metric-val"><?php echo esc_html( $yesterday_earnings !== null ? $this->fmt_eur( $yesterday_earnings ) : '—' ); ?></div>
+				<?php if ( $yesterday_earnings !== null && $week_ago_earnings !== null && $week_ago_earnings > 0 ) : ?>
+					<?php $delta = $yesterday_earnings - $week_ago_earnings; $pct = round( $delta / $week_ago_earnings * 100 ); ?>
+					<div class="tbmm-metric-delta <?php echo $delta >= 0 ? 'tbmm-delta-up' : 'tbmm-delta-down'; ?>">
+						<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $pct . '%' ); ?> vs zelfde dag vorige week
 					</div>
-					<?php endif; ?>
+				<?php endif; ?>
+			</div>
 
-					<div class="tbmm-adsense-metric">
-						<div class="tbmm-adsense-metric-label">Gisteren</div>
-						<div class="tbmm-adsense-metric-value"><?php echo esc_html( $yesterday_earnings !== null ? $this->fmt_eur( $yesterday_earnings ) : '—' ); ?></div>
-						<?php if ( $yesterday_earnings !== null && $week_ago_earnings !== null && $week_ago_earnings > 0 ) : ?>
-							<?php $delta = $yesterday_earnings - $week_ago_earnings; $pct = round( $delta / $week_ago_earnings * 100 ); ?>
-							<div class="tbmm-adsense-metric-delta <?php echo $delta >= 0 ? 'tbmm-adsense-delta-up' : 'tbmm-adsense-delta-down'; ?>">
-								<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $this->fmt_eur( $delta ) . ' (' . $pct . '%)' ); ?><br>
-								vs zelfde dag vorige week
-							</div>
-						<?php endif; ?>
+			<div class="tbmm-google-metric-box">
+				<h4>Laatste 7 dagen</h4>
+				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $last7 ) ); ?></div>
+				<?php if ( $prev7 > 0 ) : ?>
+					<?php $delta = $last7 - $prev7; $pct = round( $delta / $prev7 * 100 ); ?>
+					<div class="tbmm-metric-delta <?php echo $delta >= 0 ? 'tbmm-delta-up' : 'tbmm-delta-down'; ?>">
+						<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $pct . '%' ); ?> vs vorige 7 dagen
 					</div>
+				<?php endif; ?>
+			</div>
 
-					<div class="tbmm-adsense-metric">
-						<div class="tbmm-adsense-metric-label">Laatste 7 dagen</div>
-						<div class="tbmm-adsense-metric-value"><?php echo esc_html( $this->fmt_eur( $last7 ) ); ?></div>
-						<?php if ( $prev7 > 0 ) : ?>
-							<?php $delta = $last7 - $prev7; $pct = round( $delta / $prev7 * 100 ); ?>
-							<div class="tbmm-adsense-metric-delta <?php echo $delta >= 0 ? 'tbmm-adsense-delta-up' : 'tbmm-adsense-delta-down'; ?>">
-								<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $this->fmt_eur( $delta ) . ' (' . $pct . '%)' ); ?><br>
-								vs vorige 7 dagen
-							</div>
-						<?php endif; ?>
-					</div>
-
-					<div class="tbmm-adsense-metric">
-						<div class="tbmm-adsense-metric-label">Deze maand</div>
-						<div class="tbmm-adsense-metric-value"><?php echo esc_html( $this->fmt_eur( $month ) ); ?></div>
-					</div>
-
-				</div>
+			<div class="tbmm-google-metric-box">
+				<h4>Deze maand</h4>
+				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $month ) ); ?></div>
 			</div>
 
 		</div>
 
-		<p style="color:#646970; font-size:12px; margin-top:12px;">Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense.</p>
+		<p style="color:#646970; font-size:12px;">Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense.</p>
 		<?php
 	}
 
