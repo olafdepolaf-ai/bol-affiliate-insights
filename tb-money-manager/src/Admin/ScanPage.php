@@ -2,22 +2,20 @@
 
 namespace TuinenBalkon\TBMoneyManager\Admin;
 
-use TuinenBalkon\TBMoneyManager\Admin\ToolsTab;
-
 class ScanPage {
 
 	private TradeTrackerTab $tt_tab;
 	private TATab $ta_tab;
 	private BolTab $bol_tab;
-	private ToolsTab $tools_tab;
 	private GoogleTab $google_tab;
+	private SettingsTab $settings_tab;
 
-	public function __construct( TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, ToolsTab $tools_tab, GoogleTab $google_tab ) {
-		$this->tt_tab       = $tt_tab;
-		$this->ta_tab       = $ta_tab;
-		$this->bol_tab      = $bol_tab;
-		$this->tools_tab    = $tools_tab;
-		$this->google_tab   = $google_tab;
+	public function __construct( TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, GoogleTab $google_tab, SettingsTab $settings_tab ) {
+		$this->tt_tab      = $tt_tab;
+		$this->ta_tab      = $ta_tab;
+		$this->bol_tab     = $bol_tab;
+		$this->google_tab  = $google_tab;
+		$this->settings_tab = $settings_tab;
 	}
 
 	public function render(): void {
@@ -42,7 +40,7 @@ class ScanPage {
 			'tradetracker' => 'TradeTracker',
 			'google'       => 'Google',
 			'ta'           => 'ThirstyAffiliates',
-			'tools'        => 'Tools',
+			'settings'     => 'Instellingen',
 		];
 
 		if ( ! function_exists( 'get_plugin_data' ) ) {
@@ -86,8 +84,8 @@ class ScanPage {
 				<?php $this->ta_tab->render(); ?>
 			<?php elseif ( $current_tab === 'google' ) : ?>
 				<?php $this->google_tab->render(); ?>
-			<?php elseif ( $current_tab === 'tools' ) : ?>
-				<?php $this->tools_tab->render(); ?>
+			<?php elseif ( $current_tab === 'settings' ) : ?>
+				<?php $this->settings_tab->render(); ?>
 			<?php else : ?>
 				<?php $this->bol_tab->render(); ?>
 			<?php endif; ?>

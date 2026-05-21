@@ -103,6 +103,10 @@ class TradeTrackerTab {
 	// Instellingen subtab
 	// -------------------------------------------------------------------------
 
+	public function render_settings(): void {
+		$this->render_settings_subtab();
+	}
+
 	private function render_settings_subtab(): void {
 		$notice = '';
 

@@ -79,4 +79,8 @@ class BolTab {
 		}
 		$this->settings_page->render_content( $subtab );
 	}
+
+	public function render_settings(): void {
+		$this->settings_page->render_content( 'settings' );
+	}
 }

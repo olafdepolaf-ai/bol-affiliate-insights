@@ -71,7 +71,7 @@ class MenuService {
 			[ 'TradeTracker',      'manage_options', $base . '&tab=tradetracker' ],
 			[ 'Google',            'manage_options', $base . '&tab=google'       ],
 			[ 'ThirstyAffiliates', 'manage_options', $base . '&tab=ta'           ],
-			[ 'Tools',             'manage_options', $base . '&tab=tools'        ],
+			[ 'Instellingen',      'manage_options', $base . '&tab=settings'     ],
 		];
 	}
 }

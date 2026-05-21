@@ -37,7 +37,6 @@ class GoogleTab {
 		);
 		?>
 		<div style="max-width:960px;">
-			<h2 style="margin-bottom:16px;">Google</h2>
 
 			<?php if ( isset( $_GET['cache_cleared'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Cache gewist.</p></div>
