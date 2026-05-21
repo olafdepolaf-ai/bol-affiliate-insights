@@ -46,7 +46,9 @@ cd ..
 rm -f tb-money-manager.zip
 zip -r tb-money-manager.zip tb-money-manager/ \
     --exclude "tb-money-manager/release.sh" \
-    --exclude "*/.DS_Store"
+    --exclude "*/.DS_Store" \
+    --exclude "tb-money-manager/client_secret_*.json" \
+    --exclude "tb-money-manager/*.local"
 echo "Zip gebouwd: tb-money-manager.zip"
 cd tb-money-manager
 
