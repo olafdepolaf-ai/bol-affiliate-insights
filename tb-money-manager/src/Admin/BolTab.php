@@ -42,11 +42,11 @@ class BolTab {
 		$left_subtabs = array(
 			'dashboard'          => 'Dashboard',
 			'orders'             => 'Orders',
-			'commission_revenue' => 'Commission & Revenue',
-			'promotion_methods'  => 'Promotion Methods',
+			'commission_revenue' => 'Commissie & Omzet',
+			'promotion_methods'  => 'Promotiemethoden',
 			'analysis'           => 'Analyse',
 			'drop_analysis'      => 'Klik-drop',
-			'affiliate_links'    => 'Affiliate Links',
+			'affiliate_links'    => 'Affiliate links',
 			'link_generator'     => 'Linkgenerator',
 		);
 		?>

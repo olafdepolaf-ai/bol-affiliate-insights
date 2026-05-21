@@ -169,7 +169,7 @@ class ReportDataService {
 					}
 					break;
 				case 'orders':
-					$aggregated_data[ $key ]['value'] += 1;
+					$aggregated_data[ $key ]['value'] += isset( $item['orders'] ) ? (int) $item['orders'] : 1;
 					break;
 				case 'clicks':
 					if ( isset( $item['clicks'] ) ) {
@@ -177,16 +177,16 @@ class ReportDataService {
 					}
 					break;
 				case 'revenue':
-					if ( isset( $item['revenueOriginalInclVat'] ) ) {
-						$aggregated_data[ $key ]['value'] += (float) $item['revenueOriginalInclVat'];
+					if ( isset( $item['revenueInclVat'] ) ) {
+						$aggregated_data[ $key ]['value'] += (float) $item['revenueInclVat'];
 					}
 					break;
 				case 'conversion':
 					if ( isset( $item['clicks'] ) ) {
 						$aggregated_data[ $key ]['clicks'] += (int) $item['clicks'];
 					}
-					if ( $date_key === 'orderDateTime' ) {
-						$aggregated_data[ $key ]['orders'] += 1;
+					if ( isset( $item['orders'] ) ) {
+						$aggregated_data[ $key ]['orders'] += (int) $item['orders'];
 					}
 					break;
 			}

@@ -101,17 +101,17 @@ class SettingsPage {
 			$start_date = $start_date_obj->format( 'Y-m-d' );
 			$end_date   = $end_date_obj->format( 'Y-m-d' );
 			?>
-			<h3>Dashboard Metrics</h3>
+			<h3>Dashboard statistieken</h3>
 			<div class="dashboard-period-selector">
-				Time range:
+				Periode:
 				<a href="<?php echo esc_url( admin_url( $base_page . '&subtab=dashboard&period=today' ) ); ?>"
-				   class="<?php echo $current_period === 'today' ? 'current active' : ''; ?>">Today</a> |
+				   class="<?php echo $current_period === 'today' ? 'current active' : ''; ?>">Vandaag</a> |
 				<a href="<?php echo esc_url( admin_url( $base_page . '&subtab=dashboard&period=last_7_days' ) ); ?>"
-				   class="<?php echo $current_period === 'last_7_days' ? 'current active' : ''; ?>">Last 7 Days</a> |
+				   class="<?php echo $current_period === 'last_7_days' ? 'current active' : ''; ?>">Laatste 7 dagen</a> |
 				<a href="<?php echo esc_url( admin_url( $base_page . '&subtab=dashboard&period=last_30_days' ) ); ?>"
-				   class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Last 30 Days</a> |
+				   class="<?php echo $current_period === 'last_30_days' ? 'current active' : ''; ?>">Laatste 30 dagen</a> |
 				<a href="<?php echo esc_url( admin_url( $base_page . '&subtab=dashboard&period=this_year' ) ); ?>"
-				   class="<?php echo $current_period === 'this_year' ? 'current active' : ''; ?>">This Year</a>
+				   class="<?php echo $current_period === 'this_year' ? 'current active' : ''; ?>">Dit jaar</a>
 			</div>
 			<hr>
 			<?php
@@ -163,10 +163,10 @@ class SettingsPage {
 			?>
 			<div class="metrics-container">
 				<div class="metric-box"><h4>Orders</h4><p><?php echo number_format_i18n( $total_orders ); ?></p></div>
-				<div class="metric-box"><h4>Clicks</h4><p><?php echo number_format_i18n( $total_clicks ); ?></p></div>
-				<div class="metric-box"><h4>Revenue</h4><p><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
-				<div class="metric-box"><h4>Commission</h4><p><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
-				<div class="metric-box"><h4>Conversion Rate</h4><p><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
+				<div class="metric-box"><h4>Kliks</h4><p><?php echo number_format_i18n( $total_clicks ); ?></p></div>
+				<div class="metric-box"><h4>Omzet</h4><p><?php echo '€' . number_format_i18n( $total_revenue, 2 ); ?></p></div>
+				<div class="metric-box"><h4>Commissie</h4><p><?php echo '€' . number_format_i18n( $total_commission, 2 ); ?></p></div>
+				<div class="metric-box"><h4>Conversieratio</h4><p><?php echo number_format_i18n( $conversion_rate, 2 ); ?>%</p></div>
 			</div>
 
 			<?php
@@ -184,44 +184,44 @@ class SettingsPage {
 
 			<hr>
 			<div class="chart-container">
-				<h3>Performance Chart</h3>
+				<h3>Prestaties</h3>
 				<p id="bol-chart-last-updated" style="margin-top:0;"></p>
 				<div class="chart-controls">
 					<div>
-						<label for="chart-metric-selector">Metric:</label>
+						<label for="chart-metric-selector">Metriek:</label>
 						<select id="chart-metric-selector">
 							<option value="orders" selected>Orders</option>
-							<option value="clicks">Clicks</option>
-							<option value="revenue">Revenue</option>
-							<option value="commission">Commission</option>
-							<option value="conversion">Conversion Rate</option>
+							<option value="clicks">Kliks</option>
+							<option value="revenue">Omzet</option>
+							<option value="commission">Commissie</option>
+							<option value="conversion">Conversieratio</option>
 						</select>
 					</div>
 					<div>
-						<label for="chart-period-selector">Period:</label>
+						<label for="chart-period-selector">Periode:</label>
 						<select id="chart-period-selector">
-							<option value="last_4_weeks" selected>Last 4 Weeks</option>
-							<option value="this_month">This Month</option>
-							<option value="last_month">Last Month</option>
-							<option value="last_30_days">Last 30 Days</option>
-							<option value="last_7_days">Last 7 Days</option>
-							<option value="this_year">This Year</option>
-							<option value="last_year">Last Year</option>
+							<option value="last_4_weeks" selected>Laatste 4 weken</option>
+							<option value="this_month">Deze maand</option>
+							<option value="last_month">Vorige maand</option>
+							<option value="last_30_days">Laatste 30 dagen</option>
+							<option value="last_7_days">Laatste 7 dagen</option>
+							<option value="this_year">Dit jaar</option>
+							<option value="last_year">Vorig jaar</option>
 						</select>
 					</div>
 					<div>
-						<label for="chart-granularity-selector">Granularity:</label>
+						<label for="chart-granularity-selector">Per:</label>
 						<select id="chart-granularity-selector">
-							<option value="auto" selected>Auto</option>
-							<option value="month">Month</option>
-							<option value="week">Week</option>
-							<option value="day">Day</option>
+							<option value="auto">Automatisch</option>
+							<option value="month">Maand</option>
+							<option value="week" selected>Week</option>
+							<option value="day">Dag</option>
 						</select>
 					</div>
 					<div>
-						<label for="chart-site-selector">Site:</label>
+						<label for="chart-site-selector">Website:</label>
 						<select id="chart-site-selector">
-							<option value="all_sites" selected>All Sites</option>
+							<option value="all_sites">Alle websites</option>
 							<?php foreach ( $available_sites_for_dropdown as $site_code => $site_name ) : ?>
 								<option value="<?php echo esc_attr( $site_code ); ?>">
 									<?php echo esc_html( $site_name ); ?> (<?php echo esc_html( $site_code ); ?>)
@@ -229,7 +229,7 @@ class SettingsPage {
 							<?php endforeach; ?>
 						</select>
 					</div>
-					<button type="button" id="bol-update-chart-button" class="button button-secondary">Update Chart</button>
+					<button type="button" id="bol-update-chart-button" class="button button-secondary">Grafiek bijwerken</button>
 					<span id="bol-chart-loading-indicator" class="spinner" style="float:none;display:none;"></span>
 				</div>
 				<div style="max-width: 800px; margin: auto;">
@@ -241,7 +241,7 @@ class SettingsPage {
 			<?php
 
 		} elseif ( $active_tab === 'orders' ) {
-			echo '<h3>Orders Report</h3>';
+			echo '<h3>Orders rapport</h3>';
 			$current_start_date = isset( $_GET['start_date'] ) ? sanitize_text_field( $_GET['start_date'] ) : date_create( 'now', wp_timezone() )->modify( '-30 days' )->format( 'Y-m-d' );
 			$current_end_date   = isset( $_GET['end_date'] )   ? sanitize_text_field( $_GET['end_date'] )   : current_time( 'Y-m-d' );
 			?>
@@ -250,33 +250,33 @@ class SettingsPage {
 				<input type="hidden" name="tab" value="bol">
 				<input type="hidden" name="subtab" value="orders">
 				<?php wp_nonce_field( 'bol_orders_date_range', 'bol_orders_nonce' ); ?>
-				<label for="orders-start-date">From:</label>
+				<label for="orders-start-date">Van:</label>
 				<input type="text" id="orders-start-date" name="start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
-				<label for="orders-end-date">To:</label>
+				<label for="orders-end-date">t/m:</label>
 				<input type="text" id="orders-end-date" name="end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
-				<input type="submit" value="Fetch Orders" class="button button-secondary">
+				<input type="submit" value="Ophalen" class="button button-secondary">
 			</form>
 			<hr>
 			<?php
 			if ( isset( $_GET['start_date'] ) && isset( $_GET['bol_orders_nonce'] ) && wp_verify_nonce( $_GET['bol_orders_nonce'], 'bol_orders_date_range' ) ) {
-				echo '<h4>Orders from ' . esc_html( $current_start_date ) . ' to ' . esc_html( $current_end_date ) . '</h4>';
+				echo '<h4>Orders van ' . esc_html( $current_start_date ) . ' t/m ' . esc_html( $current_end_date ) . '</h4>';
 				$orders_data_response = $api_client->get_orders_report( $current_start_date, $current_end_date );
 				if ( is_wp_error( $orders_data_response ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Error: ' . esc_html( $orders_data_response->get_error_message() ) . '</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>Fout: ' . esc_html( $orders_data_response->get_error_message() ) . '</p></div>';
 				} elseif ( ! isset( $orders_data_response['items'] ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Orders data response is not in the expected format.</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>API-respons heeft een onverwacht formaat.</p></div>';
 				} else {
 					$orders_list_table = new OrdersListTable();
 					$orders_list_table->prepare_items( $orders_data_response['items'] );
-					$csv_export_button( 'Orders Data', 'orders', $current_start_date, $current_end_date );
+					$csv_export_button( 'Orders', 'orders', $current_start_date, $current_end_date );
 					$orders_list_table->display();
 				}
 			} else {
-				echo '<p>Select a date range and click \'Fetch Orders\' to view the report.</p>';
+				echo '<p>Kies een datumbereik en klik op Ophalen.</p>';
 			}
 
 		} elseif ( $active_tab === 'commission_revenue' ) {
-			echo '<h3>Commission &amp; Revenue Report</h3>';
+			echo '<h3>Commissie &amp; Omzet rapport</h3>';
 			$default_start_date = date_create( current_time( 'Y' ) . '-01-01', wp_timezone() )->format( 'Y-m-d' );
 			$default_end_date   = current_time( 'Y-m-d' );
 			$current_start_date = isset( $_GET['cr_start_date'] ) ? sanitize_text_field( $_GET['cr_start_date'] ) : $default_start_date;
@@ -287,22 +287,22 @@ class SettingsPage {
 				<input type="hidden" name="tab" value="bol">
 				<input type="hidden" name="subtab" value="commission_revenue">
 				<?php wp_nonce_field( 'bol_cr_date_range', 'bol_cr_nonce' ); ?>
-				<label for="cr-start-date">From:</label>
+				<label for="cr-start-date">Van:</label>
 				<input type="text" id="cr-start-date" name="cr_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
-				<label for="cr-end-date">To:</label>
+				<label for="cr-end-date">t/m:</label>
 				<input type="text" id="cr-end-date" name="cr_end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
-				<input type="submit" value="Fetch Report" class="button button-secondary">
+				<input type="submit" value="Ophalen" class="button button-secondary">
 			</form>
 			<hr>
 			<?php
 			if ( isset( $_GET['cr_start_date'] ) && isset( $_GET['bol_cr_nonce'] ) && wp_verify_nonce( $_GET['bol_cr_nonce'], 'bol_cr_date_range' ) ) {
-				echo '<h4>Report from ' . esc_html( $current_start_date ) . ' to ' . esc_html( $current_end_date ) . '</h4>';
+				echo '<h4>Rapport van ' . esc_html( $current_start_date ) . ' t/m ' . esc_html( $current_end_date ) . '</h4>';
 				$report_data_response = $api_client->get_commission_revenue_report( $current_start_date, $current_end_date );
 
 				if ( is_wp_error( $report_data_response ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Error: ' . esc_html( $report_data_response->get_error_message() ) . '</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>Fout: ' . esc_html( $report_data_response->get_error_message() ) . '</p></div>';
 				} elseif ( ! isset( $report_data_response['items'] ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>API-respons heeft een onverwacht formaat.</p></div>';
 				} else {
 					$cr_items = $report_data_response['items'];
 					if ( $global_selected_site_filter !== 'all_sites' && ! empty( $cr_items ) ) {
@@ -312,15 +312,15 @@ class SettingsPage {
 					}
 					$cr_list_table = new CommissionRevenueListTable();
 					$cr_list_table->prepare_items( $cr_items );
-					$csv_export_button( 'Commission & Revenue Data', 'commission-revenue', $current_start_date, $current_end_date );
+					$csv_export_button( 'Commissie & Omzet', 'commission-revenue', $current_start_date, $current_end_date );
 					$cr_list_table->display();
 				}
 			} else {
-				echo '<p>Select a date range and click \'Fetch Report\' to view the data.</p>';
+				echo '<p>Kies een datumbereik en klik op Ophalen.</p>';
 			}
 
 		} elseif ( $active_tab === 'promotion_methods' ) {
-			echo '<h3>Promotion Methods Report</h3>';
+			echo '<h3>Promotiemethoden rapport</h3>';
 			$default_start_date = date_create( current_time( 'Y' ) . '-01-01', wp_timezone() )->format( 'Y-m-d' );
 			$default_end_date   = current_time( 'Y-m-d' );
 			$current_start_date = isset( $_GET['pm_start_date'] ) ? sanitize_text_field( $_GET['pm_start_date'] ) : $default_start_date;
@@ -332,26 +332,26 @@ class SettingsPage {
 				<input type="hidden" name="tab" value="bol">
 				<input type="hidden" name="subtab" value="promotion_methods">
 				<?php wp_nonce_field( 'bol_pm_date_range', 'bol_pm_nonce' ); ?>
-				<label for="pm-start-date">From:</label>
+				<label for="pm-start-date">Van:</label>
 				<input type="text" id="pm-start-date" name="pm_start_date" class="datepicker" value="<?php echo esc_attr( $current_start_date ); ?>">
-				<label for="pm-end-date">To:</label>
+				<label for="pm-end-date">t/m:</label>
 				<input type="text" id="pm-end-date" name="pm_end_date" class="datepicker" value="<?php echo esc_attr( $current_end_date ); ?>">
 				<label style="margin-left:10px;">
 					<input type="checkbox" name="pm_only_with_orders" value="1" <?php checked( $only_with_orders, true ); ?> />
-					Only entries with orders
+					Alleen rijen met orders
 				</label>
-				<input type="submit" value="Fetch Report" class="button button-secondary">
+				<input type="submit" value="Ophalen" class="button button-secondary">
 			</form>
 			<hr>
 			<?php
 			if ( isset( $_GET['pm_start_date'] ) && isset( $_GET['bol_pm_nonce'] ) && wp_verify_nonce( $_GET['bol_pm_nonce'], 'bol_pm_date_range' ) ) {
-				echo '<h4>Report from ' . esc_html( $current_start_date ) . ' to ' . esc_html( $current_end_date ) . '</h4>';
+				echo '<h4>Rapport van ' . esc_html( $current_start_date ) . ' t/m ' . esc_html( $current_end_date ) . '</h4>';
 				$report_data_response = $api_client->get_promotion_methods_report( $current_start_date, $current_end_date );
 
 				if ( is_wp_error( $report_data_response ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Error: ' . esc_html( $report_data_response->get_error_message() ) . '</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>Fout: ' . esc_html( $report_data_response->get_error_message() ) . '</p></div>';
 				} elseif ( ! isset( $report_data_response['items'] ) ) {
-					echo '<div class="notice notice-error is-dismissible"><p>Report data response is not in the expected format.</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>API-respons heeft een onverwacht formaat.</p></div>';
 				} else {
 					$pm_items = $report_data_response['items'];
 					if ( $global_selected_site_filter !== 'all_sites' && ! empty( $pm_items ) ) {
@@ -369,14 +369,14 @@ class SettingsPage {
 					$pm_list_table->set_affiliate_link_index( $affiliate_adapter->build_bol_params_index() );
 					$pm_list_table->set_hide_site_column( $global_selected_site_filter !== 'all_sites' );
 					$pm_list_table->prepare_items( $pm_items );
-					$csv_export_button( 'Promotion Methods Data', 'promotion-methods', $current_start_date, $current_end_date );
+					$csv_export_button( 'Promotiemethoden', 'promotion-methods', $current_start_date, $current_end_date );
 					if ( $only_with_orders ) {
-						echo '<p><em>Filter active: only showing rows with at least 1 order.</em></p>';
+						echo '<p><em>Filter actief: alleen rijen met minstens 1 order.</em></p>';
 					}
 					$pm_list_table->display();
 				}
 			} else {
-				echo '<p>Select a date range and click \'Fetch Report\' to view the data.</p>';
+				echo '<p>Kies een datumbereik en klik op Ophalen.</p>';
 			}
 
 		} elseif ( $active_tab === 'analysis' ) {
@@ -420,20 +420,20 @@ class SettingsPage {
 				<input type="hidden" name="tab" value="bol">
 				<input type="hidden" name="subtab" value="analysis">
 				<?php wp_nonce_field( 'bol_analysis_filters', 'bol_analysis_nonce' ); ?>
-				<label for="an-period" style="margin-right:6px;">Window:</label>
+				<label for="an-period" style="margin-right:6px;">Periode:</label>
 				<select id="an-period" name="an_period">
-					<option value="last_30_days" <?php selected( $analysis_period, 'last_30_days' ); ?>>Last 30 days</option>
-					<option value="last_60_days" <?php selected( $analysis_period, 'last_60_days' ); ?>>Last 60 days</option>
-					<option value="last_90_days" <?php selected( $analysis_period, 'last_90_days' ); ?>>Last 90 days</option>
-					<option value="custom"       <?php selected( $analysis_period, 'custom' ); ?>>Custom</option>
+					<option value="last_30_days" <?php selected( $analysis_period, 'last_30_days' ); ?>>Laatste 30 dagen</option>
+					<option value="last_60_days" <?php selected( $analysis_period, 'last_60_days' ); ?>>Laatste 60 dagen</option>
+					<option value="last_90_days" <?php selected( $analysis_period, 'last_90_days' ); ?>>Laatste 90 dagen</option>
+					<option value="custom"       <?php selected( $analysis_period, 'custom' ); ?>>Aangepast</option>
 				</select>
-				<label for="an-start-date">From:</label>
+				<label for="an-start-date">Van:</label>
 				<input type="text" id="an-start-date" name="an_start_date" class="datepicker" value="<?php echo esc_attr( $analysis_start_date ); ?>">
-				<label for="an-end-date">To:</label>
+				<label for="an-end-date">t/m:</label>
 				<input type="text" id="an-end-date" name="an_end_date" class="datepicker" value="<?php echo esc_attr( $analysis_end_date ); ?>">
-				<label for="an-min-clicks" style="margin-left:10px;">Min clicks (0 orders):</label>
+				<label for="an-min-clicks" style="margin-left:10px;">Min. kliks (0 orders):</label>
 				<input type="number" id="an-min-clicks" name="an_min_clicks" min="1" step="1" value="<?php echo esc_attr( $min_clicks ); ?>" style="width:90px;">
-				<input type="submit" value="Update Analysis" class="button button-secondary">
+				<input type="submit" value="Analyseer" class="button button-secondary">
 			</form>
 			<hr>
 			<?php
@@ -448,7 +448,7 @@ class SettingsPage {
 					echo '<div class="notice notice-error is-dismissible"><p>Error: ' . esc_html( $insights['error'] ) . '</p></div>';
 				}
 
-				echo '<p><em>Based on Promotion Report data. Generated at: ' . esc_html( $insights['generated_at'] ?? '' ) . '</em></p>';
+				echo '<p><em>Op basis van promotie-rapport. Gegenereerd om: ' . esc_html( $insights['generated_at'] ?? '' ) . '</em></p>';
 
 				$bol_params_index = $affiliate_adapter->build_bol_params_index();
 				$aff_available    = $affiliate_adapter->is_available();
@@ -457,7 +457,7 @@ class SettingsPage {
 				$render_table = function ( string $title, array $rows ) use ( $bol_params_index, $aff_available, $hide_site_col, $affiliate_adapter ) {
 					echo '<h3>' . esc_html( $title ) . '</h3>';
 					if ( empty( $rows ) ) {
-						echo '<div class="notice notice-info is-dismissible"><p>No rows found for this selection.</p></div>';
+						echo '<div class="notice notice-info is-dismissible"><p>Geen rijen gevonden voor deze selectie.</p></div>';
 						return;
 					}
 					echo '<table class="wp-list-table widefat fixed striped" style="table-layout:auto;">';
