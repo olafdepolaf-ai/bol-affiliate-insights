@@ -898,6 +898,48 @@ class TradeTrackerTab {
 		</form>
 
 		<?php
+		// ── Uitbetaling sectie ────────────────────────────────────────────
+		$pending     = $this->service->get_pending_commission( $site_id );
+		$last_pmt    = $this->service->get_last_payment();
+		$has_payout  = ! is_wp_error( $pending ) || ! is_wp_error( $last_pmt );
+
+		if ( $has_payout ) :
+			$pend_amount = ( ! is_wp_error( $pending ) ) ? (float) $pending['commission'] : 0.0;
+			$pend_count  = ( ! is_wp_error( $pending ) ) ? (int) $pending['count'] : 0;
+			?>
+			<div style="background:#fff; border:1px solid #ccd0d4; border-radius:4px; padding:14px 18px; margin-bottom:20px; max-width:600px;">
+				<h4 style="margin:0 0 10px; font-size:13px; color:#1d2327;">Uitbetaling</h4>
+				<table style="border-collapse:collapse; width:100%; font-size:13px;">
+					<tr>
+						<td style="padding:4px 0; color:#646970; width:200px;">Openstaand</td>
+						<td style="padding:4px 0; font-weight:600;">
+							<?php echo esc_html( '€ ' . number_format( $pend_amount, 2, ',', '.' ) ); ?>
+							<?php if ( $pend_count > 0 ) : ?>
+								<span style="color:#646970; font-weight:normal; font-size:12px;">(<?php echo esc_html( $pend_count ); ?> transacti<?php echo $pend_count === 1 ? 'e' : 'es'; ?>)</span>
+							<?php endif; ?>
+						</td>
+					</tr>
+					<?php if ( ! is_wp_error( $last_pmt ) && ! empty( $last_pmt ) ) : ?>
+					<tr>
+						<td style="padding:4px 0; color:#646970;">Laatste betaling</td>
+						<td style="padding:4px 0;">
+							€ <?php echo esc_html( number_format( (float) $last_pmt['amount'], 2, ',', '.' ) ); ?>
+							<span style="color:#646970; font-size:12px;">op <?php echo esc_html( gmdate( 'd-m-Y', strtotime( $last_pmt['date'] ) ) ); ?></span>
+						</td>
+					</tr>
+					<?php endif; ?>
+					<?php if ( $pend_amount > 0 && $pend_amount < 25 ) : ?>
+					<tr>
+						<td colspan="2" style="padding:6px 0 0; font-size:12px; color:#646970;">
+							Minimumbedrag voor uitbetaling is € 25,00 — nog € <?php echo esc_html( number_format( 25 - $pend_amount, 2, ',', '.' ) ); ?> te gaan.
+						</td>
+					</tr>
+					<?php endif; ?>
+				</table>
+			</div>
+		<?php endif; ?>
+
+		<?php
 		$transactions = $this->service->get_sales_year( $site_id, $selected_year );
 
 		if ( is_wp_error( $transactions ) ) {
