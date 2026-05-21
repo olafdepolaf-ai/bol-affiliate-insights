@@ -5,6 +5,7 @@ namespace TuinenBalkon\TBMoneyManager\Admin;
 use TuinenBalkon\TBMoneyManager\Bol\Service\ApiAuthService;
 use TuinenBalkon\TBMoneyManager\Bol\Service\ApiClient;
 use TuinenBalkon\TBMoneyManager\Bol\Service\ReportDataService;
+use TuinenBalkon\TBMoneyManager\Google\SiteKitBridge;
 use TuinenBalkon\TBMoneyManager\Service\TradeTrackerService;
 
 class DashboardWidget {
@@ -52,6 +53,7 @@ class DashboardWidget {
 		return [
 			'bol'          => $this->fetch_bol( $start->format( 'Y-m-d' ), $end->format( 'Y-m-d' ) ),
 			'tt'           => $this->fetch_tt( $start ),
+			'adsense'      => $this->fetch_adsense(),
 			'generated_at' => current_time( 'H:i' ),
 		];
 	}
@@ -144,13 +146,43 @@ class DashboardWidget {
 		];
 	}
 
+	private function fetch_adsense(): array {
+		$bridge = new SiteKitBridge();
+		if ( ! $bridge->is_adsense_connected() ) {
+			return [ 'available' => false ];
+		}
+
+		$daily = $bridge->get_adsense_daily_earnings();
+		if ( is_wp_error( $daily ) || empty( $daily ) ) {
+			return [ 'available' => false ];
+		}
+
+		$last7 = $this->sum_days( $daily, strtotime( '-7 days' ), strtotime( '-1 day' ) );
+		$prev7 = $this->sum_days( $daily, strtotime( '-14 days' ), strtotime( '-8 days' ) );
+
+		return [
+			'available' => true,
+			'last7'     => $last7,
+			'prev7'     => $prev7,
+		];
+	}
+
+	private function sum_days( array $daily, int $from_ts, int $to_ts ): float {
+		$total = 0.0;
+		for ( $ts = $from_ts; $ts <= $to_ts; $ts += DAY_IN_SECONDS ) {
+			$total += $daily[ gmdate( 'Y-m-d', $ts ) ] ?? 0.0;
+		}
+		return $total;
+	}
+
 	// -------------------------------------------------------------------------
 	// Rendering
 	// -------------------------------------------------------------------------
 
 	private function render_html( array $data ): void {
-		$bol = $data['bol'] ?? [];
-		$tt  = $data['tt']  ?? [];
+		$bol     = $data['bol']     ?? [];
+		$tt      = $data['tt']      ?? [];
+		$adsense = $data['adsense'] ?? [];
 		?>
 		<style>
 			#tbmm_earnings_widget .tbmm-section { margin-bottom: 16px; }
@@ -240,6 +272,37 @@ class DashboardWidget {
 				</div>
 			<?php endif; ?>
 		</div>
+
+		<?php if ( ! empty( $adsense['available'] ) ) : ?>
+			<hr class="tbmm-divider">
+			<div class="tbmm-section">
+				<p class="tbmm-section-title">🔵 AdSense</p>
+				<div class="tbmm-rows">
+					<?php
+					$last7 = (float) $adsense['last7'];
+					$prev7 = (float) $adsense['prev7'];
+					$delta = $last7 - $prev7;
+					$pct   = $prev7 > 0 ? round( $delta / $prev7 * 100 ) : null;
+					?>
+					<div class="tbmm-row">
+						<span class="tbmm-label">Laatste 7 dagen</span>
+						<span class="tbmm-value tbmm-big"><?php echo esc_html( $this->fmt( $last7 ) ); ?></span>
+					</div>
+					<div class="tbmm-row">
+						<span class="tbmm-label">Vorige 7 dagen</span>
+						<span class="tbmm-value"><?php echo esc_html( $this->fmt( $prev7 ) ); ?></span>
+					</div>
+					<?php if ( $pct !== null ) : ?>
+					<div class="tbmm-row" style="margin-top:2px; border-top:1px dashed #e0e0e0; padding-top:4px;">
+						<span class="tbmm-label">Verschil</span>
+						<span class="tbmm-value" style="color:<?php echo $delta >= 0 ? '#00a32a' : '#b32d2e'; ?>;">
+							<?php echo esc_html( ( $delta >= 0 ? '+' : '' ) . $this->fmt( $delta ) . ' (' . ( $delta >= 0 ? '+' : '' ) . $pct . '%)' ); ?>
+						</span>
+					</div>
+					<?php endif; ?>
+				</div>
+			</div>
+		<?php endif; ?>
 
 		<div class="tbmm-footer">
 			<span>Bijgewerkt om <?php echo esc_html( $data['generated_at'] ?? '—' ); ?></span>
