@@ -545,9 +545,16 @@ class TradeTrackerTab {
 			.alc-clicks-meta { color:#646970; font-size:13px; margin-bottom:10px; }
 		</style>
 
+		<?php
+		$fetched_at = $this->service->get_clicks_fetched_at( $site_id, $selected_year );
+		$fetched_str = $fetched_at
+			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · gecached voor 24 uur'
+			: 'Realtime';
+		?>
 		<p class="alc-clicks-meta">
 			<?php echo esc_html( number_format( $total_clicks, 0, ',', '.' ) ); ?> kliks in <?php echo esc_html( $selected_year ); ?>
 			— pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( $total_pages ); ?>
+			<span style="margin-left:16px; color:#aaa; font-size:12px;"><?php echo esc_html( $fetched_str ); ?></span>
 		</p>
 
 		<table class="alc-clicks-tbl">

@@ -16,7 +16,7 @@ class TradeTrackerService {
 	const TTL_REPORT_PAST   = 86400;  // 24h — past years
 	const TTL_SALES         = 3600;   // 1h  — current year
 	const TTL_SALES_PAST    = 86400;  // 24h — past years
-	const TTL_CLICKS        = 3600;   // 1h  — current year
+	const TTL_CLICKS        = 86400;  // 24h — current year
 	const TTL_CLICKS_PAST   = 86400;  // 24h — past years
 	const TTL_MATERIALS     = 21600;  // 6h  — text link materials rarely change
 	const TTL_FEEDS         = 86400;  // 24h — feed-catalogus verandert hooguit dagelijks
@@ -257,10 +257,16 @@ class TradeTrackerService {
 			$clicks = $this->to_array( $result );
 			$ttl    = ( $year < (int) gmdate( 'Y' ) ) ? self::TTL_CLICKS_PAST : self::TTL_CLICKS;
 			$this->cache_set( $cache_key, $clicks, $ttl );
+			set_transient( self::CACHE_PREFIX . 'clicks_fetched_at_' . md5( $site_id . '_' . $year ), time(), $ttl );
 			return $clicks;
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'soap_error', $e->getMessage() );
 		}
+	}
+
+	public function get_clicks_fetched_at( string $site_id, int $year ): ?int {
+		$ts = get_transient( self::CACHE_PREFIX . 'clicks_fetched_at_' . md5( $site_id . '_' . $year ) );
+		return ( false !== $ts ) ? (int) $ts : null;
 	}
 
 	/**

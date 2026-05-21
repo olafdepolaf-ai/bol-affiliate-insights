@@ -67,11 +67,10 @@ class MenuService {
 		global $submenu;
 		$base = 'admin.php?page=tb-money-manager';
 		$submenu['tb-money-manager'] = [
-			[ 'Link Scanner',      'manage_options', $base . '&tab=scanner'      ],
-			[ 'TradeTracker',      'manage_options', $base . '&tab=tradetracker' ],
-			[ 'ThirstyAffiliates', 'manage_options', $base . '&tab=ta'           ],
 			[ 'Bol.com',           'manage_options', $base . '&tab=bol'          ],
-			[ 'Google',            'manage_options', $base . '&tab=google'        ],
+			[ 'TradeTracker',      'manage_options', $base . '&tab=tradetracker' ],
+			[ 'Google',            'manage_options', $base . '&tab=google'       ],
+			[ 'ThirstyAffiliates', 'manage_options', $base . '&tab=ta'           ],
 			[ 'Tools',             'manage_options', $base . '&tab=tools'        ],
 		];
 	}

@@ -24,14 +24,13 @@ class TATab {
 
 	public function render(): void {
 		$subtabs = [
-			'rapport'         => 'Rapport',
 			'aanbeveling-404' => 'Aanbeveling 404',
 			'orphaned-links'  => 'Orphaned Links',
 		];
 
-		$current_subtab = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'rapport';
+		$current_subtab = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'aanbeveling-404';
 		if ( ! array_key_exists( $current_subtab, $subtabs ) ) {
-			$current_subtab = 'rapport';
+			$current_subtab = 'aanbeveling-404';
 		}
 
 		$page_url = admin_url( 'admin.php?page=tb-money-manager&tab=ta' );
@@ -79,136 +78,11 @@ class TATab {
 		</nav>
 
 		<?php
-		if ( $current_subtab === 'rapport' ) {
-			$this->render_rapport_subtab();
-		} elseif ( $current_subtab === 'aanbeveling-404' ) {
-			$this->render_aanbeveling_404_subtab();
-		} elseif ( $current_subtab === 'orphaned-links' ) {
+		if ( $current_subtab === 'orphaned-links' ) {
 			$this->render_orphaned_links_subtab();
+		} else {
+			$this->render_aanbeveling_404_subtab();
 		}
-	}
-
-	private function render_rapport_subtab(): void {
-		$current_year  = (int) gmdate( 'Y' );
-		$selected_year = isset( $_GET['ta_year'] ) ? (int) $_GET['ta_year'] : $current_year;
-		$per_page      = 50;
-		$current_page  = isset( $_GET['tapaged'] ) ? max( 1, (int) $_GET['tapaged'] ) : 1;
-
-		$page_url = admin_url( 'admin.php?page=tb-money-manager&tab=ta&subtab=rapport' );
-
-		$data        = $this->ta_service->get_clicks_by_year( $selected_year, $current_page, $per_page );
-		$total_links = $data['total'];
-		$total_pages = $per_page > 0 ? (int) ceil( $total_links / $per_page ) : 1;
-		$offset      = ( $current_page - 1 ) * $per_page;
-
-		$total_clicks_year = $this->ta_service->get_total_clicks_for_year( $selected_year );
-
-		$max_clicks = 0;
-		if ( ! empty( $data['items'] ) ) {
-			$max_clicks = (int) $data['items'][0]->click_count;
-		}
-		?>
-		<div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
-			<form method="get" style="display:flex; align-items:center; gap:8px;">
-				<input type="hidden" name="page" value="tb-money-manager">
-				<input type="hidden" name="tab" value="ta">
-				<input type="hidden" name="subtab" value="rapport">
-				<label for="ta-year-select" style="font-size:13px; font-weight:600;">Jaar:</label>
-				<select id="ta-year-select" name="ta_year" style="font-size:13px;">
-					<?php for ( $y = $current_year; $y >= $current_year - 5; $y-- ) : ?>
-					<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>>
-						<?php echo esc_html( $y ); ?>
-					</option>
-					<?php endfor; ?>
-				</select>
-				<button type="submit" class="button">Toon</button>
-			</form>
-		</div>
-
-		<?php if ( $data['table_missing'] ) : ?>
-		<div class="alc-ta-no-table">
-			<strong>Click tracking tabel niet gevonden.</strong><br>
-			ThirstyAffiliates Pro is vereist voor klikregistratie.
-			Zorg dat de Pro-module actief is en dat de tabel
-			<code><?php echo esc_html( $GLOBALS['wpdb']->prefix . 'ta_click_logs' ); ?></code> bestaat.
-		</div>
-		<?php return; endif; ?>
-
-		<div class="alc-ta-summary">
-			<strong><?php echo esc_html( number_format_i18n( $total_clicks_year ) ); ?></strong> kliks in <?php echo esc_html( $selected_year ); ?>
-			&nbsp;·&nbsp;
-			<?php echo esc_html( number_format_i18n( $total_links ) ); ?> links
-			&nbsp;·&nbsp;
-			Pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( max( 1, $total_pages ) ); ?>
-		</div>
-
-		<?php if ( empty( $data['items'] ) ) : ?>
-		<p style="color:#646970; font-size:13px;">Geen klikdata gevonden voor <?php echo esc_html( $selected_year ); ?>.</p>
-		<?php else : ?>
-		<table class="alc-ta-table">
-			<thead>
-				<tr>
-					<th class="alc-rank-cell">#</th>
-					<th>Link naam</th>
-					<th>Destination URL</th>
-					<th style="text-align:right; white-space:nowrap;">Kliks <?php echo esc_html( $selected_year ); ?></th>
-					<th style="width:40px;"></th>
-				</tr>
-			</thead>
-			<tbody>
-			<?php foreach ( $data['items'] as $i => $row ) :
-				$rank         = $offset + $i + 1;
-				$clicks       = (int) $row->click_count;
-				$bar_pct      = $max_clicks > 0 ? round( ( $clicks / $max_clicks ) * 100 ) : 0;
-				$dest_url     = $row->destination_url ?: '';
-				$edit_url     = admin_url( 'post.php?post=' . (int) $row->ID . '&action=edit' );
-				$zero_class   = $clicks === 0 ? ' alc-ta-zero' : '';
-			?>
-			<tr>
-				<td class="alc-rank-cell<?php echo esc_attr( $zero_class ); ?>"><?php echo esc_html( $rank ); ?></td>
-				<td>
-					<a href="<?php echo esc_url( $edit_url ); ?>" target="_blank" style="text-decoration:none; color:inherit;">
-						<?php echo esc_html( $row->post_title ); ?>
-					</a>
-				</td>
-				<td style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-					<?php if ( $dest_url ) : ?>
-					<a href="<?php echo esc_url( $dest_url ); ?>" target="_blank"
-					   title="<?php echo esc_attr( $dest_url ); ?>"
-					   style="font-size:12px; color:#646970; text-decoration:none;">
-						<?php echo esc_html( $dest_url ); ?>
-					</a>
-					<?php else : ?>
-					<span style="color:#b0b0b0; font-size:12px;">—</span>
-					<?php endif; ?>
-				</td>
-				<td class="alc-clicks-cell<?php echo esc_attr( $zero_class ); ?>">
-					<?php echo esc_html( number_format_i18n( $clicks ) ); ?>
-					<?php if ( $clicks > 0 ) : ?>
-					<span class="alc-ta-bar-wrap">
-						<span class="alc-ta-bar" style="width:<?php echo esc_attr( $bar_pct ); ?>%;"></span>
-					</span>
-					<?php endif; ?>
-				</td>
-				<td style="text-align:center;">
-					<a href="<?php echo esc_url( $edit_url ); ?>" target="_blank"
-					   title="Bewerk in ThirstyAffiliates" style="text-decoration:none; font-size:15px;">✎</a>
-				</td>
-			</tr>
-			<?php endforeach; ?>
-			</tbody>
-		</table>
-
-		<?php if ( $total_pages > 1 ) : ?>
-		<div class="alc-ta-pagination">
-			<?php
-			$base_page_url = esc_url( $page_url . '&ta_year=' . $selected_year . '&tapaged=' );
-			$this->render_pagination( $current_page, $total_pages, $base_page_url );
-			?>
-		</div>
-		<?php endif; ?>
-		<?php endif; ?>
-		<?php
 	}
 
 	private function render_aanbeveling_404_subtab(): void {
@@ -225,6 +99,12 @@ class TATab {
 			.alc-articles-list { margin:4px 0 0; padding:0; list-style:none; }
 			.alc-articles-list li { margin-bottom:3px; font-size:12px; }
 		</style>
+
+		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
+			Toont <code>/aanbeveling/</code>-URLs die een <strong>404 hebben opgeleverd</strong> — bezoekers klikten op een link die niet werkte.
+			De data komt uit de <strong>Redirection plugin</strong> (<code><?php echo esc_html( $GLOBALS['wpdb']->prefix . 'redirection_404' ); ?></code>) en is <strong>realtime</strong> (geen cache).
+			Klik op "Zoek in artikelen" om te zien welk artikel de gebroken link bevat, zodat je hem kunt herstellen in ThirstyAffiliates.
+		</p>
 
 		<form method="get" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
 			<input type="hidden" name="page"   value="tb-money-manager">
@@ -359,6 +239,12 @@ class TATab {
 			.alc-orphan-progress-wrap { background:#e0e0e0; border-radius:4px; height:10px; max-width:500px; overflow:hidden; }
 			.alc-orphan-bar { background:#2271b1; height:100%; width:0%; transition:width 0.25s; border-radius:4px; }
 		</style>
+
+		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
+			Zoekt in alle <strong>live gepubliceerde artikelen</strong> naar links met het patroon <code>/aanbeveling/slug</code>
+			die <strong>niet bekend zijn in ThirstyAffiliates</strong>. Dit zijn <em>dode links</em>: de redirect bestaat niet (meer),
+			waardoor bezoekers op een niet-werkende URL terechtkomen. Elke gevonden link moet worden aangemaakt of gerepareerd in ThirstyAffiliates.
+		</p>
 
 		<?php if ( $cached ) :
 			$ts      = date_i18n( 'd M Y \o\m H:i', strtotime( $cached['scanned_at'] ) );

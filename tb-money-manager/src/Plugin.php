@@ -59,9 +59,9 @@ class Plugin {
 		$ta_tab           = new TATab( $ta_service, $orphaned_scanner, $scan_cache );
 		$bol_tab          = new BolTab();
 		$unmanaged        = new UnmanagedLinkScanner();
-		$tools_tab        = new ToolsTab( $unmanaged );
+		$tools_tab        = new ToolsTab( $unmanaged, $link_scanner );
 		$google_tab       = new GoogleTab( new SiteKitBridge() );
-		$scan_page        = new ScanPage( $link_scanner, $tt_tab, $ta_tab, $bol_tab, $tools_tab, $google_tab );
+		$scan_page        = new ScanPage( $tt_tab, $ta_tab, $bol_tab, $tools_tab, $google_tab );
 		new MenuService( $scan_page );
 		new AjaxHandlerService( $link_scanner, $orphaned_scanner, $scan_cache, $ta_service, $tt_service, $unmanaged );
 
