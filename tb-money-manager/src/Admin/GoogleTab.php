@@ -173,63 +173,104 @@ class GoogleTab {
 		$month              = $this->sum_range( $daily, strtotime( $month_start ), strtotime( 'today' ) );
 		?>
 
-		<style>
-			.tbmm-google-metrics { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:20px; }
-			.tbmm-google-metric-box {
-				border:1px solid #ccd0d4; padding:15px; min-width:140px;
-				background:#fff; box-shadow:0 1px 1px rgba(0,0,0,.04); text-align:center;
-			}
-			.tbmm-google-metric-box h4 { margin:0 0 8px; font-size:13px; color:#646970; font-weight:400; }
-			.tbmm-google-metric-box .tbmm-metric-val { font-size:1.7em; font-weight:600; margin:4px 0; }
-			.tbmm-google-metric-box .tbmm-metric-delta { font-size:12px; color:#646970; margin-top:4px; }
-			.tbmm-google-metric-box .tbmm-delta-up   { color:#00a32a; }
-			.tbmm-google-metric-box .tbmm-delta-down { color:#b32d2e; }
-		</style>
+		<?php $this->render_metric_styles(); ?>
 
 		<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
 			<h3 style="margin:0;">Geschatte inkomsten</h3>
 			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ Cache wissen</a>
 		</div>
 
-		<div class="tbmm-google-metrics">
-
+		<div class="tbmm-metrics-row">
 			<?php if ( $today_earnings !== null ) : ?>
-			<div class="tbmm-google-metric-box">
-				<h4>Vandaag</h4>
-				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $today_earnings ) ); ?></div>
-			</div>
+				<?php $this->render_metric_box( 'Vandaag', $this->fmt_eur( $today_earnings ) ); ?>
 			<?php endif; ?>
 
-			<div class="tbmm-google-metric-box">
-				<h4>Gisteren</h4>
-				<div class="tbmm-metric-val"><?php echo esc_html( $yesterday_earnings !== null ? $this->fmt_eur( $yesterday_earnings ) : '—' ); ?></div>
-				<?php if ( $yesterday_earnings !== null && $week_ago_earnings !== null && $week_ago_earnings > 0 ) : ?>
-					<?php $delta = $yesterday_earnings - $week_ago_earnings; $pct = round( $delta / $week_ago_earnings * 100 ); ?>
-					<div class="tbmm-metric-delta <?php echo $delta >= 0 ? 'tbmm-delta-up' : 'tbmm-delta-down'; ?>">
-						<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $pct . '%' ); ?> vs zelfde dag vorige week
-					</div>
-				<?php endif; ?>
-			</div>
+			<?php
+			$yday_delta = null;
+			if ( $yesterday_earnings !== null && $week_ago_earnings !== null && $week_ago_earnings > 0 ) {
+				$yday_delta = [ $yesterday_earnings - $week_ago_earnings, 'vs zelfde dag vorige week' ];
+				$yday_delta[2] = round( $yday_delta[0] / $week_ago_earnings * 100 );
+			}
+			$this->render_metric_box(
+				'Gisteren',
+				$yesterday_earnings !== null ? $this->fmt_eur( $yesterday_earnings ) : '—',
+				$yday_delta
+			);
+			?>
 
-			<div class="tbmm-google-metric-box">
-				<h4>Laatste 7 dagen</h4>
-				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $last7 ) ); ?></div>
-				<?php if ( $prev7 > 0 ) : ?>
-					<?php $delta = $last7 - $prev7; $pct = round( $delta / $prev7 * 100 ); ?>
-					<div class="tbmm-metric-delta <?php echo $delta >= 0 ? 'tbmm-delta-up' : 'tbmm-delta-down'; ?>">
-						<?php echo esc_html( ( $delta >= 0 ? '▲ +' : '▼ ' ) . $pct . '%' ); ?> vs vorige 7 dagen
-					</div>
-				<?php endif; ?>
-			</div>
+			<?php
+			$week_delta = null;
+			if ( $prev7 > 0 ) {
+				$week_delta = [ $last7 - $prev7, 'vs vorige 7 dagen' ];
+				$week_delta[2] = round( $week_delta[0] / $prev7 * 100 );
+			}
+			$this->render_metric_box( 'Laatste 7 dagen', $this->fmt_eur( $last7 ), $week_delta );
+			?>
 
-			<div class="tbmm-google-metric-box">
-				<h4>Deze maand</h4>
-				<div class="tbmm-metric-val"><?php echo esc_html( $this->fmt_eur( $month ) ); ?></div>
-			</div>
-
+			<?php $this->render_metric_box( 'Deze maand', $this->fmt_eur( $month ) ); ?>
 		</div>
 
 		<p style="color:#646970; font-size:12px;">Gecached voor 6 uur. Bedragen zijn schattingen van Google AdSense.</p>
+		<?php
+	}
+
+	/**
+	 * Renders a single metric box.
+	 *
+	 * @param string     $label  Box title.
+	 * @param string     $value  Formatted primary value.
+	 * @param array|null $delta  Optional: [ float $diff, string $vs_label, int $pct ].
+	 *                           Positive diff = up (green), negative = down (red).
+	 */
+	private function render_metric_box( string $label, string $value, ?array $delta = null ): void {
+		$trend_class = '';
+		if ( $delta !== null ) {
+			$trend_class = $delta[0] >= 0 ? 'tbmm-trend-up' : 'tbmm-trend-down';
+		}
+		?>
+		<div class="tbmm-metric-box <?php echo esc_attr( $trend_class ); ?>">
+			<div class="tbmm-metric-label"><?php echo esc_html( $label ); ?></div>
+			<div class="tbmm-metric-value"><?php echo esc_html( $value ); ?></div>
+			<?php if ( $delta !== null ) : ?>
+				<?php
+				[ $diff, $vs, $pct ] = $delta;
+				$up   = $diff >= 0;
+				$sign = $up ? '+' : '';
+				?>
+				<div class="tbmm-metric-trend <?php echo $up ? 'up' : 'down'; ?>">
+					<span class="tbmm-trend-arrow"><?php echo $up ? '▲' : '▼'; ?></span>
+					<span class="tbmm-trend-pct"><?php echo esc_html( $sign . $pct . '%' ); ?></span>
+				</div>
+				<div class="tbmm-metric-vs"><?php echo esc_html( $vs ); ?></div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	private function render_metric_styles(): void {
+		?>
+		<style>
+			.tbmm-metrics-row { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px; }
+			.tbmm-metric-box {
+				border:1px solid #ccd0d4; border-bottom-width:3px;
+				padding:14px 16px; min-width:130px; flex:1;
+				background:#fff; box-shadow:0 1px 1px rgba(0,0,0,.04);
+				text-align:center; border-bottom-color:#ccd0d4;
+			}
+			.tbmm-metric-box.tbmm-trend-up   { border-bottom-color:#00a32a; }
+			.tbmm-metric-box.tbmm-trend-down  { border-bottom-color:#b32d2e; }
+			.tbmm-metric-label { font-size:12px; color:#646970; margin-bottom:6px; }
+			.tbmm-metric-value { font-size:1.6em; font-weight:600; line-height:1.2; color:#1d2327; }
+			.tbmm-metric-trend {
+				margin-top:8px; font-size:13px; font-weight:600;
+				display:flex; align-items:center; justify-content:center; gap:3px;
+			}
+			.tbmm-metric-trend.up   { color:#00a32a; }
+			.tbmm-metric-trend.down { color:#b32d2e; }
+			.tbmm-trend-arrow { font-size:11px; }
+			.tbmm-trend-pct   { font-size:15px; }
+			.tbmm-metric-vs   { font-size:11px; color:#949494; margin-top:2px; }
+		</style>
 		<?php
 	}
 
