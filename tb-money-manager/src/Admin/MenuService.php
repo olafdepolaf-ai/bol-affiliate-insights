@@ -71,6 +71,7 @@ class MenuService {
 			[ 'TradeTracker',      'manage_options', $base . '&tab=tradetracker' ],
 			[ 'ThirstyAffiliates', 'manage_options', $base . '&tab=ta'           ],
 			[ 'Bol.com',           'manage_options', $base . '&tab=bol'          ],
+			[ 'Google',            'manage_options', $base . '&tab=google'        ],
 			[ 'Tools',             'manage_options', $base . '&tab=tools'        ],
 		];
 	}

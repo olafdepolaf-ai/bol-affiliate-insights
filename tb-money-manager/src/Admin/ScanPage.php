@@ -12,13 +12,15 @@ class ScanPage {
 	private TATab $ta_tab;
 	private BolTab $bol_tab;
 	private ToolsTab $tools_tab;
+	private GoogleTab $google_tab;
 
-	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, ToolsTab $tools_tab ) {
+	public function __construct( LinkScanner $link_scanner, TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, ToolsTab $tools_tab, GoogleTab $google_tab ) {
 		$this->link_scanner = $link_scanner;
 		$this->tt_tab       = $tt_tab;
 		$this->ta_tab       = $ta_tab;
 		$this->bol_tab      = $bol_tab;
 		$this->tools_tab    = $tools_tab;
+		$this->google_tab   = $google_tab;
 	}
 
 	public function render(): void {
@@ -46,6 +48,7 @@ class ScanPage {
 			'tradetracker' => 'TradeTracker',
 			'ta'           => 'ThirstyAffiliates',
 			'bol'          => 'Bol.com',
+			'google'       => 'Google',
 			'tools'        => 'Tools',
 		];
 
@@ -90,6 +93,8 @@ class ScanPage {
 				<?php $this->ta_tab->render(); ?>
 			<?php elseif ( $current_tab === 'bol' ) : ?>
 				<?php $this->bol_tab->render(); ?>
+			<?php elseif ( $current_tab === 'google' ) : ?>
+				<?php $this->google_tab->render(); ?>
 			<?php elseif ( $current_tab === 'tools' ) : ?>
 				<?php $this->tools_tab->render(); ?>
 			<?php else : ?>
