@@ -10,7 +10,8 @@ use TuinenBalkon\TBMoneyManager\Service\TradeTrackerService;
 
 class DashboardWidget {
 
-	const CACHE_KEY = 'tbmm_dashboard_widget';
+	// Bump this suffix when the cached data structure changes to avoid stale cache reads.
+	const CACHE_KEY = 'tbmm_dashboard_widget_v3';
 	const CACHE_TTL = 3600;
 
 	public function __construct() {
@@ -33,6 +34,11 @@ class DashboardWidget {
 	}
 
 	public function render(): void {
+		// Allow manual cache flush via ?tbmm_flush_widget=1.
+		if ( isset( $_GET['tbmm_flush_widget'] ) ) {
+			delete_transient( self::CACHE_KEY );
+		}
+
 		$data = get_transient( self::CACHE_KEY );
 		if ( false === $data ) {
 			$data = $this->fetch_all();
@@ -65,20 +71,18 @@ class DashboardWidget {
 		$d7     = gmdate( 'Y-m-d', strtotime( '-6 days' ) );
 		$d30    = gmdate( 'Y-m-d', strtotime( '-29 days' ) );
 
-		$periods = [
+		$result = [ 'configured' => true ];
+
+		foreach ( [
 			'today' => [ $today, $today ],
 			'last7' => [ $d7,    $today ],
 			'last30'=> [ $d30,   $today ],
-		];
-
-		$result = [ 'configured' => true ];
-
-		foreach ( $periods as $key => [$start, $end] ) {
+		] as $key => [ $start, $end ] ) {
 			$data       = $client->get_orders_report( $start, $end );
 			$orders     = 0;
 			$commission = 0.0;
 			if ( ! is_wp_error( $data ) && ! empty( $data['items'] ) ) {
-				$orders     = count( $data['items'] );
+				$orders = count( $data['items'] );
 				foreach ( $data['items'] as $item ) {
 					$commission += (float) ( $item['commission'] ?? 0 );
 				}
@@ -109,7 +113,7 @@ class DashboardWidget {
 		$site_id = $tt->get_primary_site_id();
 
 		if ( is_wp_error( $site_id ) ) {
-			return [ 'configured' => true, 'error' => true ];
+			return [ 'configured' => false ];
 		}
 
 		$today      = gmdate( 'Y-m-d' );
@@ -122,38 +126,37 @@ class DashboardWidget {
 			$years[] = $current_year - 1;
 		}
 
-		$buckets = [ 'today' => [0.0, 0], 'last7' => [0.0, 0], 'last30' => [0.0, 0] ];
+		$buckets = [
+			'today' => [ 'commission' => 0.0, 'count' => 0 ],
+			'last7' => [ 'commission' => 0.0, 'count' => 0 ],
+			'last30'=> [ 'commission' => 0.0, 'count' => 0 ],
+		];
 
 		foreach ( $years as $year ) {
 			$sales = $tt->get_sales_year( $site_id, $year );
 			if ( is_wp_error( $sales ) ) {
-				return [ 'configured' => true, 'error' => true ];
+				return [ 'configured' => false ];
 			}
 			foreach ( $sales as $t ) {
-				$t   = is_object( $t ) ? $t : (object) $t;
+				$t    = is_object( $t ) ? $t : (object) $t;
 				$date = isset( $t->registrationDate ) ? substr( (string) $t->registrationDate, 0, 10 ) : '';
 				$com  = (float) ( $t->commission ?? 0 );
 				if ( $date === $today ) {
-					$buckets['today'][0] += $com;
-					$buckets['today'][1]++;
+					$buckets['today']['commission'] += $com;
+					$buckets['today']['count']++;
 				}
 				if ( $date >= $d7_cutoff ) {
-					$buckets['last7'][0] += $com;
-					$buckets['last7'][1]++;
+					$buckets['last7']['commission'] += $com;
+					$buckets['last7']['count']++;
 				}
 				if ( $date >= $d30_cutoff ) {
-					$buckets['last30'][0] += $com;
-					$buckets['last30'][1]++;
+					$buckets['last30']['commission'] += $com;
+					$buckets['last30']['count']++;
 				}
 			}
 		}
 
-		return [
-			'configured' => true,
-			'today'      => [ 'commission' => $buckets['today'][0], 'count' => $buckets['today'][1] ],
-			'last7'      => [ 'commission' => $buckets['last7'][0], 'count' => $buckets['last7'][1] ],
-			'last30'     => [ 'commission' => $buckets['last30'][0], 'count' => $buckets['last30'][1] ],
-		];
+		return [ 'configured' => true ] + $buckets;
 	}
 
 	private function fetch_adsense(): array {
@@ -193,44 +196,52 @@ class DashboardWidget {
 		$tt      = $data['tt']      ?? [];
 		$adsense = $data['adsense'] ?? [];
 
-		$has_bol     = ! empty( $bol['configured'] ) && empty( $bol['error'] );
-		$has_tt      = ! empty( $tt['configured'] ) && empty( $tt['error'] );
+		$has_bol     = ! empty( $bol['configured'] );
+		$has_tt      = ! empty( $tt['configured'] );
 		$has_adsense = ! empty( $adsense['available'] );
 
 		if ( ! $has_bol && ! $has_tt && ! $has_adsense ) {
-			echo '<p style="color:#949494; font-size:12px; font-style:italic;">Geen bronnen geconfigureerd. Stel Bol.com, TradeTracker of AdSense (via Site Kit) in.</p>';
+			echo '<p style="color:#949494;font-size:12px;font-style:italic;">Geen bronnen geconfigureerd.</p>';
 			return;
 		}
 		?>
 		<style>
-			#tbmm_earnings_widget .tbmm-period { margin-bottom:14px; }
-			#tbmm_earnings_widget .tbmm-period-title {
-				font-size:11px; font-weight:700; text-transform:uppercase;
-				letter-spacing:.06em; color:#646970; margin:0 0 6px;
+			#tbmm_earnings_widget .tbmm-section { margin-bottom:12px; }
+			#tbmm_earnings_widget .tbmm-section-title {
+				font-size:10px; font-weight:700; text-transform:uppercase;
+				letter-spacing:.07em; color:#646970; margin:0 0 5px; padding:0;
 			}
-			#tbmm_earnings_widget .tbmm-rows { display:flex; flex-direction:column; gap:3px; }
+			#tbmm_earnings_widget .tbmm-rows { display:flex; flex-direction:column; gap:2px; }
 			#tbmm_earnings_widget .tbmm-row {
 				display:flex; justify-content:space-between; align-items:baseline;
-				font-size:13px;
+				font-size:12px;
 			}
-			#tbmm_earnings_widget .tbmm-label { color:#646970; }
-			#tbmm_earnings_widget .tbmm-value { font-weight:600; font-variant-numeric:tabular-nums; }
-			#tbmm_earnings_widget .tbmm-value.green { color:#00a32a; }
-			#tbmm_earnings_widget .tbmm-delta {
-				font-size:11px; margin-left:5px; font-weight:400;
+			#tbmm_earnings_widget .tbmm-lbl { color:#646970; white-space:nowrap; }
+			#tbmm_earnings_widget .tbmm-val {
+				font-weight:600; font-variant-numeric:tabular-nums;
+				text-align:right; color:#1d2327;
 			}
-			#tbmm_earnings_widget .tbmm-delta.up   { color:#00a32a; }
-			#tbmm_earnings_widget .tbmm-delta.down  { color:#b32d2e; }
-			#tbmm_earnings_widget .tbmm-divider {
-				border:none; border-top:1px solid #f0f0f1; margin:10px 0;
+			#tbmm_earnings_widget .tbmm-val.has-value { color:#00a32a; }
+			#tbmm_earnings_widget .tbmm-trend {
+				font-size:10px; margin-left:4px; font-weight:400;
 			}
-			#tbmm_earnings_widget .tbmm-saldo {
-				margin-top:6px; padding-top:6px; border-top:1px dashed #e0e0e0;
-				font-size:12px; color:#646970;
+			#tbmm_earnings_widget .tbmm-trend.up   { color:#00a32a; }
+			#tbmm_earnings_widget .tbmm-trend.down  { color:#b32d2e; }
+			#tbmm_earnings_widget .tbmm-divider { border:none; border-top:1px solid #f0f0f1; margin:8px 0; }
+			#tbmm_earnings_widget .tbmm-uitbetaling {
+				background:#f6f7f7; border:1px solid #e0e0e0; padding:8px 10px;
+				margin-top:10px; font-size:12px;
+			}
+			#tbmm_earnings_widget .tbmm-uitbetaling-title {
+				font-size:10px; font-weight:700; text-transform:uppercase;
+				letter-spacing:.07em; color:#646970; margin:0 0 5px;
+			}
+			#tbmm_earnings_widget .tbmm-uitbetaling-total {
+				font-size:14px; font-weight:700; color:#2271b1; margin-top:4px;
 			}
 			#tbmm_earnings_widget .tbmm-footer {
-				margin-top:10px; font-size:11px; color:#949494;
-				display:flex; justify-content:space-between; align-items:center;
+				margin-top:8px; font-size:11px; color:#949494;
+				display:flex; justify-content:space-between;
 			}
 			#tbmm_earnings_widget .tbmm-footer a { color:#949494; text-decoration:none; }
 			#tbmm_earnings_widget .tbmm-footer a:hover { color:#2271b1; }
@@ -245,109 +256,107 @@ class DashboardWidget {
 
 		$first = true;
 		foreach ( $periods as $period_key => $period_label ) :
-			$has_any_data = false;
-			ob_start();
+			if ( ! $first ) echo '<hr class="tbmm-divider">';
+			$first = false;
 			?>
-			<div class="tbmm-rows">
-				<?php if ( $has_bol ) : ?>
-					<?php
-					$orders = (int) ( $bol[ $period_key ]['orders'] ?? 0 );
-					$com    = (float) ( $bol[ $period_key ]['commission'] ?? 0 );
-					if ( $orders > 0 || $period_key !== 'today' ) :
-						$has_any_data = true;
+			<div class="tbmm-section">
+				<p class="tbmm-section-title"><?php echo esc_html( $period_label ); ?></p>
+				<div class="tbmm-rows">
+
+					<?php if ( $has_bol ) :
+						$orders = (int)   ( $bol[ $period_key ]['orders']     ?? 0 );
+						$com    = (float) ( $bol[ $period_key ]['commission']  ?? 0 );
+						$label  = $orders > 0
+							? $orders . ' ' . _n( 'order', 'orders', $orders ) . ' · ' . $this->fmt( $com )
+							: $this->fmt( $com );
 						?>
 						<div class="tbmm-row">
-							<span class="tbmm-label">🟠 Bol.com</span>
-							<span class="tbmm-value green">
-								<?php
-								$parts = [];
-								if ( $orders > 0 ) {
-									$parts[] = $orders . ' ' . _n( 'order', 'orders', $orders );
-								}
-								$parts[] = $this->fmt( $com );
-								echo esc_html( implode( ' · ', $parts ) );
-								?>
+							<span class="tbmm-lbl">🟠 Bol.com</span>
+							<span class="tbmm-val <?php echo $com > 0 ? 'has-value' : ''; ?>">
+								<?php echo esc_html( $label ); ?>
 							</span>
 						</div>
 					<?php endif; ?>
-				<?php endif; ?>
 
-				<?php if ( $has_tt ) : ?>
-					<?php
-					$t_com   = (float) ( $tt[ $period_key ]['commission'] ?? 0 );
-					$t_count = (int)   ( $tt[ $period_key ]['count']      ?? 0 );
-					if ( $t_count > 0 || $period_key !== 'today' ) :
-						$has_any_data = true;
+					<?php if ( $has_tt ) :
+						$t_count = (int)   ( $tt[ $period_key ]['count']      ?? 0 );
+						$t_com   = (float) ( $tt[ $period_key ]['commission']  ?? 0 );
+						$label   = $t_count > 0
+							? $t_count . ' ' . _n( 'sale', 'sales', $t_count ) . ' · ' . $this->fmt( $t_com )
+							: $this->fmt( $t_com );
 						?>
 						<div class="tbmm-row">
-							<span class="tbmm-label">🔵 TradeTracker</span>
-							<span class="tbmm-value green">
-								<?php
-								$parts = [];
-								if ( $t_count > 0 ) {
-									$parts[] = $t_count . ' ' . _n( 'sale', 'sales', $t_count );
-								}
-								$parts[] = $this->fmt( $t_com );
-								echo esc_html( implode( ' · ', $parts ) );
-								?>
+							<span class="tbmm-lbl">🔵 TradeTracker</span>
+							<span class="tbmm-val <?php echo $t_com > 0 ? 'has-value' : ''; ?>">
+								<?php echo esc_html( $label ); ?>
 							</span>
 						</div>
 					<?php endif; ?>
-				<?php endif; ?>
 
-				<?php if ( $has_adsense ) : ?>
-					<?php
-					if ( $period_key === 'today' ) {
-						$a_val = $adsense['today'] ?? null;
-						$show  = $a_val !== null;
-					} else {
-						$a_val = (float) ( $adsense[ $period_key ] ?? 0 );
-						$show  = true;
-					}
-					if ( $show ) :
-						$has_any_data = true;
+					<?php if ( $has_adsense ) :
+						if ( $period_key === 'today' ) {
+							$a_val = $adsense['today'] ?? null;
+							$a_str = $a_val !== null ? $this->fmt( (float) $a_val ) : '—';
+							$a_positive = $a_val !== null && $a_val > 0;
+						} else {
+							$a_val      = (float) ( $adsense[ $period_key ] ?? 0 );
+							$a_str      = $this->fmt( $a_val );
+							$a_positive = $a_val > 0;
+						}
+
+						$trend_html = '';
+						if ( $period_key === 'last7' && ! empty( $adsense['prev7'] ) && $adsense['prev7'] > 0 && is_float( $a_val ) ) {
+							$delta = $a_val - $adsense['prev7'];
+							$pct   = round( $delta / $adsense['prev7'] * 100 );
+							$cls   = $delta >= 0 ? 'up' : 'down';
+							$arrow = $delta >= 0 ? '▲' : '▼';
+							$trend_html = '<span class="tbmm-trend ' . $cls . '">' . esc_html( $arrow . ( $delta >= 0 ? '+' : '' ) . $pct . '%' ) . '</span>';
+						}
 						?>
 						<div class="tbmm-row">
-							<span class="tbmm-label">🟡 AdSense</span>
-							<span class="tbmm-value green">
-								<?php echo esc_html( $this->fmt( (float) $a_val ) ); ?>
-								<?php if ( $period_key === 'last7' && ! empty( $adsense['prev7'] ) && $adsense['prev7'] > 0 ) : ?>
-									<?php
-									$delta = $a_val - $adsense['prev7'];
-									$pct   = round( $delta / $adsense['prev7'] * 100 );
-									$cls   = $delta >= 0 ? 'up' : 'down';
-									$sign  = $delta >= 0 ? '+' : '';
-									?>
-									<span class="tbmm-delta <?php echo esc_attr( $cls ); ?>"><?php echo esc_html( $sign . $pct . '%' ); ?></span>
-								<?php endif; ?>
+							<span class="tbmm-lbl">🟡 AdSense</span>
+							<span class="tbmm-val <?php echo $a_positive ? 'has-value' : ''; ?>">
+								<?php echo esc_html( $a_str ); ?><?php echo $trend_html; // phpcs:ignore ?>
 							</span>
 						</div>
 					<?php endif; ?>
-				<?php endif; ?>
-			</div>
-			<?php
-			$rows_html = ob_get_clean();
 
-			if ( $has_any_data ) :
-				if ( ! $first ) echo '<hr class="tbmm-divider">';
-				$first = false;
-				?>
-				<div class="tbmm-period">
-					<p class="tbmm-period-title"><?php echo esc_html( $period_label ); ?></p>
-					<?php echo $rows_html; // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<?php if ( $period_key === 'last30' && $has_bol ) : ?>
-						<div class="tbmm-saldo">
-							Saldo: <strong><?php echo esc_html( $this->fmt( $bol['saldo_approved'] ?? 0 ) ); ?></strong> goedgekeurd
-							· <?php echo esc_html( $this->fmt( $bol['saldo_pending'] ?? 0 ) ); ?> open
-						</div>
-					<?php endif; ?>
 				</div>
-			<?php endif; ?>
+			</div>
 		<?php endforeach; ?>
+
+		<?php
+		// --- Uitbetaling sectie ---
+		$show_bol_saldo     = $has_bol && ( ( $bol['saldo_approved'] ?? 0 ) + ( $bol['saldo_pending'] ?? 0 ) ) > 0;
+		if ( $show_bol_saldo ) :
+			$approved = (float) ( $bol['saldo_approved'] ?? 0 );
+			$pending  = (float) ( $bol['saldo_pending']  ?? 0 );
+			$total    = $approved + $pending;
+			?>
+			<hr class="tbmm-divider">
+			<div class="tbmm-uitbetaling">
+				<p class="tbmm-uitbetaling-title">Uitbetaling Bol.com</p>
+				<div class="tbmm-rows">
+					<div class="tbmm-row">
+						<span class="tbmm-lbl">Goedgekeurd</span>
+						<span class="tbmm-val"><?php echo esc_html( $this->fmt( $approved ) ); ?></span>
+					</div>
+					<div class="tbmm-row">
+						<span class="tbmm-lbl">Open</span>
+						<span class="tbmm-val"><?php echo esc_html( $this->fmt( $pending ) ); ?></span>
+					</div>
+				</div>
+				<div class="tbmm-uitbetaling-total"><?php echo esc_html( $this->fmt( $total ) ); ?></div>
+			</div>
+		<?php endif; ?>
 
 		<div class="tbmm-footer">
 			<span>Bijgewerkt om <?php echo esc_html( $data['generated_at'] ?? '—' ); ?></span>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=tb-money-manager' ) ); ?>">Volledig rapport →</a>
+			<span>
+				<a href="<?php echo esc_url( add_query_arg( 'tbmm_flush_widget', '1' ) ); ?>">↻</a>
+				&nbsp;
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=tb-money-manager' ) ); ?>">Rapport →</a>
+			</span>
 		</div>
 		<?php
 	}
