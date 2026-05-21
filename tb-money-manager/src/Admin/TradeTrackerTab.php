@@ -217,7 +217,29 @@ class TradeTrackerTab {
 			return;
 		}
 
+		// Handle cache flush request
+		if ( isset( $_GET['tbmm_flush_rapport'] ) && wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_rapport'] ), 'tbmm_flush_rapport_' . $selected_year ) ) {
+			$this->service->clear_report_cache( $site_id, $selected_year );
+			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=rapport&jaar=' . $selected_year . '&cache_cleared=1' ) );
+			exit;
+		}
+
+		$fetched_at  = $this->service->get_report_fetched_at( $site_id, $selected_year );
+		$ttl_label   = ( $selected_year < (int) gmdate( 'Y' ) ) ? '24 uur' : '1 uur';
+		$fetched_str = $fetched_at
+			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · vernieuwt elke ' . $ttl_label
+			: 'Tijdstip onbekend';
+		$flush_url   = wp_nonce_url(
+			admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=rapport&jaar=' . $selected_year . '&tbmm_flush_rapport=1' ),
+			'tbmm_flush_rapport_' . $selected_year,
+			'tbmm_flush_rapport'
+		);
+
+		if ( isset( $_GET['cache_cleared'] ) ) :
 		?>
+		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p>Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.</p></div>
+		<?php endif; ?>
+
 		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="tradetracker" />
@@ -229,6 +251,11 @@ class TradeTrackerTab {
 				<?php endfor; ?>
 			</select>
 		</form>
+
+		<p style="display:flex; align-items:center; gap:14px; font-size:13px; color:#646970; margin-bottom:16px;">
+			<span><?php echo esc_html( $fetched_str ); ?></span>
+			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ Vernieuwen</a>
+		</p>
 
 		<?php
 		$months_data = $this->service->get_report_year( $site_id, $selected_year );
@@ -494,6 +521,13 @@ class TradeTrackerTab {
 			return;
 		}
 
+		// Handle cache flush request
+		if ( isset( $_GET['tbmm_flush_clicks'] ) && wp_verify_nonce( sanitize_key( $_GET['tbmm_flush_clicks'] ), 'tbmm_flush_clicks_' . $selected_year ) ) {
+			$this->service->clear_clicks_cache( $site_id, $selected_year );
+			wp_safe_redirect( admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year . '&cache_cleared=1' ) );
+			exit;
+		}
+
 		// Base URL for this subtab (year/page navigation)
 		$subtab_url = admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year );
 		?>
@@ -546,15 +580,28 @@ class TradeTrackerTab {
 		</style>
 
 		<?php
-		$fetched_at = $this->service->get_clicks_fetched_at( $site_id, $selected_year );
-		$fetched_str = $fetched_at
-			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · gecached voor 24 uur'
-			: 'Realtime';
+		if ( isset( $_GET['cache_cleared'] ) ) :
 		?>
-		<p class="alc-clicks-meta">
-			<?php echo esc_html( number_format( $total_clicks, 0, ',', '.' ) ); ?> kliks in <?php echo esc_html( $selected_year ); ?>
-			— pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( $total_pages ); ?>
-			<span style="margin-left:16px; color:#aaa; font-size:12px;"><?php echo esc_html( $fetched_str ); ?></span>
+		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p>Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.</p></div>
+		<?php endif;
+
+		$fetched_at  = $this->service->get_clicks_fetched_at( $site_id, $selected_year );
+		$fetched_str = $fetched_at
+			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · vernieuwt elke 24 uur'
+			: 'Tijdstip onbekend — klik Vernieuwen om de cache te vullen';
+		$flush_url   = wp_nonce_url(
+			admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year . '&tbmm_flush_clicks=1' ),
+			'tbmm_flush_clicks_' . $selected_year,
+			'tbmm_flush_clicks'
+		);
+		?>
+		<p class="alc-clicks-meta" style="display:flex; align-items:center; gap:14px;">
+			<span>
+				<?php echo esc_html( number_format( $total_clicks, 0, ',', '.' ) ); ?> kliks in <?php echo esc_html( $selected_year ); ?>
+				— pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( $total_pages ); ?>
+			</span>
+			<span style="color:#aaa; font-size:12px;"><?php echo esc_html( $fetched_str ); ?></span>
+			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ Vernieuwen</a>
 		</p>
 
 		<table class="alc-clicks-tbl">

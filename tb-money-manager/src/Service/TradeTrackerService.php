@@ -190,8 +190,20 @@ class TradeTrackerService {
 
 		$ttl = ( $year < $current_year ) ? self::TTL_REPORT_PAST : self::TTL_REPORT;
 		$this->cache_set( $cache_key, $months, $ttl );
+		set_transient( self::CACHE_PREFIX . 'report_fetched_at_' . md5( $site_id . '_' . $year ), time(), $ttl );
 
 		return $months;
+	}
+
+	public function get_report_fetched_at( string $site_id, int $year ): ?int {
+		$ts = get_transient( self::CACHE_PREFIX . 'report_fetched_at_' . md5( $site_id . '_' . $year ) );
+		return ( false !== $ts ) ? (int) $ts : null;
+	}
+
+	public function clear_report_cache( string $site_id, int $year ): void {
+		$hash = md5( $site_id . '_' . $year );
+		$this->cache_delete( 'year_' . $hash );
+		delete_transient( self::CACHE_PREFIX . 'report_fetched_at_' . $hash );
 	}
 
 	/**
@@ -267,6 +279,12 @@ class TradeTrackerService {
 	public function get_clicks_fetched_at( string $site_id, int $year ): ?int {
 		$ts = get_transient( self::CACHE_PREFIX . 'clicks_fetched_at_' . md5( $site_id . '_' . $year ) );
 		return ( false !== $ts ) ? (int) $ts : null;
+	}
+
+	public function clear_clicks_cache( string $site_id, int $year ): void {
+		$hash = md5( $site_id . '_' . $year );
+		$this->cache_delete( 'clicks_' . $hash );
+		delete_transient( self::CACHE_PREFIX . 'clicks_fetched_at_' . $hash );
 	}
 
 	/**
