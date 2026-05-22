@@ -31,12 +31,12 @@ class TATab {
 	}
 
 	public function render(): void {
-		$subtabs = [
-			'aanbeveling-404' => 'Aanbeveling 404',
-			'orphaned-links'  => 'Orphaned Links',
-			'link-scanner'    => 'Link Scanner',
-			'unmanaged-links' => 'Unmanaged Links',
-		];
+		$subtabs = array(
+			'aanbeveling-404' => __( 'Aanbeveling 404', 'tbmm' ),
+			'orphaned-links'  => __( 'Orphaned Links', 'tbmm' ),
+			'link-scanner'    => __( 'Link Scanner', 'tbmm' ),
+			'unmanaged-links' => __( 'Unmanaged Links', 'tbmm' ),
+		);
 
 		$current_subtab = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'aanbeveling-404';
 		if ( ! array_key_exists( $current_subtab, $subtabs ) ) {
@@ -115,16 +115,24 @@ class TATab {
 		</style>
 
 		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
-			Toont <code>/aanbeveling/</code>-URLs die een <strong>404 hebben opgeleverd</strong> — bezoekers klikten op een link die niet werkte.
-			De data komt uit de <strong>Redirection plugin</strong> (<code><?php echo esc_html( $GLOBALS['wpdb']->prefix . 'redirection_404' ); ?></code>) en is <strong>realtime</strong> (geen cache).
-			Klik op "Zoek in artikelen" om te zien welk artikel de gebroken link bevat, zodat je hem kunt herstellen in ThirstyAffiliates.
+			<?php
+			printf(
+				wp_kses(
+					/* translators: 1: /aanbeveling/ code tag, 2: Redirection plugin, 3: DB table code tag */
+					__( 'Toont %1$s-URLs die een <strong>404 hebben opgeleverd</strong> — bezoekers klikten op een link die niet werkte. De data komt uit de <strong>Redirection plugin</strong> (%2$s) en is <strong>realtime</strong> (geen cache). Klik op "Zoek in artikelen" om te zien welk artikel de gebroken link bevat, zodat je hem kunt herstellen in ThirstyAffiliates.', 'tbmm' ),
+					array( 'strong' => array(), 'code' => array() )
+				),
+				'<code>/aanbeveling/</code>',
+				'<code>' . esc_html( $GLOBALS['wpdb']->prefix . 'redirection_404' ) . '</code>'
+			);
+			?>
 		</p>
 
 		<form method="get" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
 			<input type="hidden" name="page"   value="tb-money-manager">
 			<input type="hidden" name="tab"    value="ta">
 			<input type="hidden" name="subtab" value="aanbeveling-404">
-			<label for="alc-redir-period" style="font-size:13px; font-weight:600;">Periode:</label>
+			<label for="alc-redir-period" style="font-size:13px; font-weight:600;"><?php esc_html_e( 'Periode:', 'tbmm' ); ?></label>
 			<select id="alc-redir-period" name="redir_period" style="font-size:13px;">
 				<?php foreach ( $allowed_periods as $key => $label ) : ?>
 				<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $selected_period, $key ); ?>>
@@ -132,25 +140,33 @@ class TATab {
 				</option>
 				<?php endforeach; ?>
 			</select>
-			<button type="submit" class="button">Toon</button>
+			<button type="submit" class="button"><?php esc_html_e( 'Toon', 'tbmm' ); ?></button>
 		</form>
 
 		<?php if ( $redir_data['table_missing'] ) : ?>
 		<div class="notice notice-warning inline" style="margin:0;">
-			<p>Redirection plugin niet actief of 404-logtabel (<code><?php echo esc_html( $GLOBALS['wpdb']->prefix . 'redirection_404' ); ?></code>) niet gevonden.</p>
+			<p>
+				<?php
+				/* translators: %s = database table name */
+				printf(
+					__( 'Redirection plugin niet actief of 404-logtabel (%s) niet gevonden.', 'tbmm' ),
+					'<code>' . esc_html( $GLOBALS['wpdb']->prefix . 'redirection_404' ) . '</code>'
+				);
+				?>
+			</p>
 		</div>
 
 		<?php elseif ( empty( $redir_data['items'] ) ) : ?>
-		<p style="color:#646970; font-size:13px;">Geen <code>/aanbeveling/</code> 404-hits gevonden voor deze periode.</p>
+		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen /aanbeveling/ 404-hits gevonden voor deze periode.', 'tbmm' ); ?></p>
 
 		<?php else : ?>
 		<table class="alc-ta-table">
 			<thead>
 				<tr>
-					<th>URL</th>
-					<th style="text-align:right; width:60px;">Hits</th>
-					<th>Laatste hit</th>
-					<th style="width:160px;">Zoek in artikelen</th>
+					<th><?php esc_html_e( 'URL', 'tbmm' ); ?></th>
+					<th style="text-align:right; width:60px;"><?php esc_html_e( 'Hits', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Laatste hit', 'tbmm' ); ?></th>
+					<th style="width:160px;"><?php esc_html_e( 'Zoek in artikelen', 'tbmm' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -169,7 +185,7 @@ class TATab {
 					<button class="button button-small alc-find-btn"
 					        data-slug="<?php echo esc_attr( $slug ); ?>"
 					        data-row="<?php echo esc_attr( $i ); ?>">
-						Zoek in artikelen
+						<?php esc_html_e( 'Zoek in artikelen', 'tbmm' ); ?>
 					</button>
 				</td>
 			</tr>
@@ -196,12 +212,12 @@ class TATab {
 
 					if (arRow.style.display !== 'none') {
 						arRow.style.display = 'none';
-						btn.textContent = 'Zoek in artikelen';
+						btn.textContent = <?php echo wp_json_encode( __( 'Zoek in artikelen', 'tbmm' ) ); ?>;
 						return;
 					}
 
 					btn.disabled = true;
-					btn.textContent = 'Zoeken…';
+					btn.textContent = <?php echo wp_json_encode( __( 'Zoeken…', 'tbmm' ) ); ?>;
 
 					var data = new FormData();
 					data.append('action', 'tbmm_orphan_find_articles');
@@ -220,16 +236,16 @@ class TATab {
 								});
 								html += '</ul>';
 								cell.innerHTML = html;
-								btn.textContent = 'Verberg ▲';
+								btn.textContent = <?php echo wp_json_encode( __( 'Verberg ▲', 'tbmm' ) ); ?>;
 							} else {
-								cell.innerHTML = '<em style="font-size:12px; color:#646970;">Niet gevonden in gepubliceerde artikelen.</em>';
-								btn.textContent = 'Verberg ▲';
+								cell.innerHTML = '<em style="font-size:12px; color:#646970;"><?php echo esc_js( __( 'Niet gevonden in gepubliceerde artikelen.', 'tbmm' ) ); ?></em>';
+								btn.textContent = <?php echo wp_json_encode( __( 'Verberg ▲', 'tbmm' ) ); ?>;
 							}
 							arRow.style.display = '';
 						})
 						.catch(function() {
 							btn.disabled = false;
-							btn.textContent = 'Zoek in artikelen';
+							btn.textContent = <?php echo wp_json_encode( __( 'Zoek in artikelen', 'tbmm' ) ); ?>;
 						});
 				});
 			});
@@ -255,9 +271,12 @@ class TATab {
 		</style>
 
 		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
-			Zoekt in alle <strong>live gepubliceerde artikelen</strong> naar links met het patroon <code>/aanbeveling/slug</code>
-			die <strong>niet bekend zijn in ThirstyAffiliates</strong>. Dit zijn <em>dode links</em>: de redirect bestaat niet (meer),
-			waardoor bezoekers op een niet-werkende URL terechtkomen. Elke gevonden link moet worden aangemaakt of gerepareerd in ThirstyAffiliates.
+			<?php
+			echo wp_kses(
+				__( 'Zoekt in alle <strong>live gepubliceerde artikelen</strong> naar links met het patroon <code>/aanbeveling/slug</code> die <strong>niet bekend zijn in ThirstyAffiliates</strong>. Dit zijn <em>dode links</em>: de redirect bestaat niet (meer), waardoor bezoekers op een niet-werkende URL terechtkomen. Elke gevonden link moet worden aangemaakt of gerepareerd in ThirstyAffiliates.', 'tbmm' ),
+				array( 'strong' => array(), 'code' => array(), 'em' => array() )
+			);
+			?>
 		</p>
 
 		<?php if ( $cached ) :
@@ -271,21 +290,24 @@ class TATab {
 			} );
 		?>
 		<div class="alc-scan-meta">
-			<span>Laatste scan: <?php echo esc_html( $ts ); ?></span>
-			<button id="alc-orphan-rescan-btn" class="button button-small">↺ Herscan</button>
+			<?php
+			/* translators: %s = date/time of last scan */
+			echo esc_html( sprintf( __( 'Laatste scan: %s', 'tbmm' ), $ts ) );
+			?>
+			<button id="alc-orphan-rescan-btn" class="button button-small">↺ <?php esc_html_e( 'Herscan', 'tbmm' ); ?></button>
 		</div>
 
 		<?php if ( empty( $results ) ) : ?>
-		<p style="color:#646970; font-size:13px;">Geen orphaned <code>/aanbeveling/</code> links gevonden.</p>
+		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen orphaned /aanbeveling/ links gevonden.', 'tbmm' ); ?></p>
 
 		<?php else : ?>
 		<table class="alc-ta-table">
 			<thead>
 				<tr>
 					<th class="alc-rank-cell">#</th>
-					<th>Artikel</th>
-					<th>Gevonden URL</th>
-					<th style="text-align:right; width:80px;">Voorkomens</th>
+					<th><?php esc_html_e( 'Artikel', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Gevonden URL', 'tbmm' ); ?></th>
+					<th style="text-align:right; width:80px;"><?php esc_html_e( 'Voorkomens', 'tbmm' ); ?></th>
 					<th style="width:40px;"></th>
 				</tr>
 			</thead>
@@ -302,7 +324,7 @@ class TATab {
 				<td style="text-align:right; font-variant-numeric:tabular-nums;"><?php echo esc_html( $r['occurrences'] ); ?>×</td>
 				<td style="text-align:center;">
 					<a href="<?php echo esc_url( $r['edit_url'] ); ?>" target="_blank"
-					   title="Bewerk artikel" style="text-decoration:none; font-size:15px;">✎</a>
+					   title="<?php esc_attr_e( 'Bewerk artikel', 'tbmm' ); ?>" style="text-decoration:none; font-size:15px;">✎</a>
 				</td>
 			</tr>
 			<?php endforeach; ?>
@@ -312,9 +334,9 @@ class TATab {
 
 		<?php else : ?>
 		<p style="font-size:13px; color:#646970;">
-			Scan de gepubliceerde artikelen op orphaned <code>/aanbeveling/</code> links — links die in artikelen staan maar niet meer actief zijn in ThirstyAffiliates.
+			<?php esc_html_e( 'Scan de gepubliceerde artikelen op orphaned /aanbeveling/ links — links die in artikelen staan maar niet meer actief zijn in ThirstyAffiliates.', 'tbmm' ); ?>
 		</p>
-		<button id="alc-orphan-scan-btn" class="button button-primary">Doe analyse</button>
+		<button id="alc-orphan-scan-btn" class="button button-primary"><?php esc_html_e( 'Doe analyse', 'tbmm' ); ?></button>
 		<?php endif; ?>
 
 		<div id="alc-orphan-progress" style="display:none; margin-top:16px;">
@@ -338,7 +360,7 @@ class TATab {
 			function startScan() {
 				if (progressEl) progressEl.style.display = 'block';
 				if (barEl)      barEl.style.width = '0%';
-				if (labelEl)    labelEl.textContent = 'Initialiseren…';
+				if (labelEl)    labelEl.textContent = <?php echo wp_json_encode( __( 'Initialiseren…', 'tbmm' ) ); ?>;
 				if (scanBtn)    scanBtn.disabled = true;
 				if (rescanBtn)  rescanBtn.disabled = true;
 
@@ -353,7 +375,7 @@ class TATab {
 						runBatch(0, resp.data.total_posts, []);
 					})
 					.catch(function(err) {
-						if (labelEl) labelEl.textContent = 'Fout: ' + err.message;
+						if (labelEl) labelEl.textContent = <?php echo wp_json_encode( __( 'Fout:', 'tbmm' ) ); ?> + ' ' + err.message;
 						if (scanBtn)   scanBtn.disabled   = false;
 						if (rescanBtn) rescanBtn.disabled = false;
 					});
@@ -362,8 +384,8 @@ class TATab {
 			function runBatch(offset, totalPosts, allOrphans) {
 				var pct = totalPosts > 0 ? Math.round((offset / totalPosts) * 100) : 100;
 				if (barEl)   barEl.style.width = pct + '%';
-				if (labelEl) labelEl.textContent = 'Artikel ' + Math.min(offset, totalPosts)
-					+ ' van ' + totalPosts + '…';
+				if (labelEl) labelEl.textContent = <?php echo wp_json_encode( __( 'Artikel', 'tbmm' ) ); ?> + ' '
+					+ Math.min(offset, totalPosts) + ' ' + <?php echo wp_json_encode( __( 'van', 'tbmm' ) ); ?> + ' ' + totalPosts + '…';
 
 				if (offset >= totalPosts) {
 					saveScan(allOrphans);
@@ -391,7 +413,7 @@ class TATab {
 
 			function saveScan(orphans) {
 				if (barEl)   barEl.style.width = '100%';
-				if (labelEl) labelEl.textContent = 'Opslaan…';
+				if (labelEl) labelEl.textContent = <?php echo wp_json_encode( __( 'Opslaan…', 'tbmm' ) ); ?>;
 
 				var data = new FormData();
 				data.append('action',  'tbmm_orphan_save');
@@ -402,13 +424,13 @@ class TATab {
 					.then(function(r) { return r.json(); })
 					.then(function(resp) {
 						if (resp.success) {
-							if (labelEl) labelEl.textContent = 'Klaar! '
-								+ orphans.length + ' orphaned link(s) gevonden. Pagina wordt herladen…';
+							if (labelEl) labelEl.textContent = <?php echo wp_json_encode( __( 'Klaar!', 'tbmm' ) ); ?>
+								+ ' ' + orphans.length + ' ' + <?php echo wp_json_encode( __( 'orphaned link(s) gevonden. Pagina wordt herladen…', 'tbmm' ) ); ?>;
 							setTimeout(function() { window.location.reload(); }, 1500);
 						}
 					})
 					.catch(function() {
-						if (labelEl) labelEl.textContent = 'Scan klaar, maar opslaan mislukt.';
+						if (labelEl) labelEl.textContent = <?php echo wp_json_encode( __( 'Scan klaar, maar opslaan mislukt.', 'tbmm' ) ); ?>;
 						if (scanBtn)   scanBtn.disabled   = false;
 						if (rescanBtn) rescanBtn.disabled = false;
 					});
@@ -423,11 +445,11 @@ class TATab {
 
 	private function render_pagination( int $current, int $total, string $base_url ): void {
 		if ( $current > 1 ) {
-			echo '<a href="' . esc_url( $base_url . ( $current - 1 ) ) . '">‹ Vorige</a>';
+			echo '<a href="' . esc_url( $base_url . ( $current - 1 ) ) . '">‹ ' . esc_html__( 'Vorige', 'tbmm' ) . '</a>';
 		}
 
 		$window = 2;
-		$shown  = [];
+		$shown  = array();
 
 		for ( $p = 1; $p <= $total; $p++ ) {
 			if ( $p === 1 || $p === $total || abs( $p - $current ) <= $window ) {
@@ -449,45 +471,50 @@ class TATab {
 		}
 
 		if ( $current < $total ) {
-			echo '<a href="' . esc_url( $base_url . ( $current + 1 ) ) . '">Volgende ›</a>';
+			echo '<a href="' . esc_url( $base_url . ( $current + 1 ) ) . '">' . esc_html__( 'Volgende', 'tbmm' ) . ' ›</a>';
 		}
 	}
 
 	// -------------------------------------------------------------------------
-	// Link Scanner subtab (moved from ToolsTab)
+	// Link Scanner subtab
 	// -------------------------------------------------------------------------
 
 	private function render_link_scanner_subtab(): void {
 		$stats = $this->link_scanner->get_stats();
 		$nonce = wp_create_nonce( 'tbmm_run_scan_nonce' );
 		?>
-		<h3>Link Scanner</h3>
+		<h3><?php esc_html_e( 'Link Scanner', 'tbmm' ); ?></h3>
 		<p style="max-width:700px; font-size:13px; margin-bottom:16px;">
-			Controleert alle <strong>ThirstyAffiliates destination URLs</strong> op gebroken links door elk adres te opvragen en de HTTP-statuscode te controleren.
-			<strong>Bol.com-links worden overgeslagen</strong> — die zijn altijd geldig zolang het product bestaat.
-			Alle andere links (TradeTracker, adverteerders, directe product-URLs) worden getest.
-			Een scan vindt 404-fouten, serverfouten (5xx) en verbindingsproblemen — zo kun je tijdig dode links herstellen voordat bezoekers erop klikken.
+			<?php
+			echo wp_kses(
+				__( 'Controleert alle <strong>ThirstyAffiliates destination URLs</strong> op gebroken links door elk adres te opvragen en de HTTP-statuscode te controleren. <strong>Bol.com-links worden overgeslagen</strong> — die zijn altijd geldig zolang het product bestaat. Alle andere links (TradeTracker, adverteerders, directe product-URLs) worden getest. Een scan vindt 404-fouten, serverfouten (5xx) en verbindingsproblemen — zo kun je tijdig dode links herstellen voordat bezoekers erop klikken.', 'tbmm' ),
+				array( 'strong' => array() )
+			);
+			?>
 		</p>
 
 		<div class="alc-stats-box">
 			<div class="alc-stats-numbers">
 				<div class="alc-stat">
 					<span class="alc-stat-number"><?php echo esc_html( $stats['total'] ); ?></span>
-					<span class="alc-stat-label">Totaal links</span>
+					<span class="alc-stat-label"><?php esc_html_e( 'Totaal links', 'tbmm' ); ?></span>
 				</div>
 				<div class="alc-stat alc-stat-skip">
 					<span class="alc-stat-number"><?php echo esc_html( $stats['bol_count'] ); ?></span>
-					<span class="alc-stat-label">Bol.com (overgeslagen)</span>
+					<span class="alc-stat-label"><?php esc_html_e( 'Bol.com (overgeslagen)', 'tbmm' ); ?></span>
 				</div>
 				<div class="alc-stat alc-stat-scan">
 					<span class="alc-stat-number"><?php echo esc_html( $stats['scan_count'] ); ?></span>
-					<span class="alc-stat-label">Te scannen</span>
+					<span class="alc-stat-label"><?php esc_html_e( 'Te scannen', 'tbmm' ); ?></span>
 				</div>
 			</div>
 
 			<?php if ( ! empty( $stats['domains'] ) ) : ?>
 			<table class="alc-domain-table">
-				<thead><tr><th>Domein</th><th>Links</th></tr></thead>
+				<thead><tr>
+					<th><?php esc_html_e( 'Domein', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Links', 'tbmm' ); ?></th>
+				</tr></thead>
 				<tbody>
 					<?php foreach ( $stats['domains'] as $domain => $count ) : ?>
 					<tr class="<?php echo strpos( $domain, 'overgeslagen' ) !== false ? 'alc-domain-skip' : ''; ?>">
@@ -502,10 +529,13 @@ class TATab {
 
 		<?php if ( $stats['scan_count'] > 0 ) : ?>
 		<button id="alc-start-scan" class="button button-primary" style="margin-top:16px;">
-			Start Scan (<?php echo esc_html( $stats['scan_count'] ); ?> links)
+			<?php
+			/* translators: %d = number of links to scan */
+			printf( esc_html__( 'Start Scan (%d links)', 'tbmm' ), $stats['scan_count'] );
+			?>
 		</button>
 		<?php else : ?>
-		<p><em>Geen links te scannen.</em></p>
+		<p><em><?php esc_html_e( 'Geen links te scannen.', 'tbmm' ); ?></em></p>
 		<?php endif; ?>
 
 		<div id="alc-progress" style="display:none; margin-top:20px;">
@@ -556,21 +586,21 @@ class TATab {
 			btn.addEventListener('click', function() {
 				btn.disabled = true; brokenCount = 0; tableBody = null;
 				results.innerHTML = ''; progress.style.display = 'block';
-				bar.style.width = '0%'; label.textContent = 'Voorbereiden…';
+				bar.style.width = '0%'; label.textContent = <?php echo wp_json_encode( __( 'Voorbereiden…', 'tbmm' ) ); ?>;
 				scanNext(0);
 			});
 
 			function scanNext(index) {
 				if (index >= total) {
 					bar.style.width = '100%';
-					label.textContent = 'Klaar. ' + brokenCount + ' gebroken link(s) gevonden.';
+					label.textContent = <?php echo wp_json_encode( __( 'Klaar.', 'tbmm' ) ); ?> + ' ' + brokenCount + ' ' + <?php echo wp_json_encode( __( 'gebroken link(s) gevonden.', 'tbmm' ) ); ?>;
 					btn.disabled = false;
-					if (brokenCount === 0) results.innerHTML = '<div class="notice notice-success inline"><p>Geen gebroken links gevonden.</p></div>';
+					if (brokenCount === 0) results.innerHTML = '<div class="notice notice-success inline"><p><?php echo esc_js( __( 'Geen gebroken links gevonden.', 'tbmm' ) ); ?></p></div>';
 					return;
 				}
 				var link = links[index];
 				bar.style.width = Math.round((index / total) * 100) + '%';
-				label.textContent = 'Link ' + (index + 1) + ' van ' + total + ' — ' + link.name;
+				label.textContent = <?php echo wp_json_encode( __( 'Link', 'tbmm' ) ); ?> + ' ' + (index + 1) + ' ' + <?php echo wp_json_encode( __( 'van', 'tbmm' ) ); ?> + ' ' + total + ' — ' + link.name;
 				var data = new FormData();
 				data.append('action', 'tbmm_check_link'); data.append('nonce', nonce);
 				data.append('link_id', link.id); data.append('link_url', link.url);
@@ -585,13 +615,19 @@ class TATab {
 
 			function appendBrokenRow(link, data) {
 				if (!tableBody) {
-					var h = document.createElement('p'); h.innerHTML = '<strong>Gebroken links:</strong>'; results.appendChild(h);
+					var h = document.createElement('p'); h.innerHTML = '<strong><?php echo esc_js( __( 'Gebroken links:', 'tbmm' ) ); ?></strong>'; results.appendChild(h);
 					var t = document.createElement('table');
-					t.innerHTML = '<thead><tr><th>Link naam</th><th>Destination URL</th><th>Status</th><th>Gebruikt in</th><th>Bewerk</th></tr></thead><tbody></tbody>';
+					t.innerHTML = '<thead><tr>'
+						+ '<th><?php echo esc_js( __( 'Link naam', 'tbmm' ) ); ?></th>'
+						+ '<th><?php echo esc_js( __( 'Destination URL', 'tbmm' ) ); ?></th>'
+						+ '<th><?php echo esc_js( __( 'Status', 'tbmm' ) ); ?></th>'
+						+ '<th><?php echo esc_js( __( 'Gebruikt in', 'tbmm' ) ); ?></th>'
+						+ '<th><?php echo esc_js( __( 'Bewerk', 'tbmm' ) ); ?></th>'
+						+ '</tr></thead><tbody></tbody>';
 					results.appendChild(t); tableBody = t.querySelector('tbody');
 				}
 				var sc = data.status === 404 ? 'alc-status-404' : (data.status >= 500 ? 'alc-status-5xx' : 'alc-status-0');
-				var sl = data.status === 0 ? 'Verbinding mislukt' : data.status;
+				var sl = data.status === 0 ? <?php echo wp_json_encode( __( 'Verbinding mislukt', 'tbmm' ) ); ?> : data.status;
 				var ph = '—';
 				if (data.posts && data.posts.length) {
 					ph = '<ul class="alc-post-list">' + data.posts.map(function(p) {
@@ -603,7 +639,7 @@ class TATab {
 					+ '<td><a href="' + escHtml(link.url) + '" target="_blank">' + escHtml(link.url) + '</a></td>'
 					+ '<td><span class="' + sc + '">' + sl + '</span></td>'
 					+ '<td>' + ph + '</td>'
-					+ '<td><a href="' + escHtml(data.edit_url) + '" target="_blank" class="button button-small">Bewerk in TA</a></td>';
+					+ '<td><a href="' + escHtml(data.edit_url) + '" target="_blank" class="button button-small"><?php echo esc_js( __( 'Bewerk in TA', 'tbmm' ) ); ?></a></td>';
 				tableBody.appendChild(tr);
 			}
 			function escHtml(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(String(s))); return d.innerHTML; }
@@ -613,7 +649,7 @@ class TATab {
 	}
 
 	// -------------------------------------------------------------------------
-	// Unmanaged Links subtab (moved from ToolsTab)
+	// Unmanaged Links subtab
 	// -------------------------------------------------------------------------
 
 	private function render_unmanaged_links_subtab(): void {
@@ -634,8 +670,11 @@ class TATab {
 			}
 		}
 
-		echo '<h3>Unmanaged Links Scanner</h3>';
-		echo '<p>Zoekt in alle gepubliceerde berichten en pagina\'s naar affiliate-links die <strong>niet</strong> via ThirstyAffiliates lopen. Als er een TA-link bestaat met dezelfde bestemmings-URL, kun je de link direct vervangen.</p>';
+		echo '<h3>' . esc_html__( 'Unmanaged Links Scanner', 'tbmm' ) . '</h3>';
+		echo '<p>' . wp_kses(
+			__( 'Zoekt in alle gepubliceerde berichten en pagina\'s naar affiliate-links die <strong>niet</strong> via ThirstyAffiliates lopen. Als er een TA-link bestaat met dezelfde bestemmings-URL, kun je de link direct vervangen.', 'tbmm' ),
+			array( 'strong' => array() )
+		) . '</p>';
 
 		?>
 		<style>
@@ -653,27 +692,33 @@ class TATab {
 		</style>
 
 		<div class="tbmm-patterns-box">
-			<strong style="display:block;margin-bottom:8px;">Zoekpatronen (actief bij volgende scan):</strong>
+			<strong style="display:block;margin-bottom:8px;"><?php esc_html_e( 'Zoekpatronen (actief bij volgende scan):', 'tbmm' ); ?></strong>
 			<form id="tbmm-scan-form" style="display:inline;">
 			<?php foreach ( UnmanagedLinkScanner::TYPES as $type_key => $type_label ) : ?>
 				<label>
 					<input type="checkbox" name="scan_type[]" value="<?php echo esc_attr( $type_key ); ?>" checked>
 					<span class="tbmm-type-badge tbmm-badge-<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $type_label ); ?></span>
 					<?php if ( isset( $type_counts[ $type_key ] ) && ! empty( $meta ) ) : ?>
-						<span style="color:#646970;font-size:11px;">(<?php echo $type_counts[ $type_key ]; ?> gevonden)</span>
+						<?php
+						/* translators: %d = number of links found */
+						printf( '<span style="color:#646970;font-size:11px;">(%d ' . esc_html__( 'gevonden', 'tbmm' ) . ')</span>', $type_counts[ $type_key ] );
+						?>
 					<?php endif; ?>
 				</label>
 			<?php endforeach; ?>
 			</form>
 			<div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
 				<button type="button" id="tbmm-scan-btn" class="button button-primary" data-nonce="<?php echo esc_attr( $nonce ); ?>">
-					<?php echo empty( $meta ) ? '&#128270; Scan starten' : '&#128270; Herscan'; ?>
+					<?php echo empty( $meta ) ? '&#128270; ' . esc_html__( 'Scan starten', 'tbmm' ) : '&#128270; ' . esc_html__( 'Herscan', 'tbmm' ); ?>
 				</button>
 				<span id="tbmm-scan-status" style="font-size:13px;color:#646970;">
 				<?php if ( ! empty( $meta['scanned_at'] ) ) : ?>
-					Laatste scan: <?php echo esc_html( $meta['scanned_at'] ); ?> — <?php echo (int) $meta['total']; ?> links gevonden
+					<?php
+					/* translators: 1: date/time, 2: count */
+					printf( __( 'Laatste scan: %1$s — %2$d links gevonden', 'tbmm' ), esc_html( $meta['scanned_at'] ), (int) $meta['total'] );
+					?>
 				<?php else : ?>
-					Nog niet gescand.
+					<?php esc_html_e( 'Nog niet gescand.', 'tbmm' ); ?>
 				<?php endif; ?>
 				</span>
 			</div>
@@ -687,29 +732,37 @@ class TATab {
 
 		<?php if ( empty( $meta ) ) : ?>
 			<div style="background:#f0f6fc;border-left:4px solid #72aee6;padding:10px 14px;margin:8px 0 16px;font-size:13px;">
-				Klik op <strong>Scan starten</strong> om te beginnen.
+				<?php echo wp_kses( __( 'Klik op <strong>Scan starten</strong> om te beginnen.', 'tbmm' ), array( 'strong' => array() ) ); ?>
 			</div>
 		<?php elseif ( empty( $rows ) ) : ?>
 			<div style="background:#edfaef;border-left:4px solid #00a32a;padding:10px 14px;margin:8px 0 16px;font-size:13px;">
-				&#10003; Geen onbeheerde links gevonden voor de geselecteerde patronen.
+				&#10003; <?php esc_html_e( 'Geen onbeheerde links gevonden voor de geselecteerde patronen.', 'tbmm' ); ?>
 			</div>
 		<?php else :
 			echo '<form method="GET" style="margin-bottom:12px;">';
 			echo '<input type="hidden" name="page" value="tb-money-manager">';
 			echo '<input type="hidden" name="tab" value="ta">';
 			echo '<input type="hidden" name="subtab" value="unmanaged-links">';
-			echo '<strong style="font-size:13px;">Filter weergave:</strong> ';
+			echo '<strong style="font-size:13px;">' . esc_html__( 'Filter weergave:', 'tbmm' ) . '</strong> ';
 			foreach ( UnmanagedLinkScanner::TYPES as $type_key => $type_label ) {
 				$checked = in_array( $type_key, $filter_types, true ) ? 'checked' : '';
 				echo '<label style="margin-right:14px;font-size:13px;"><input type="checkbox" name="types[]" value="' . esc_attr( $type_key ) . '" ' . $checked . '> ';
 				echo '<span class="tbmm-type-badge tbmm-badge-' . esc_attr( $type_key ) . '">' . esc_html( $type_label ) . '</span>';
 				echo ' <span style="color:#646970;font-size:11px;">(' . $type_counts[ $type_key ] . ')</span></label>';
 			}
-			echo '<input type="submit" value="Filter" class="button button-secondary" style="margin-left:8px;">';
+			echo '<input type="submit" value="' . esc_attr__( 'Filter', 'tbmm' ) . '" class="button button-secondary" style="margin-left:8px;">';
 			echo '</form>';
-			echo '<p style="color:#646970;font-size:13px;">' . count( $rows ) . ' link(s) weergegeven.</p>';
+			/* translators: %d = number of links shown */
+			echo '<p style="color:#646970;font-size:13px;">' . sprintf( __( '%d link(s) weergegeven.', 'tbmm' ), count( $rows ) ) . '</p>';
 			echo '<table class="wp-list-table widefat fixed striped" style="table-layout:auto;">';
-			echo '<thead><tr><th>Bericht</th><th>Type</th><th>Gevonden URL</th><th>Anchor tekst</th><th style="text-align:center;">TA match?</th><th>Actie</th></tr></thead><tbody>';
+			echo '<thead><tr>'
+				. '<th>' . esc_html__( 'Bericht', 'tbmm' ) . '</th>'
+				. '<th>' . esc_html__( 'Type', 'tbmm' ) . '</th>'
+				. '<th>' . esc_html__( 'Gevonden URL', 'tbmm' ) . '</th>'
+				. '<th>' . esc_html__( 'Anchor tekst', 'tbmm' ) . '</th>'
+				. '<th style="text-align:center;">' . esc_html__( 'TA match?', 'tbmm' ) . '</th>'
+				. '<th>' . esc_html__( 'Actie', 'tbmm' ) . '</th>'
+				. '</tr></thead><tbody>';
 			foreach ( $rows as $row ) {
 				$edit_url   = esc_url( admin_url( 'post.php?post=' . (int) $row['post_id'] . '&action=edit' ) );
 				$has_match  = ! empty( $row['ta_link_id'] );
@@ -729,11 +782,11 @@ class TATab {
 				if ( $has_match ) {
 					echo '<td><button type="button" class="button button-small tbmm-replace-btn"'
 						. ' data-row-id="' . (int) $row['id'] . '" data-nonce="' . esc_attr( $nonce ) . '"'
-						. ' title="Vervang door: ' . esc_attr( $row['ta_redirect_url'] ) . '">'
-						. '&#9654; Vervang door TA-link</button>'
+						. ' title="' . esc_attr( sprintf( __( 'Vervang door: %s', 'tbmm' ), $row['ta_redirect_url'] ) ) . '">'
+						. '&#9654; ' . esc_html__( 'Vervang door TA-link', 'tbmm' ) . '</button>'
 						. '<span style="display:block;font-size:11px;color:#646970;margin-top:2px;">' . esc_html( $row['ta_link_name'] ?? '' ) . '</span></td>';
 				} else {
-					echo '<td style="color:#646970;font-size:12px;">Geen match — maak eerst een TA-link</td>';
+					echo '<td style="color:#646970;font-size:12px;">' . esc_html__( 'Geen match — maak eerst een TA-link', 'tbmm' ) . '</td>';
 				}
 				echo '</tr>';
 			}
@@ -751,12 +804,12 @@ class TATab {
 
 			function setProgress(done, total) {
 				barEl.style.width = (total > 0 ? Math.round((done / total) * 100) : 100) + '%';
-				labelEl.textContent = 'Artikel ' + Math.min(done, total) + ' van ' + total + '…';
+				labelEl.textContent = <?php echo wp_json_encode( __( 'Artikel', 'tbmm' ) ); ?> + ' ' + Math.min(done, total) + ' ' + <?php echo wp_json_encode( __( 'van', 'tbmm' ) ); ?> + ' ' + total + '…';
 			}
 			function runBatch(offset, totalPosts, activeTypes, nonce) {
 				setProgress(offset, totalPosts);
 				if (offset >= totalPosts) {
-					scanStatus.textContent = 'Scan klaar. Pagina wordt herladen…';
+					scanStatus.textContent = <?php echo wp_json_encode( __( 'Scan klaar. Pagina wordt herladen…', 'tbmm' ) ); ?>;
 					setTimeout(function() { window.location.reload(); }, 1000);
 					return;
 				}
@@ -768,17 +821,17 @@ class TATab {
 					.then(function(r) { return r.json(); })
 					.then(function(data) {
 						if (data.success) { runBatch(offset + BATCH_SIZE, totalPosts, activeTypes, nonce); }
-						else { scanStatus.textContent = 'Fout: ' + (data.data && data.data.message ? data.data.message : 'onbekend'); scanBtn.disabled = false; }
+						else { scanStatus.textContent = <?php echo wp_json_encode( __( 'Fout:', 'tbmm' ) ); ?> + ' ' + (data.data && data.data.message ? data.data.message : 'onbekend'); scanBtn.disabled = false; }
 					})
-					.catch(function(err) { scanStatus.textContent = 'Netwerkfout: ' + err; scanBtn.disabled = false; });
+					.catch(function(err) { scanStatus.textContent = <?php echo wp_json_encode( __( 'Netwerkfout:', 'tbmm' ) ); ?> + ' ' + err; scanBtn.disabled = false; });
 			}
 			if (scanBtn) {
 				scanBtn.addEventListener('click', function() {
 					var checkboxes = document.querySelectorAll('#tbmm-scan-form input[name="scan_type[]"]:checked');
 					var types = Array.from(checkboxes).map(function(cb) { return cb.value; });
-					if (!types.length) { alert('Selecteer minimaal één patroon.'); return; }
+					if (!types.length) { alert(<?php echo wp_json_encode( __( 'Selecteer minimaal één patroon.', 'tbmm' ) ); ?>); return; }
 					var nonce = scanBtn.dataset.nonce;
-					scanBtn.disabled = true; scanStatus.textContent = 'Initialiseren…';
+					scanBtn.disabled = true; scanStatus.textContent = <?php echo wp_json_encode( __( 'Initialiseren…', 'tbmm' ) ); ?>;
 					progressWrap.style.display = 'block'; setProgress(0, 1);
 					var body = new URLSearchParams();
 					body.append('action', 'tbmm_unmanaged_init'); body.append('nonce', nonce);
@@ -787,14 +840,14 @@ class TATab {
 						.then(function(r) { return r.json(); })
 						.then(function(data) {
 							if (data.success) { runBatch(0, data.data.total_posts, data.data.active_types, nonce); }
-							else { scanStatus.textContent = 'Fout: ' + (data.data && data.data.message ? data.data.message : 'onbekend'); scanBtn.disabled = false; progressWrap.style.display = 'none'; }
+							else { scanStatus.textContent = <?php echo wp_json_encode( __( 'Fout:', 'tbmm' ) ); ?> + ' ' + (data.data && data.data.message ? data.data.message : 'onbekend'); scanBtn.disabled = false; progressWrap.style.display = 'none'; }
 						})
-						.catch(function(err) { scanStatus.textContent = 'Netwerkfout: ' + err; scanBtn.disabled = false; progressWrap.style.display = 'none'; });
+						.catch(function(err) { scanStatus.textContent = <?php echo wp_json_encode( __( 'Netwerkfout:', 'tbmm' ) ); ?> + ' ' + err; scanBtn.disabled = false; progressWrap.style.display = 'none'; });
 				});
 			}
 			document.querySelectorAll('.tbmm-replace-btn').forEach(function(btn) {
 				btn.addEventListener('click', function() {
-					if (!confirm('Weet je zeker dat je deze URL in het artikel wilt vervangen door de ThirstyAffiliates-link?')) return;
+					if (!confirm(<?php echo wp_json_encode( __( 'Weet je zeker dat je deze URL in het artikel wilt vervangen door de ThirstyAffiliates-link?', 'tbmm' ) ); ?>)) return;
 					btn.disabled = true; btn.textContent = '…';
 					var body = new URLSearchParams();
 					body.append('action', 'tbmm_replace_unmanaged_link');
@@ -803,10 +856,10 @@ class TATab {
 						.then(function(r) { return r.json(); })
 						.then(function(data) {
 							var row = btn.closest('tr');
-							if (data.success) { row.style.background = '#edfaef'; row.cells[row.cells.length - 1].innerHTML = '<span style="color:#00a32a;font-size:12px;">&#10003; Vervangen</span>'; }
-							else { row.cells[row.cells.length - 1].innerHTML = '<span style="color:#b32d2e;font-size:12px;">&#9888; ' + (data.data && data.data.message ? data.data.message : 'Onbekende fout') + '</span>'; }
+							if (data.success) { row.style.background = '#edfaef'; row.cells[row.cells.length - 1].innerHTML = '<span style="color:#00a32a;font-size:12px;">&#10003; <?php echo esc_js( __( 'Vervangen', 'tbmm' ) ); ?></span>'; }
+							else { row.cells[row.cells.length - 1].innerHTML = '<span style="color:#b32d2e;font-size:12px;">&#9888; ' + (data.data && data.data.message ? data.data.message : <?php echo wp_json_encode( __( 'Onbekende fout', 'tbmm' ) ); ?>) + '</span>'; }
 						})
-						.catch(function(err) { btn.disabled = false; btn.textContent = '▶ Vervang door TA-link'; alert('Netwerkfout: ' + err); });
+						.catch(function(err) { btn.disabled = false; btn.textContent = '▶ <?php echo esc_js( __( 'Vervang door TA-link', 'tbmm' ) ); ?>'; alert(<?php echo wp_json_encode( __( 'Netwerkfout:', 'tbmm' ) ); ?> + ' ' + err); });
 				});
 			});
 		})();

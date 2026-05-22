@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: TB Money Manager 0.2.52\n"
-"Report-Msgid-Bugs-To: olaflemmers@gmail.com\n"
-"POT-Creation-Date: 2026-05-21 16:37+0200\n"
+"Project-Id-Version: TB Money Manager\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-21 17:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -48,12 +48,12 @@ msgstr ""
 msgid "Affiliate links"
 msgstr ""
 
-#: src/Admin/BolTab.php:50
+#: src/Admin/BolTab.php:50 src/Admin/TradeTrackerTab.php:63
 msgid "Linkgenerator"
 msgstr ""
 
 #: src/Admin/BolTab.php:71 src/Admin/ScanPage.php:43
-#: src/Bol/Admin/SettingsPage.php:67
+#: src/Admin/TradeTrackerTab.php:86 src/Bol/Admin/SettingsPage.php:67
 msgid "Instellingen"
 msgstr ""
 
@@ -140,7 +140,9 @@ msgstr ""
 msgid "Cache wissen"
 msgstr ""
 
-#: src/Admin/GoogleTab.php:148
+#: src/Admin/GoogleTab.php:148 src/Admin/TATab.php:378 src/Admin/TATab.php:824
+#: src/Admin/TATab.php:843 src/Admin/TradeTrackerTab.php:319
+#: src/Admin/TradeTrackerTab.php:597 src/Admin/TradeTrackerTab.php:1070
 msgid "Fout:"
 msgstr ""
 
@@ -239,12 +241,808 @@ msgstr ""
 msgid "Controleer op updates"
 msgstr ""
 
+#: src/Admin/TATab.php:35
+msgid "Aanbeveling 404"
+msgstr ""
+
+#: src/Admin/TATab.php:36
+msgid "Orphaned Links"
+msgstr ""
+
+#: src/Admin/TATab.php:37 src/Admin/TATab.php:486
+msgid "Link Scanner"
+msgstr ""
+
+#: src/Admin/TATab.php:38
+msgid "Unmanaged Links"
+msgstr ""
+
+#. translators: 1: /aanbeveling/ code tag, 2: Redirection plugin, 3: DB table code tag
+#: src/Admin/TATab.php:122
+#, php-format
+msgid ""
+"Toont %1$s-URLs die een <strong>404 hebben opgeleverd</strong> — bezoekers "
+"klikten op een link die niet werkte. De data komt uit de <strong>Redirection "
+"plugin</strong> (%2$s) en is <strong>realtime</strong> (geen cache). Klik op "
+"\"Zoek in artikelen\" om te zien welk artikel de gebroken link bevat, zodat "
+"je hem kunt herstellen in ThirstyAffiliates."
+msgstr ""
+
+#: src/Admin/TATab.php:135 src/Bol/Admin/SettingsPage.php:114
+#: src/Bol/Admin/SettingsPage.php:211 src/Bol/Admin/SettingsPage.php:439
+msgid "Periode:"
+msgstr ""
+
+#: src/Admin/TATab.php:143
+msgid "Toon"
+msgstr ""
+
+#: src/Admin/TATab.php:152
+#, php-format
+msgid "Redirection plugin niet actief of 404-logtabel (%s) niet gevonden."
+msgstr ""
+
+#: src/Admin/TATab.php:160
+msgid "Geen /aanbeveling/ 404-hits gevonden voor deze periode."
+msgstr ""
+
+#: src/Admin/TATab.php:166 src/Admin/TradeTrackerTab.php:187
+msgid "URL"
+msgstr ""
+
+#: src/Admin/TATab.php:167
+msgid "Hits"
+msgstr ""
+
+#: src/Admin/TATab.php:168
+msgid "Laatste hit"
+msgstr ""
+
+#: src/Admin/TATab.php:169 src/Admin/TATab.php:188 src/Admin/TATab.php:215
+#: src/Admin/TATab.php:248 src/Admin/TradeTrackerTab.php:1548
+#: src/Admin/TradeTrackerTab.php:1584 src/Admin/TradeTrackerTab.php:1610
+#: src/Admin/TradeTrackerTab.php:1645
+msgid "Zoek in artikelen"
+msgstr ""
+
+#: src/Admin/TATab.php:220 src/Admin/TradeTrackerTab.php:1615
+msgid "Zoeken…"
+msgstr ""
+
+#: src/Admin/TATab.php:239 src/Admin/TATab.php:242
+#: src/Admin/TradeTrackerTab.php:1636 src/Admin/TradeTrackerTab.php:1639
+msgid "Verberg ▲"
+msgstr ""
+
+#: src/Admin/TATab.php:241 src/Admin/TradeTrackerTab.php:1638
+msgid "Niet gevonden in gepubliceerde artikelen."
+msgstr ""
+
+#: src/Admin/TATab.php:276
+msgid ""
+"Zoekt in alle <strong>live gepubliceerde artikelen</strong> naar links met "
+"het patroon <code>/aanbeveling/slug</code> die <strong>niet bekend zijn in "
+"ThirstyAffiliates</strong>. Dit zijn <em>dode links</em>: de redirect "
+"bestaat niet (meer), waardoor bezoekers op een niet-werkende URL "
+"terechtkomen. Elke gevonden link moet worden aangemaakt of gerepareerd in "
+"ThirstyAffiliates."
+msgstr ""
+
+#. translators: %s = date/time of last scan
+#: src/Admin/TATab.php:295
+#, php-format
+msgid "Laatste scan: %s"
+msgstr ""
+
+#: src/Admin/TATab.php:297 src/Admin/TATab.php:712
+msgid "Herscan"
+msgstr ""
+
+#: src/Admin/TATab.php:301
+msgid "Geen orphaned /aanbeveling/ links gevonden."
+msgstr ""
+
+#: src/Admin/TATab.php:308 src/Admin/TATab.php:387 src/Admin/TATab.php:807
+msgid "Artikel"
+msgstr ""
+
+#: src/Admin/TATab.php:309 src/Admin/TATab.php:761
+msgid "Gevonden URL"
+msgstr ""
+
+#: src/Admin/TATab.php:310
+msgid "Voorkomens"
+msgstr ""
+
+#: src/Admin/TATab.php:327
+msgid "Bewerk artikel"
+msgstr ""
+
+#: src/Admin/TATab.php:337
+msgid ""
+"Scan de gepubliceerde artikelen op orphaned /aanbeveling/ links — links die "
+"in artikelen staan maar niet meer actief zijn in ThirstyAffiliates."
+msgstr ""
+
+#: src/Admin/TATab.php:339
+msgid "Doe analyse"
+msgstr ""
+
+#: src/Admin/TATab.php:363 src/Admin/TATab.php:834
+msgid "Initialiseren…"
+msgstr ""
+
+#: src/Admin/TATab.php:388 src/Admin/TATab.php:603 src/Admin/TATab.php:807
+msgid "van"
+msgstr ""
+
+#: src/Admin/TATab.php:416
+msgid "Opslaan…"
+msgstr ""
+
+#: src/Admin/TATab.php:427
+msgid "Klaar!"
+msgstr ""
+
+#: src/Admin/TATab.php:428
+msgid "orphaned link(s) gevonden. Pagina wordt herladen…"
+msgstr ""
+
+#: src/Admin/TATab.php:433
+msgid "Scan klaar, maar opslaan mislukt."
+msgstr ""
+
+#: src/Admin/TATab.php:448 src/Admin/TradeTrackerTab.php:526
+#: src/Admin/TradeTrackerTab.php:712
+msgid "Vorige"
+msgstr ""
+
+#: src/Admin/TATab.php:474 src/Admin/TradeTrackerTab.php:547
+#: src/Admin/TradeTrackerTab.php:737 src/Admin/TradeTrackerTab.php:1406
+#: src/Admin/TradeTrackerTab.php:1438
+msgid "Volgende"
+msgstr ""
+
+#: src/Admin/TATab.php:490
+msgid ""
+"Controleert alle <strong>ThirstyAffiliates destination URLs</strong> op "
+"gebroken links door elk adres te opvragen en de HTTP-statuscode te "
+"controleren. <strong>Bol.com-links worden overgeslagen</strong> — die zijn "
+"altijd geldig zolang het product bestaat. Alle andere links (TradeTracker, "
+"adverteerders, directe product-URLs) worden getest. Een scan vindt 404-"
+"fouten, serverfouten (5xx) en verbindingsproblemen — zo kun je tijdig dode "
+"links herstellen voordat bezoekers erop klikken."
+msgstr ""
+
+#: src/Admin/TATab.php:500 src/Bol/Admin/SettingsPage.php:697
+msgid "Totaal links"
+msgstr ""
+
+#: src/Admin/TATab.php:504
+msgid "Bol.com (overgeslagen)"
+msgstr ""
+
+#: src/Admin/TATab.php:508
+msgid "Te scannen"
+msgstr ""
+
+#: src/Admin/TATab.php:515
+msgid "Domein"
+msgstr ""
+
+#: src/Admin/TATab.php:516
+msgid "Links"
+msgstr ""
+
+#. translators: %d = number of links to scan
+#: src/Admin/TATab.php:534
+#, php-format
+msgid "Start Scan (%d links)"
+msgstr ""
+
+#: src/Admin/TATab.php:538
+msgid "Geen links te scannen."
+msgstr ""
+
+#: src/Admin/TATab.php:589
+msgid "Voorbereiden…"
+msgstr ""
+
+#: src/Admin/TATab.php:596
+msgid "Klaar."
+msgstr ""
+
+#: src/Admin/TATab.php:596
+msgid "gebroken link(s) gevonden."
+msgstr ""
+
+#: src/Admin/TATab.php:598
+msgid "Geen gebroken links gevonden."
+msgstr ""
+
+#: src/Admin/TATab.php:603 src/Bol/Admin/SettingsPage.php:484
+msgid "Link"
+msgstr ""
+
+#: src/Admin/TATab.php:618
+msgid "Gebroken links:"
+msgstr ""
+
+#: src/Admin/TATab.php:621 src/Admin/TradeTrackerTab.php:1545
+#: src/Bol/Admin/SettingsPage.php:833
+msgid "Link naam"
+msgstr ""
+
+#: src/Admin/TATab.php:622 src/Admin/TradeTrackerTab.php:1546
+msgid "Destination URL"
+msgstr ""
+
+#: src/Admin/TATab.php:623 src/Admin/TradeTrackerTab.php:189
+#: src/Admin/TradeTrackerTab.php:232 src/Admin/TradeTrackerTab.php:1161
+#: src/Bol/Admin/SettingsPage.php:696
+msgid "Status"
+msgstr ""
+
+#: src/Admin/TATab.php:624
+msgid "Gebruikt in"
+msgstr ""
+
+#: src/Admin/TATab.php:625 src/Admin/TradeTrackerTab.php:1547
+msgid "Bewerk"
+msgstr ""
+
+#: src/Admin/TATab.php:630
+msgid "Verbinding mislukt"
+msgstr ""
+
+#: src/Admin/TATab.php:642 src/Admin/TradeTrackerTab.php:1578
+msgid "Bewerk in TA"
+msgstr ""
+
+#: src/Admin/TATab.php:673
+msgid "Unmanaged Links Scanner"
+msgstr ""
+
+#: src/Admin/TATab.php:675
+msgid ""
+"Zoekt in alle gepubliceerde berichten en pagina's naar affiliate-links die "
+"<strong>niet</strong> via ThirstyAffiliates lopen. Als er een TA-link "
+"bestaat met dezelfde bestemmings-URL, kun je de link direct vervangen."
+msgstr ""
+
+#: src/Admin/TATab.php:695
+msgid "Zoekpatronen (actief bij volgende scan):"
+msgstr ""
+
+#. translators: %d = number of links found
+#: src/Admin/TATab.php:704
+msgid "gevonden"
+msgstr ""
+
+#: src/Admin/TATab.php:712
+msgid "Scan starten"
+msgstr ""
+
+#. translators: 1: date/time, 2: count
+#: src/Admin/TATab.php:718
+#, php-format
+msgid "Laatste scan: %1$s — %2$d links gevonden"
+msgstr ""
+
+#: src/Admin/TATab.php:721
+msgid "Nog niet gescand."
+msgstr ""
+
+#: src/Admin/TATab.php:735
+msgid "Klik op <strong>Scan starten</strong> om te beginnen."
+msgstr ""
+
+#: src/Admin/TATab.php:739
+msgid "Geen onbeheerde links gevonden voor de geselecteerde patronen."
+msgstr ""
+
+#: src/Admin/TATab.php:746
+msgid "Filter weergave:"
+msgstr ""
+
+#: src/Admin/TATab.php:753
+msgid "Filter"
+msgstr ""
+
+#. translators: %d = number of links shown
+#: src/Admin/TATab.php:756
+#, php-format
+msgid "%d link(s) weergegeven."
+msgstr ""
+
+#: src/Admin/TATab.php:759
+msgid "Bericht"
+msgstr ""
+
+#: src/Admin/TATab.php:760 src/Admin/TradeTrackerTab.php:188
+#: src/Bol/Admin/SettingsPage.php:825
+msgid "Type"
+msgstr ""
+
+#: src/Admin/TATab.php:762
+msgid "Anchor tekst"
+msgstr ""
+
+#: src/Admin/TATab.php:763
+msgid "TA match?"
+msgstr ""
+
+#: src/Admin/TATab.php:764 src/Admin/TradeTrackerTab.php:1473
+msgid "Actie"
+msgstr ""
+
+#: src/Admin/TATab.php:785
+#, php-format
+msgid "Vervang door: %s"
+msgstr ""
+
+#: src/Admin/TATab.php:786 src/Admin/TATab.php:862
+msgid "Vervang door TA-link"
+msgstr ""
+
+#: src/Admin/TATab.php:789
+msgid "Geen match — maak eerst een TA-link"
+msgstr ""
+
+#: src/Admin/TATab.php:812
+msgid "Scan klaar. Pagina wordt herladen…"
+msgstr ""
+
+#: src/Admin/TATab.php:826 src/Admin/TATab.php:845 src/Admin/TATab.php:862
+msgid "Netwerkfout:"
+msgstr ""
+
+#: src/Admin/TATab.php:832
+msgid "Selecteer minimaal één patroon."
+msgstr ""
+
+#: src/Admin/TATab.php:850
+msgid ""
+"Weet je zeker dat je deze URL in het artikel wilt vervangen door de "
+"ThirstyAffiliates-link?"
+msgstr ""
+
+#: src/Admin/TATab.php:859
+msgid "Vervangen"
+msgstr ""
+
+#: src/Admin/TATab.php:860
+msgid "Onbekende fout"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:60
+msgid "Sales"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:61 src/Admin/TradeTrackerTab.php:325
+#: src/Admin/TradeTrackerTab.php:480 src/Bol/Admin/SettingsPage.php:176
+#: src/Bol/Admin/SettingsPage.php:204 src/Bol/Admin/SettingsPage.php:487
+msgid "Kliks"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:62
+msgid "Rapport"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:64
+msgid "FONQ.nl"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:65
+msgid "Productbrowser"
+msgstr ""
+
 #: src/Admin/TradeTrackerTab.php:117
 msgid "Instellingen opgeslagen en cache gewist."
 msgstr ""
 
-#: src/Admin/TradeTrackerTab.php:267 src/Admin/TradeTrackerTab.php:605
+#: src/Admin/TradeTrackerTab.php:134
+msgid "API inloggegevens"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:137
+msgid "Klant-ID"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:140
+msgid "bijv. 26710"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:143
+msgid "Toegangssleutel"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:149
+msgid "Opslaan"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:151
+msgid "Cache vernieuwen"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:156
+msgid "Vul de inloggegevens in om data op te halen."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:162 src/Admin/TradeTrackerTab.php:170
+msgid "Verbindingsfout:"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:181
+msgid "Affiliate sites"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:185 src/Admin/TradeTrackerTab.php:228
+#: src/Admin/TradeTrackerTab.php:675 src/Admin/TradeTrackerTab.php:1157
+msgid "ID"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:186 src/Admin/TradeTrackerTab.php:229
+#: src/Bol/Admin/SettingsPage.php:714
+msgid "Naam"
+msgstr ""
+
+#. translators: %d = number of subscribed campaigns
+#: src/Admin/TradeTrackerTab.php:219
+#, php-format
+msgid "Geabonneerde campagnes (%d)"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:223
+msgid "Geen geabonneerde campagnes."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:230 src/Admin/TradeTrackerTab.php:1471
+msgid "Categorie"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:231
+msgid "Commissie type"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:266 src/Admin/TradeTrackerTab.php:568
+#: src/Admin/TradeTrackerTab.php:752 src/Admin/TradeTrackerTab.php:985
+#: src/Admin/TradeTrackerTab.php:1205
+msgid "Vul eerst de inloggegevens in via het tabblad Instellingen."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:277
+msgid "24 uur"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:277
+msgid "1 uur"
+msgstr ""
+
+#. translators: 1: date/time, 2: TTL interval
+#: src/Admin/TradeTrackerTab.php:281
+#, php-format
+msgid "Bijgewerkt: %1$s · vernieuwt elke %2$s"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:285
+msgid "Tijdstip onbekend"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:294 src/Admin/TradeTrackerTab.php:637
 msgid "Cache gewist — data wordt opnieuw opgehaald bij TradeTracker."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:301 src/Admin/TradeTrackerTab.php:584
+#: src/Admin/TradeTrackerTab.php:1000
+msgid "Jaar:"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:311 src/Admin/TradeTrackerTab.php:668
+msgid "Vernieuwen"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:326
+msgid "Kliks uniek"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:327
+msgid "Leads #"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:328
+msgid "Leads €"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:329
+msgid "Sales #"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:330
+msgid "Sales €"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:331
+msgid "Totaal €"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:350 src/Bol/Admin/SettingsPage.php:226
+msgid "Maand"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:383
+msgid "Totaal"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:447
+msgid "Meest geklikt — per link"
+msgstr ""
+
+#. translators: 1: unique link count, 2: total click count
+#: src/Admin/TradeTrackerTab.php:452
+#, php-format
+msgid "%1$s unieke links · %2$s kliks totaal"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:478 src/Admin/TradeTrackerTab.php:676
+#: src/Admin/TradeTrackerTab.php:805 src/Admin/TradeTrackerTab.php:1158
+#: src/Admin/TradeTrackerTab.php:1272
+msgid "Campagne"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:479 src/Admin/TradeTrackerTab.php:677
+#: src/Admin/TradeTrackerTab.php:822 src/Admin/TradeTrackerTab.php:1159
+msgid "Referentie"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:481
+msgid "Open link in nieuw tabblad"
+msgstr ""
+
+#. translators: %s = year number
+#: src/Admin/TradeTrackerTab.php:606
+#, php-format
+msgid "Geen kliks gevonden voor %s."
+msgstr ""
+
+#. translators: %s = date/time of last fetch
+#: src/Admin/TradeTrackerTab.php:644
+#, php-format
+msgid "Bijgewerkt: %s · vernieuwt elke 24 uur"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:647
+msgid "Tijdstip onbekend — klik Vernieuwen om de cache te vullen"
+msgstr ""
+
+#. translators: 1: click count, 2: year, 3: current page, 4: total pages
+#: src/Admin/TradeTrackerTab.php:659
+#, php-format
+msgid "%1$s kliks in %2$s — pagina %3$s van %4$s"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:674
+msgid "Datum"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:678
+msgid "Apparaat"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:679
+msgid "Land"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:680
+msgid "Herkomst"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:807
+msgid "— Selecteer campagne —"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:812
+msgid "Alleen geaccepteerde campagnes."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:816
+msgid "Doel-URL"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:816
+msgid "leeg = homepage van campagne"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:822
+msgid "optioneel"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:823
+msgid "bijv. loopkamille"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:824
+msgid "Gebruik alleen letters, cijfers en koppeltekens."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:828
+msgid "Gegenereerde tekstlink"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:832
+msgid "Kopieer link"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:833 src/Bol/Admin/SettingsPage.php:857
+msgid "Gekopieerd!"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1018
+msgid "Uitbetaling"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1021
+msgid "Openstaand"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1026
+msgid "transactie"
+msgid_plural "transacties"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/TradeTrackerTab.php:1033
+msgid "Laatste betaling"
+msgstr ""
+
+#. translators: %s = date of payment
+#: src/Admin/TradeTrackerTab.php:1040
+#, php-format
+msgid "op %s"
+msgstr ""
+
+#. translators: %s = remaining amount until payout threshold
+#: src/Admin/TradeTrackerTab.php:1054
+#, php-format
+msgid "Minimumbedrag voor uitbetaling is € 25,00 — nog € %s te gaan."
+msgstr ""
+
+#. translators: %s = year number
+#: src/Admin/TradeTrackerTab.php:1079
+#, php-format
+msgid "Geen sales gevonden voor %s."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1102
+msgid "Geaccepteerd"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1103
+msgid "In behandeling"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1104
+msgid "Afgekeurd"
+msgstr ""
+
+#. translators: %d = number of sales
+#: src/Admin/TradeTrackerTab.php:1131
+#, php-format
+msgid "%d sales"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1136
+msgid "totaal"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1156
+msgid "Registratiedatum"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1160
+msgid "Productgroep"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1162
+msgid "Bestelbedr"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1163 src/Bol/Admin/SettingsPage.php:178
+#: src/Bol/Admin/SettingsPage.php:206
+msgid "Commissie"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1274
+msgid "— Alle campagnes —"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1281
+msgid "Productfeed"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1283
+msgid "— Alle productfeeds —"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1293
+msgid "Zoekwoord"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1294
+msgid "bijv. vogelvoer"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1297
+msgid "Per pagina"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1308 src/Admin/TradeTrackerTab.php:1380
+msgid "Zoeken"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1365
+msgid "Selecteer een campagne of voer een zoekwoord in."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1375 src/Admin/TradeTrackerTab.php:1418
+msgid "Laden…"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1376
+msgid "Producten ophalen…"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1383
+msgid "Fout bij ophalen."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1389
+msgid "Geen producten gevonden."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1399
+msgid ""
+"resultaten gevonden — selecteer een specifieke feed voor meer resultaten."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1406 src/Admin/TradeTrackerTab.php:1438
+msgid "laden →"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1462
+msgid "Verbindingsfout."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1469
+msgid "Foto"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1470
+msgid "Naam & beschrijving"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1471
+msgid "Feed"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1472
+msgid "Prijs"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1483
+msgid "Geen foto"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1487
+msgid "Bekijk"
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1533
+msgid "Geen actieve FONQ.nl links gevonden in ThirstyAffiliates."
+msgstr ""
+
+#: src/Admin/TradeTrackerTab.php:1538
+msgid "FONQ.nl links gevonden in ThirstyAffiliates."
 msgstr ""
 
 #. translators: %s = link to settings page
@@ -262,11 +1060,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:112
 msgid "Dashboard statistieken"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:114 src/Bol/Admin/SettingsPage.php:211
-#: src/Bol/Admin/SettingsPage.php:439
-msgid "Periode:"
 msgstr ""
 
 #. translators: %s = API error message
@@ -289,18 +1082,9 @@ msgstr ""
 msgid "Onverwacht API-antwoord voor orders."
 msgstr ""
 
-#: src/Bol/Admin/SettingsPage.php:176 src/Bol/Admin/SettingsPage.php:204
-#: src/Bol/Admin/SettingsPage.php:487
-msgid "Kliks"
-msgstr ""
-
 #: src/Bol/Admin/SettingsPage.php:177 src/Bol/Admin/SettingsPage.php:205
 #: src/Bol/Admin/SettingsPage.php:489
 msgid "Omzet"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:178 src/Bol/Admin/SettingsPage.php:206
-msgid "Commissie"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:179 src/Bol/Admin/SettingsPage.php:207
@@ -345,10 +1129,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:225
 msgid "Automatisch"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:226
-msgid "Maand"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:227
@@ -467,10 +1247,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:483
 msgid "Site"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:484
-msgid "Link"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:485 src/Bol/Admin/SettingsPage.php:650
@@ -620,19 +1396,11 @@ msgid "Affiliate plugin"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:696
-msgid "Status"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:696
 msgid "Actief"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:696
 msgid "Niet gevonden"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:697
-msgid "Totaal links"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:698
@@ -673,10 +1441,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:711
 msgid "Beheer alle links in ThirstyAffiliates →"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:714
-msgid "Naam"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:715
@@ -753,10 +1517,6 @@ msgstr ""
 msgid "Plak hier de URL uit je browser..."
 msgstr ""
 
-#: src/Bol/Admin/SettingsPage.php:825
-msgid "Type"
-msgstr ""
-
 #: src/Bol/Admin/SettingsPage.php:827
 msgid "Tekstlink"
 msgstr ""
@@ -767,10 +1527,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:829
 msgid "Productlink"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:833
-msgid "Link naam"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:835
@@ -807,10 +1563,6 @@ msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:856
 msgid "Kopieer"
-msgstr ""
-
-#: src/Bol/Admin/SettingsPage.php:857
-msgid "Gekopieerd!"
 msgstr ""
 
 #: src/Bol/Admin/SettingsPage.php:1040

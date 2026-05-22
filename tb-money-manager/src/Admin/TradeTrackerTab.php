@@ -12,12 +12,6 @@ class TradeTrackerTab {
 	private ThirstyAffiliatesService $ta_service;
 	private OrphanedLinkScanner      $orphaned_scanner;
 
-	private static array $month_names = [
-		1 => 'Januari', 2 => 'Februari', 3 => 'Maart',     4 => 'April',
-		5 => 'Mei',     6 => 'Juni',     7 => 'Juli',       8 => 'Augustus',
-		9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'December',
-	];
-
 	public function __construct(
 		TradeTrackerService $service,
 		ThirstyAffiliatesService $ta_service,
@@ -62,8 +56,14 @@ class TradeTrackerTab {
 		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker' );
 		$subtab   = isset( $_GET['subtab'] ) ? sanitize_key( $_GET['subtab'] ) : 'sales';
 
-		// Left tabs (ordered), settings floated right
-		$left_subtabs = [ 'sales' => 'Sales', 'kliks' => 'Kliks', 'rapport' => 'Rapport', 'linkgenerator' => 'Linkgenerator', 'fonq' => 'FONQ.nl', 'productfeed' => 'Productbrowser' ];
+		$left_subtabs = [
+			'sales'         => __( 'Sales', 'tbmm' ),
+			'kliks'         => __( 'Kliks', 'tbmm' ),
+			'rapport'       => __( 'Rapport', 'tbmm' ),
+			'linkgenerator' => __( 'Linkgenerator', 'tbmm' ),
+			'fonq'          => __( 'FONQ.nl', 'tbmm' ),
+			'productfeed'   => __( 'Productbrowser', 'tbmm' ),
+		];
 		?>
 		<style>
 			.alc-subtab-nav { display:flex; align-items:flex-end; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0; }
@@ -83,7 +83,7 @@ class TradeTrackerTab {
 			<?php endforeach; ?>
 			<a href="<?php echo esc_url( $base_url . '&subtab=settings' ); ?>"
 			   class="alc-subtab-settings <?php echo $subtab === 'settings' ? 'active' : ''; ?>">
-				⚙ Instellingen
+				⚙ <?php esc_html_e( 'Instellingen', 'tbmm' ); ?>
 			</a>
 		</nav>
 
@@ -131,40 +131,44 @@ class TradeTrackerTab {
 
 		<form method="post">
 			<?php wp_nonce_field( 'tbmm_tt_settings', 'tbmm_tt_nonce' ); ?>
-			<h3 style="margin-top:0;">API inloggegevens</h3>
+			<h3 style="margin-top:0;"><?php esc_html_e( 'API inloggegevens', 'tbmm' ); ?></h3>
 			<table class="form-table" style="max-width:560px;">
 				<tr>
-					<th scope="row"><label for="tbmm_tt_customer_id">Klant-ID</label></th>
+					<th scope="row"><label for="tbmm_tt_customer_id"><?php esc_html_e( 'Klant-ID', 'tbmm' ); ?></label></th>
 					<td><input type="text" id="tbmm_tt_customer_id" name="tbmm_tt_customer_id"
 						value="<?php echo esc_attr( $customer_id ); ?>"
-						class="regular-text" placeholder="bijv. 26710" /></td>
+						class="regular-text" placeholder="<?php esc_attr_e( 'bijv. 26710', 'tbmm' ); ?>" /></td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="tbmm_tt_access_key">Toegangssleutel</label></th>
+					<th scope="row"><label for="tbmm_tt_access_key"><?php esc_html_e( 'Toegangssleutel', 'tbmm' ); ?></label></th>
 					<td><input type="password" id="tbmm_tt_access_key" name="tbmm_tt_access_key"
 						value="<?php echo esc_attr( $access_key ); ?>"
 						class="regular-text" /></td>
 				</tr>
 			</table>
-			<button type="submit" name="tbmm_tt_save_settings" class="button button-primary">Opslaan</button>
+			<button type="submit" name="tbmm_tt_save_settings" class="button button-primary"><?php esc_html_e( 'Opslaan', 'tbmm' ); ?></button>
 			<?php if ( $has_creds ) : ?>
-			<button type="submit" name="tbmm_tt_clear_cache" class="button" style="margin-left:8px;">Cache vernieuwen</button>
+			<button type="submit" name="tbmm_tt_clear_cache" class="button" style="margin-left:8px;"><?php esc_html_e( 'Cache vernieuwen', 'tbmm' ); ?></button>
 			<?php endif; ?>
 		</form>
 
 		<?php if ( ! $has_creds ) : ?>
-		<p style="margin-top:16px;"><em>Vul de inloggegevens in om data op te halen.</em></p>
+		<p style="margin-top:16px;"><em><?php esc_html_e( 'Vul de inloggegevens in om data op te halen.', 'tbmm' ); ?></em></p>
 		<?php return; endif;
 
 		$site_id = $this->service->get_primary_site_id();
 		if ( is_wp_error( $site_id ) ) {
-			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>Verbindingsfout:</strong> ' . esc_html( $site_id->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>'
+				. esc_html__( 'Verbindingsfout:', 'tbmm' )
+				. '</strong> ' . esc_html( $site_id->get_error_message() ) . '</p></div>';
 			return;
 		}
 
 		$sites = $this->service->get_affiliate_sites();
 		if ( is_wp_error( $sites ) ) {
-			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>Verbindingsfout:</strong> ' . esc_html( $sites->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>'
+				. esc_html__( 'Verbindingsfout:', 'tbmm' )
+				. '</strong> ' . esc_html( $sites->get_error_message() ) . '</p></div>';
 			return;
 		}
 
@@ -174,10 +178,16 @@ class TradeTrackerTab {
 
 	private function render_account_info( array $sites ): void {
 		?>
-		<h3 style="margin-top:24px;">Affiliate sites</h3>
+		<h3 style="margin-top:24px;"><?php esc_html_e( 'Affiliate sites', 'tbmm' ); ?></h3>
 		<table class="widefat striped" style="max-width:800px; margin-bottom:24px;">
 			<thead>
-				<tr><th>ID</th><th>Naam</th><th>URL</th><th>Type</th><th>Status</th></tr>
+				<tr>
+					<th><?php esc_html_e( 'ID', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Naam', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'URL', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Type', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'tbmm' ); ?></th>
+				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $sites as $site ) :
@@ -203,13 +213,25 @@ class TradeTrackerTab {
 			return;
 		}
 		?>
-		<h3>Geabonneerde campagnes (<?php echo count( $campaigns ); ?>)</h3>
+		<h3>
+			<?php
+			/* translators: %d = number of subscribed campaigns */
+			printf( esc_html__( 'Geabonneerde campagnes (%d)', 'tbmm' ), count( $campaigns ) );
+			?>
+		</h3>
 		<?php if ( empty( $campaigns ) ) : ?>
-		<p><em>Geen geabonneerde campagnes.</em></p>
+		<p><em><?php esc_html_e( 'Geen geabonneerde campagnes.', 'tbmm' ); ?></em></p>
 		<?php return; endif; ?>
 		<table class="widefat striped" style="max-width:900px; margin-bottom:24px;">
 			<thead>
-				<tr><th>ID</th><th>Naam</th><th>Categorie</th><th>Commissie type</th><th>Status</th><th></th></tr>
+				<tr>
+					<th><?php esc_html_e( 'ID', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Naam', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Categorie', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Commissie type', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'tbmm' ); ?></th>
+					<th></th>
+				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $campaigns as $campaign ) :
@@ -234,14 +256,14 @@ class TradeTrackerTab {
 	// -------------------------------------------------------------------------
 
 	private function render_rapport_subtab( string $base_url ): void {
-		$current_year = (int) gmdate( 'Y' );
+		$current_year  = (int) gmdate( 'Y' );
 		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
 		$selected_year = max( 2015, min( $current_year, $selected_year ) );
 
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
 		$access_key  = get_option( 'tbmm_tt_access_key', '' );
 		if ( empty( $customer_id ) || empty( $access_key ) ) {
-			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			echo '<p><em>' . esc_html__( 'Vul eerst de inloggegevens in via het tabblad Instellingen.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
@@ -252,10 +274,15 @@ class TradeTrackerTab {
 		}
 
 		$fetched_at  = $this->service->get_report_fetched_at( $site_id, $selected_year );
-		$ttl_label   = ( $selected_year < (int) gmdate( 'Y' ) ) ? '24 uur' : '1 uur';
+		$ttl_label   = ( $selected_year < (int) gmdate( 'Y' ) ) ? __( '24 uur', 'tbmm' ) : __( '1 uur', 'tbmm' );
 		$fetched_str = $fetched_at
-			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · vernieuwt elke ' . $ttl_label
-			: 'Tijdstip onbekend';
+			? sprintf(
+				/* translators: 1: date/time, 2: TTL interval */
+				__( 'Bijgewerkt: %1$s · vernieuwt elke %2$s', 'tbmm' ),
+				date_i18n( 'd M Y \o\m H:i', $fetched_at ),
+				$ttl_label
+			  )
+			: __( 'Tijdstip onbekend', 'tbmm' );
 		$flush_url   = wp_nonce_url(
 			admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=rapport&jaar=' . $selected_year . '&tbmm_flush_rapport=1' ),
 			'tbmm_flush_rapport_' . $selected_year,
@@ -271,7 +298,7 @@ class TradeTrackerTab {
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="tradetracker" />
 			<input type="hidden" name="subtab" value="rapport" />
-			<label for="tbmm_jaar" style="font-weight:600;">Jaar:</label>
+			<label for="tbmm_jaar" style="font-weight:600;"><?php esc_html_e( 'Jaar:', 'tbmm' ); ?></label>
 			<select id="tbmm_jaar" name="jaar" onchange="this.form.submit()">
 				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
 				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
@@ -281,29 +308,30 @@ class TradeTrackerTab {
 
 		<p style="display:flex; align-items:center; gap:14px; font-size:13px; color:#646970; margin-bottom:16px;">
 			<span><?php echo esc_html( $fetched_str ); ?></span>
-			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ Vernieuwen</a>
+			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Vernieuwen', 'tbmm' ); ?></a>
 		</p>
 
 		<?php
 		$months_data = $this->service->get_report_year( $site_id, $selected_year );
 
 		if ( is_wp_error( $months_data ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $months_data->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p><strong>'
+				. esc_html__( 'Fout:', 'tbmm' )
+				. '</strong> ' . esc_html( $months_data->get_error_message() ) . '</p></div>';
 			return;
 		}
 
 		$cols = [
-			'overallClickCount' => 'Kliks',
-			'uniqueClickCount'  => 'Kliks uniek',
-			'leadCount'         => 'Leads #',
-			'leadCommission'    => 'Leads €',
-			'saleCount'         => 'Sales #',
-			'saleCommission'    => 'Sales €',
-			'totalCommission'   => 'Totaal €',
+			'overallClickCount' => __( 'Kliks', 'tbmm' ),
+			'uniqueClickCount'  => __( 'Kliks uniek', 'tbmm' ),
+			'leadCount'         => __( 'Leads #', 'tbmm' ),
+			'leadCommission'    => __( 'Leads €', 'tbmm' ),
+			'saleCount'         => __( 'Sales #', 'tbmm' ),
+			'saleCommission'    => __( 'Sales €', 'tbmm' ),
+			'totalCommission'   => __( 'Totaal €', 'tbmm' ),
 		];
 		$money_cols = [ 'leadCommission', 'saleCommission', 'totalCommission' ];
 
-		// Totalen berekenen
 		$totals = array_fill_keys( array_keys( $cols ), 0.0 );
 		?>
 
@@ -319,7 +347,7 @@ class TradeTrackerTab {
 		<table class="widefat alc-report" style="max-width:900px; border-collapse:collapse;">
 			<thead>
 				<tr>
-					<th>Maand</th>
+					<th><?php esc_html_e( 'Maand', 'tbmm' ); ?></th>
 					<?php foreach ( $cols as $key => $label ) : ?>
 					<th><?php echo esc_html( $label ); ?></th>
 					<?php endforeach; ?>
@@ -331,7 +359,7 @@ class TradeTrackerTab {
 					$future = is_null( $r );
 				?>
 				<tr class="<?php echo $future ? 'alc-future' : ''; ?>">
-					<td><?php echo esc_html( self::$month_names[ $m ] ); ?></td>
+					<td><?php echo esc_html( date_i18n( 'F', mktime( 0, 0, 0, $m, 1 ) ) ); ?></td>
 					<?php foreach ( $cols as $key => $label ) :
 						if ( $future ) {
 							echo '<td>—</td>';
@@ -352,7 +380,7 @@ class TradeTrackerTab {
 			</tbody>
 			<tfoot>
 				<tr class="alc-total">
-					<td>Totaal</td>
+					<td><?php esc_html_e( 'Totaal', 'tbmm' ); ?></td>
 					<?php foreach ( $cols as $key => $label ) :
 						$val      = $totals[ $key ];
 						$is_money = in_array( $key, $money_cols, true );
@@ -376,10 +404,6 @@ class TradeTrackerTab {
 		$this->render_top_links_table( $site_id, $selected_year, $ref_page, $material_urls );
 	}
 
-	/**
-	 * Tabel met meest geklikt links (campagne + referentie), gesorteerd op klikcount.
-	 * Gratis uit cache — hergebruikt get_clicks_year() data van de Kliks-tab.
-	 */
 	/** @param array<string,string> $material_urls  campagneID => base tracking URL */
 	private function render_top_links_table( string $site_id, int $selected_year, int $current_page, array $material_urls = [] ): void {
 		$clicks = $this->service->get_clicks_year( $site_id, $selected_year );
@@ -387,7 +411,6 @@ class TradeTrackerTab {
 			return;
 		}
 
-		// Groepeer op campagne-ID + referentie, tel kliks
 		$groups = [];
 		foreach ( $clicks as $click ) {
 			$c             = (object) $click;
@@ -407,7 +430,6 @@ class TradeTrackerTab {
 			$groups[ $key ]['count']++;
 		}
 
-		// Sorteer aflopend op klikcount
 		usort( $groups, fn( $a, $b ) => $b['count'] - $a['count'] );
 
 		$per_page     = 25;
@@ -422,9 +444,16 @@ class TradeTrackerTab {
 		);
 		?>
 
-		<h3 style="margin-top:32px;">Meest geklikt — per link</h3>
+		<h3 style="margin-top:32px;"><?php esc_html_e( 'Meest geklikt — per link', 'tbmm' ); ?></h3>
 		<p style="color:#646970; font-size:13px; margin-top:-8px; margin-bottom:14px;">
-			<?php echo esc_html( $total ); ?> unieke links · <?php echo esc_html( count( $clicks ) ); ?> kliks totaal
+			<?php
+			printf(
+				/* translators: 1: unique link count, 2: total click count */
+				esc_html__( '%1$s unieke links · %2$s kliks totaal', 'tbmm' ),
+				esc_html( number_format_i18n( $total ) ),
+				esc_html( number_format_i18n( count( $clicks ) ) )
+			);
+			?>
 		</p>
 
 		<style>
@@ -446,10 +475,10 @@ class TradeTrackerTab {
 			<thead>
 				<tr>
 					<th>#</th>
-					<th>Campagne</th>
-					<th>Referentie</th>
-					<th>Kliks</th>
-					<th title="Open link in nieuw tabblad">↗</th>
+					<th><?php esc_html_e( 'Campagne', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Referentie', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Kliks', 'tbmm' ); ?></th>
+					<th title="<?php esc_attr_e( 'Open link in nieuw tabblad', 'tbmm' ); ?>">↗</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -460,10 +489,8 @@ class TradeTrackerTab {
 					if ( $campaign_id !== '' ) {
 						$base = $material_urls[ $campaign_id ] ?? '';
 						if ( $base !== '' ) {
-							// Transparante link: base eindigt met lege referentie-slot (_)
 							$link_url = $base . rawurlencode( $group['reference'] );
 						} else {
-							// Fallback: tc.tradetracker.net
 							$link_url = 'https://tc.tradetracker.net/?c=' . rawurlencode( $campaign_id )
 								. '&m=12&a=' . rawurlencode( $site_id );
 							if ( $group['reference'] !== '' ) {
@@ -496,7 +523,7 @@ class TradeTrackerTab {
 		<?php if ( $total_pages > 1 ) : ?>
 		<div class="alc-pagination" style="margin-top:12px;">
 			<?php if ( $current_page > 1 ) : ?>
-			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page - 1 ) ); ?>">‹ Vorige</a>
+			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page - 1 ) ); ?>">‹ <?php esc_html_e( 'Vorige', 'tbmm' ); ?></a>
 			<?php endif; ?>
 			<?php
 			$prev = null;
@@ -517,7 +544,7 @@ class TradeTrackerTab {
 			endfor;
 			?>
 			<?php if ( $current_page < $total_pages ) : ?>
-			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page + 1 ) ); ?>">Volgende ›</a>
+			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page + 1 ) ); ?>"><?php esc_html_e( 'Volgende', 'tbmm' ); ?> ›</a>
 			<?php endif; ?>
 		</div>
 		<?php endif; ?>
@@ -538,7 +565,7 @@ class TradeTrackerTab {
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
 		$access_key  = get_option( 'tbmm_tt_access_key', '' );
 		if ( empty( $customer_id ) || empty( $access_key ) ) {
-			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			echo '<p><em>' . esc_html__( 'Vul eerst de inloggegevens in via het tabblad Instellingen.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
@@ -548,14 +575,13 @@ class TradeTrackerTab {
 			return;
 		}
 
-		// Base URL for this subtab (year/page navigation)
 		$subtab_url = admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year );
 		?>
 		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="tradetracker" />
 			<input type="hidden" name="subtab" value="kliks" />
-			<label for="tbmm_kliks_jaar" style="font-weight:600;">Jaar:</label>
+			<label for="tbmm_kliks_jaar" style="font-weight:600;"><?php esc_html_e( 'Jaar:', 'tbmm' ); ?></label>
 			<select id="tbmm_kliks_jaar" name="jaar" onchange="this.form.submit()">
 				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
 				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
@@ -567,12 +593,20 @@ class TradeTrackerTab {
 		$clicks = $this->service->get_clicks_year( $site_id, $selected_year );
 
 		if ( is_wp_error( $clicks ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $clicks->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p><strong>'
+				. esc_html__( 'Fout:', 'tbmm' )
+				. '</strong> ' . esc_html( $clicks->get_error_message() ) . '</p></div>';
 			return;
 		}
 
 		if ( empty( $clicks ) ) {
-			echo '<p><em>Geen kliks gevonden voor ' . esc_html( $selected_year ) . '.</em></p>';
+			echo '<p><em>'
+				. sprintf(
+					/* translators: %s = year number */
+					esc_html__( 'Geen kliks gevonden voor %s.', 'tbmm' ),
+					esc_html( $selected_year )
+				  )
+				. '</em></p>';
 			return;
 		}
 
@@ -599,16 +633,18 @@ class TradeTrackerTab {
 			.alc-clicks-meta { color:#646970; font-size:13px; margin-bottom:10px; }
 		</style>
 
-		<?php
-		if ( isset( $_GET['cache_cleared'] ) ) :
-		?>
+		<?php if ( isset( $_GET['cache_cleared'] ) ) : ?>
 		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p><?php esc_html_e( 'Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.', 'tbmm' ); ?></p></div>
 		<?php endif;
 
 		$fetched_at  = $this->service->get_clicks_fetched_at( $site_id, $selected_year );
 		$fetched_str = $fetched_at
-			? 'Bijgewerkt: ' . date_i18n( 'd M Y \o\m H:i', $fetched_at ) . ' · vernieuwt elke 24 uur'
-			: 'Tijdstip onbekend — klik Vernieuwen om de cache te vullen';
+			? sprintf(
+				/* translators: %s = date/time of last fetch */
+				__( 'Bijgewerkt: %s · vernieuwt elke 24 uur', 'tbmm' ),
+				date_i18n( 'd M Y \o\m H:i', $fetched_at )
+			  )
+			: __( 'Tijdstip onbekend — klik Vernieuwen om de cache te vullen', 'tbmm' );
 		$flush_url   = wp_nonce_url(
 			admin_url( 'admin.php?page=tb-money-manager&tab=tradetracker&subtab=kliks&jaar=' . $selected_year . '&tbmm_flush_clicks=1' ),
 			'tbmm_flush_clicks_' . $selected_year,
@@ -617,23 +653,31 @@ class TradeTrackerTab {
 		?>
 		<p class="alc-clicks-meta" style="display:flex; align-items:center; gap:14px;">
 			<span>
-				<?php echo esc_html( number_format( $total_clicks, 0, ',', '.' ) ); ?> kliks in <?php echo esc_html( $selected_year ); ?>
-				— pagina <?php echo esc_html( $current_page ); ?> van <?php echo esc_html( $total_pages ); ?>
+				<?php
+				printf(
+					/* translators: 1: click count, 2: year, 3: current page, 4: total pages */
+					esc_html__( '%1$s kliks in %2$s — pagina %3$s van %4$s', 'tbmm' ),
+					esc_html( number_format( $total_clicks, 0, ',', '.' ) ),
+					esc_html( $selected_year ),
+					esc_html( $current_page ),
+					esc_html( $total_pages )
+				);
+				?>
 			</span>
 			<span style="color:#aaa; font-size:12px;"><?php echo esc_html( $fetched_str ); ?></span>
-			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ Vernieuwen</a>
+			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Vernieuwen', 'tbmm' ); ?></a>
 		</p>
 
 		<table class="alc-clicks-tbl">
 			<thead>
 				<tr>
-					<th>Datum</th>
-					<th>ID</th>
-					<th>Campagne</th>
-					<th>Referentie</th>
-					<th>Apparaat</th>
-					<th>Land</th>
-					<th>Herkomst</th>
+					<th><?php esc_html_e( 'Datum', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'ID', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Campagne', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Referentie', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Apparaat', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Land', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Herkomst', 'tbmm' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -643,7 +687,6 @@ class TradeTrackerTab {
 					$reg_date = ! empty( $c->registrationDate )
 						? gmdate( 'd-m-Y H:i', strtotime( $c->registrationDate ) )
 						: '—';
-					// device: check various possible property names
 					$device   = $c->deviceType ?? ( $c->device ?? ( $c->deviceName ?? '—' ) );
 					$country  = $c->countryCode ?? ( $c->country ?? '—' );
 					$referrer = $c->referrer ?? ( $c->referrerURL ?? ( $c->referrerUrl ?? '' ) );
@@ -666,11 +709,10 @@ class TradeTrackerTab {
 		<?php if ( $total_pages > 1 ) : ?>
 		<div class="alc-pagination">
 			<?php if ( $current_page > 1 ) : ?>
-			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page - 1 ) ); ?>">‹ Vorige</a>
+			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page - 1 ) ); ?>">‹ <?php esc_html_e( 'Vorige', 'tbmm' ); ?></a>
 			<?php endif; ?>
 
 			<?php
-			// Show first, last, and a window around current page
 			$shown = [];
 			for ( $p = 1; $p <= $total_pages; $p++ ) {
 				if ( $p === 1 || $p === $total_pages || abs( $p - $current_page ) <= 2 ) {
@@ -692,7 +734,7 @@ class TradeTrackerTab {
 			?>
 
 			<?php if ( $current_page < $total_pages ) : ?>
-			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page + 1 ) ); ?>">Volgende ›</a>
+			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page + 1 ) ); ?>"><?php esc_html_e( 'Volgende', 'tbmm' ); ?> ›</a>
 			<?php endif; ?>
 		</div>
 		<?php endif; ?>
@@ -707,7 +749,7 @@ class TradeTrackerTab {
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
 		$access_key  = get_option( 'tbmm_tt_access_key', '' );
 		if ( empty( $customer_id ) || empty( $access_key ) ) {
-			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			echo '<p><em>' . esc_html__( 'Vul eerst de inloggegevens in via het tabblad Instellingen.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
@@ -723,14 +765,11 @@ class TradeTrackerTab {
 			return;
 		}
 
-		// Tekstlink-materialen ophalen: campagneID => base tracking URL
-		// Bij fout: stille fallback naar tc.tradetracker.net (JS handelt dit af)
 		$material_urls = $this->service->get_text_material_urls( $site_id );
 		if ( is_wp_error( $material_urls ) ) {
 			$material_urls = [];
 		}
 
-		// Campagnelijst: id, name, url — inclusief domein voor auto-detect; gesorteerd op naam
 		$campaign_list = [];
 		foreach ( $campaigns as $c ) {
 			$c = (object) $c;
@@ -763,35 +802,35 @@ class TradeTrackerTab {
 
 		<div class="alc-gen-wrap">
 			<div class="alc-gen-field">
-				<label for="alc-gen-campaign">Campagne</label>
+				<label for="alc-gen-campaign"><?php esc_html_e( 'Campagne', 'tbmm' ); ?></label>
 				<select id="alc-gen-campaign">
-					<option value="">— Selecteer campagne —</option>
+					<option value=""><?php esc_html_e( '— Selecteer campagne —', 'tbmm' ); ?></option>
 					<?php foreach ( $campaign_list as $c ) : ?>
 					<option value="<?php echo esc_attr( $c['id'] ); ?>"><?php echo esc_html( $c['name'] ); ?></option>
 					<?php endforeach; ?>
 				</select>
-				<p class="description" style="margin-top:4px;">Alleen geaccepteerde campagnes.</p>
+				<p class="description" style="margin-top:4px;"><?php esc_html_e( 'Alleen geaccepteerde campagnes.', 'tbmm' ); ?></p>
 			</div>
 
 			<div class="alc-gen-field">
-				<label for="alc-gen-url">Doel-URL <span style="font-weight:400; color:#646970;">(leeg = homepage van campagne)</span></label>
+				<label for="alc-gen-url"><?php esc_html_e( 'Doel-URL', 'tbmm' ); ?> <span style="font-weight:400; color:#646970;">(<?php esc_html_e( 'leeg = homepage van campagne', 'tbmm' ); ?>)</span></label>
 				<input type="url" id="alc-gen-url" placeholder="https://www.voorbeeld.nl/pagina/" class="regular-text" />
 				<div class="alc-gen-url-hint" id="alc-gen-url-hint"></div>
 			</div>
 
 			<div class="alc-gen-field">
-				<label for="alc-gen-ref">Referentie <span style="font-weight:400; color:#646970;">(optioneel)</span></label>
-				<input type="text" id="alc-gen-ref" placeholder="bijv. loopkamille" class="regular-text" maxlength="64" />
-				<p class="description" style="margin-top:4px;">Gebruik alleen letters, cijfers en koppeltekens.</p>
+				<label for="alc-gen-ref"><?php esc_html_e( 'Referentie', 'tbmm' ); ?> <span style="font-weight:400; color:#646970;">(<?php esc_html_e( 'optioneel', 'tbmm' ); ?>)</span></label>
+				<input type="text" id="alc-gen-ref" placeholder="<?php esc_attr_e( 'bijv. loopkamille', 'tbmm' ); ?>" class="regular-text" maxlength="64" />
+				<p class="description" style="margin-top:4px;"><?php esc_html_e( 'Gebruik alleen letters, cijfers en koppeltekens.', 'tbmm' ); ?></p>
 			</div>
 
 			<div class="alc-gen-result" id="alc-gen-result">
-				<label>Gegenereerde tekstlink</label>
+				<label><?php esc_html_e( 'Gegenereerde tekstlink', 'tbmm' ); ?></label>
 				<div class="alc-gen-result-url" id="alc-gen-result-url"></div>
 				<div class="alc-gen-source" id="alc-gen-source"></div>
 				<div class="alc-gen-copy">
-					<button type="button" class="button" id="alc-gen-copy-btn">Kopieer link</button>
-					<span class="alc-gen-copied" id="alc-gen-copied">✓ Gekopieerd!</span>
+					<button type="button" class="button" id="alc-gen-copy-btn"><?php esc_html_e( 'Kopieer link', 'tbmm' ); ?></button>
+					<span class="alc-gen-copied" id="alc-gen-copied">✓ <?php esc_html_e( 'Gekopieerd!', 'tbmm' ); ?></span>
 				</div>
 			</div>
 		</div>
@@ -812,13 +851,11 @@ class TradeTrackerTab {
 			var elCopy   = document.getElementById('alc-gen-copy-btn');
 			var elCopied = document.getElementById('alc-gen-copied');
 
-			// Hostname zonder www., null bij ongeldige URL
 			function hostname(url) {
 				try { return new URL(url).hostname.replace(/^www\./, ''); }
 				catch(e) { return null; }
 			}
 
-			// Zoek campagne-ID op basis van domein van de doel-URL
 			function detectCampaign(destUrl) {
 				var host = hostname(destUrl);
 				if (!host) return null;
@@ -872,7 +909,6 @@ class TradeTrackerTab {
 				elCopied.style.display = 'none';
 			}
 
-			// Auto-detect campagne bij URL-invoer
 			elUrl.addEventListener('input', function() {
 				var destUrl = elUrl.value.trim();
 
@@ -889,14 +925,12 @@ class TradeTrackerTab {
 						hideHint();
 					}
 				} else {
-					// URL ingevuld maar domein herkend niet als campagne
 					showHint('⚠ Domein herkend niet als een van je campagnes — controleer de selectie.', 'warning');
 				}
 
 				generate();
 			});
 
-			// Waarschuwing als handmatig een campagne wordt gekozen die niet bij de URL past
 			elCamp.addEventListener('change', function() {
 				var destUrl = elUrl.value.trim();
 				if (!destUrl) { hideHint(); generate(); return; }
@@ -948,7 +982,7 @@ class TradeTrackerTab {
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
 		$access_key  = get_option( 'tbmm_tt_access_key', '' );
 		if ( empty( $customer_id ) || empty( $access_key ) ) {
-			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			echo '<p><em>' . esc_html__( 'Vul eerst de inloggegevens in via het tabblad Instellingen.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
@@ -963,7 +997,7 @@ class TradeTrackerTab {
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="tradetracker" />
 			<input type="hidden" name="subtab" value="sales" />
-			<label for="tbmm_sales_jaar" style="font-weight:600;">Jaar:</label>
+			<label for="tbmm_sales_jaar" style="font-weight:600;"><?php esc_html_e( 'Jaar:', 'tbmm' ); ?></label>
 			<select id="tbmm_sales_jaar" name="jaar" onchange="this.form.submit()">
 				<?php for ( $y = $current_year; $y >= 2020; $y-- ) : ?>
 				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
@@ -972,7 +1006,6 @@ class TradeTrackerTab {
 		</form>
 
 		<?php
-		// ── Uitbetaling sectie ────────────────────────────────────────────
 		$pending     = $this->service->get_pending_commission( $site_id );
 		$last_pmt    = $this->service->get_last_payment();
 		$has_payout  = ! is_wp_error( $pending ) || ! is_wp_error( $last_pmt );
@@ -982,30 +1015,46 @@ class TradeTrackerTab {
 			$pend_count  = ( ! is_wp_error( $pending ) ) ? (int) $pending['count'] : 0;
 			?>
 			<div style="background:#fff; border:1px solid #ccd0d4; border-radius:4px; padding:14px 18px; margin-bottom:20px; max-width:600px;">
-				<h4 style="margin:0 0 10px; font-size:13px; color:#1d2327;">Uitbetaling</h4>
+				<h4 style="margin:0 0 10px; font-size:13px; color:#1d2327;"><?php esc_html_e( 'Uitbetaling', 'tbmm' ); ?></h4>
 				<table style="border-collapse:collapse; width:100%; font-size:13px;">
 					<tr>
-						<td style="padding:4px 0; color:#646970; width:200px;">Openstaand</td>
+						<td style="padding:4px 0; color:#646970; width:200px;"><?php esc_html_e( 'Openstaand', 'tbmm' ); ?></td>
 						<td style="padding:4px 0; font-weight:600;">
 							<?php echo esc_html( '€ ' . number_format( $pend_amount, 2, ',', '.' ) ); ?>
 							<?php if ( $pend_count > 0 ) : ?>
-								<span style="color:#646970; font-weight:normal; font-size:12px;">(<?php echo esc_html( $pend_count ); ?> transacti<?php echo $pend_count === 1 ? 'e' : 'es'; ?>)</span>
+								<span style="color:#646970; font-weight:normal; font-size:12px;">
+									(<?php echo esc_html( $pend_count ); ?> <?php echo esc_html( _n( 'transactie', 'transacties', $pend_count, 'tbmm' ) ); ?>)
+								</span>
 							<?php endif; ?>
 						</td>
 					</tr>
 					<?php if ( ! is_wp_error( $last_pmt ) && ! empty( $last_pmt ) ) : ?>
 					<tr>
-						<td style="padding:4px 0; color:#646970;">Laatste betaling</td>
+						<td style="padding:4px 0; color:#646970;"><?php esc_html_e( 'Laatste betaling', 'tbmm' ); ?></td>
 						<td style="padding:4px 0;">
 							€ <?php echo esc_html( number_format( (float) $last_pmt['amount'], 2, ',', '.' ) ); ?>
-							<span style="color:#646970; font-size:12px;">op <?php echo esc_html( gmdate( 'd-m-Y', strtotime( $last_pmt['date'] ) ) ); ?></span>
+							<span style="color:#646970; font-size:12px;">
+								<?php
+								printf(
+									/* translators: %s = date of payment */
+									esc_html__( 'op %s', 'tbmm' ),
+									esc_html( gmdate( 'd-m-Y', strtotime( $last_pmt['date'] ) ) )
+								);
+								?>
+							</span>
 						</td>
 					</tr>
 					<?php endif; ?>
 					<?php if ( $pend_amount > 0 && $pend_amount < 25 ) : ?>
 					<tr>
 						<td colspan="2" style="padding:6px 0 0; font-size:12px; color:#646970;">
-							Minimumbedrag voor uitbetaling is € 25,00 — nog € <?php echo esc_html( number_format( 25 - $pend_amount, 2, ',', '.' ) ); ?> te gaan.
+							<?php
+							printf(
+								/* translators: %s = remaining amount until payout threshold */
+								esc_html__( 'Minimumbedrag voor uitbetaling is € 25,00 — nog € %s te gaan.', 'tbmm' ),
+								esc_html( number_format( 25 - $pend_amount, 2, ',', '.' ) )
+							);
+							?>
 						</td>
 					</tr>
 					<?php endif; ?>
@@ -1017,17 +1066,28 @@ class TradeTrackerTab {
 		$transactions = $this->service->get_sales_year( $site_id, $selected_year );
 
 		if ( is_wp_error( $transactions ) ) {
-			echo '<div class="notice notice-error inline"><p><strong>Fout:</strong> ' . esc_html( $transactions->get_error_message() ) . '</p></div>';
+			echo '<div class="notice notice-error inline"><p><strong>'
+				. esc_html__( 'Fout:', 'tbmm' )
+				. '</strong> ' . esc_html( $transactions->get_error_message() ) . '</p></div>';
 			return;
 		}
 
 		if ( empty( $transactions ) ) {
-			echo '<p><em>Geen sales gevonden voor ' . esc_html( $selected_year ) . '.</em></p>';
+			echo '<p><em>'
+				. sprintf(
+					/* translators: %s = year number */
+					esc_html__( 'Geen sales gevonden voor %s.', 'tbmm' ),
+					esc_html( $selected_year )
+				  )
+				. '</em></p>';
 			return;
 		}
 
-		// Samenvattingstotalen berekenen
-		$summary = [ 'pending' => [ 'count' => 0, 'commission' => 0.0 ], 'accepted' => [ 'count' => 0, 'commission' => 0.0 ], 'rejected' => [ 'count' => 0, 'commission' => 0.0 ] ];
+		$summary = [
+			'pending'  => [ 'count' => 0, 'commission' => 0.0 ],
+			'accepted' => [ 'count' => 0, 'commission' => 0.0 ],
+			'rejected' => [ 'count' => 0, 'commission' => 0.0 ],
+		];
 		foreach ( $transactions as $tx ) {
 			$t      = (object) $tx;
 			$status = strtolower( $t->transactionStatus ?? 'pending' );
@@ -1038,8 +1098,12 @@ class TradeTrackerTab {
 			$summary[ $status ]['commission'] += (float) ( $t->commission ?? 0 );
 		}
 
-		$status_labels = [ 'accepted' => 'Geaccepteerd', 'pending' => 'In behandeling', 'rejected' => 'Afgekeurd' ];
-		$status_colors = [ 'accepted' => '#00a32a', 'pending' => '#dba617', 'rejected' => '#d63638' ];
+		$status_labels = [
+			'accepted' => __( 'Geaccepteerd', 'tbmm' ),
+			'pending'  => __( 'In behandeling', 'tbmm' ),
+			'rejected' => __( 'Afgekeurd', 'tbmm' ),
+		];
+		$status_colors    = [ 'accepted' => '#00a32a', 'pending' => '#dba617', 'rejected' => '#d63638' ];
 		$total_commission = array_sum( array_column( $summary, 'commission' ) );
 		$total_count      = array_sum( array_column( $summary, 'count' ) );
 		?>
@@ -1060,8 +1124,16 @@ class TradeTrackerTab {
 
 		<div class="alc-sales-summary">
 			<div class="alc-sales-card alc-card-total">
-				<div class="alc-card-num"><?php echo esc_html( $total_count ); ?> sales</div>
-				<div class="alc-card-sub">€ <?php echo esc_html( number_format( $total_commission, 2, ',', '.' ) ); ?> totaal</div>
+				<div class="alc-card-num">
+					<?php
+					printf(
+						/* translators: %d = number of sales */
+						esc_html__( '%d sales', 'tbmm' ),
+						$total_count
+					);
+					?>
+				</div>
+				<div class="alc-card-sub">€ <?php echo esc_html( number_format( $total_commission, 2, ',', '.' ) ); ?> <?php esc_html_e( 'totaal', 'tbmm' ); ?></div>
 			</div>
 			<?php foreach ( $status_labels as $key => $label ) :
 				if ( empty( $summary[ $key ]['count'] ) ) continue;
@@ -1081,14 +1153,14 @@ class TradeTrackerTab {
 		<table class="alc-sales-tbl">
 			<thead>
 				<tr>
-					<th>Registratiedatum</th>
-					<th>ID</th>
-					<th>Campagne</th>
-					<th>Referentie</th>
-					<th>Productgroep</th>
-					<th>Status</th>
-					<th class="num">Bestelbedr</th>
-					<th class="num">Commissie</th>
+					<th><?php esc_html_e( 'Registratiedatum', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'ID', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Campagne', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Referentie', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Productgroep', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'tbmm' ); ?></th>
+					<th class="num"><?php esc_html_e( 'Bestelbedr', 'tbmm' ); ?></th>
+					<th class="num"><?php esc_html_e( 'Commissie', 'tbmm' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -1130,7 +1202,7 @@ class TradeTrackerTab {
 		$customer_id = get_option( 'tbmm_tt_customer_id', '' );
 		$access_key  = get_option( 'tbmm_tt_access_key', '' );
 		if ( empty( $customer_id ) || empty( $access_key ) ) {
-			echo '<p><em>Vul eerst de inloggegevens in via het tabblad Instellingen.</em></p>';
+			echo '<p><em>' . esc_html__( 'Vul eerst de inloggegevens in via het tabblad Instellingen.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
@@ -1146,8 +1218,7 @@ class TradeTrackerTab {
 			return;
 		}
 
-		// Normalize feeds to simple objects and extract unique campaigns
-		$feeds_list  = [];
+		$feeds_list     = [];
 		$campaigns_seen = [];
 		foreach ( $feeds_result as $feed ) {
 			$f           = is_object( $feed ) ? $feed : (object) $feed;
@@ -1161,10 +1232,10 @@ class TradeTrackerTab {
 				continue;
 			}
 			$feeds_list[] = [
-				'id'           => $feed_id,
-				'name'         => $feed_name,
-				'campaign_id'  => $camp_id,
-				'campaign_name'=> $camp_name,
+				'id'            => $feed_id,
+				'name'          => $feed_name,
+				'campaign_id'   => $camp_id,
+				'campaign_name' => $camp_name,
 			];
 			if ( $camp_id && ! isset( $campaigns_seen[ $camp_id ] ) ) {
 				$campaigns_seen[ $camp_id ] = $camp_name;
@@ -1198,18 +1269,18 @@ class TradeTrackerTab {
 
 		<div class="alc-pf-filters">
 			<div>
-				<label for="alc-pf-campaign">Campagne</label>
+				<label for="alc-pf-campaign"><?php esc_html_e( 'Campagne', 'tbmm' ); ?></label>
 				<select id="alc-pf-campaign" style="min-width:180px;">
-					<option value="">— Alle campagnes —</option>
+					<option value=""><?php esc_html_e( '— Alle campagnes —', 'tbmm' ); ?></option>
 					<?php foreach ( $campaigns_seen as $cid => $cname ) : ?>
 					<option value="<?php echo esc_attr( $cid ); ?>"><?php echo esc_html( $cname ); ?></option>
 					<?php endforeach; ?>
 				</select>
 			</div>
 			<div>
-				<label for="alc-pf-feed">Productfeed</label>
+				<label for="alc-pf-feed"><?php esc_html_e( 'Productfeed', 'tbmm' ); ?></label>
 				<select id="alc-pf-feed" style="min-width:220px;">
-					<option value="0">— Alle productfeeds —</option>
+					<option value="0"><?php esc_html_e( '— Alle productfeeds —', 'tbmm' ); ?></option>
 					<?php foreach ( $feeds_list as $f ) : ?>
 					<option value="<?php echo esc_attr( $f['id'] ); ?>"
 					        data-campaign="<?php echo esc_attr( $f['campaign_id'] ); ?>">
@@ -1219,11 +1290,11 @@ class TradeTrackerTab {
 				</select>
 			</div>
 			<div>
-				<label for="alc-pf-search">Zoekwoord</label>
-				<input type="text" id="alc-pf-search" placeholder="bijv. vogelvoer" class="regular-text" style="width:200px;" />
+				<label for="alc-pf-search"><?php esc_html_e( 'Zoekwoord', 'tbmm' ); ?></label>
+				<input type="text" id="alc-pf-search" placeholder="<?php esc_attr_e( 'bijv. vogelvoer', 'tbmm' ); ?>" class="regular-text" style="width:200px;" />
 			</div>
 			<div>
-				<label for="alc-pf-perpage">Per pagina</label>
+				<label for="alc-pf-perpage"><?php esc_html_e( 'Per pagina', 'tbmm' ); ?></label>
 				<select id="alc-pf-perpage">
 					<option value="10">10</option>
 					<option value="25" selected>25</option>
@@ -1234,7 +1305,7 @@ class TradeTrackerTab {
 			</div>
 			<div>
 				<label>&nbsp;</label>
-				<button type="button" id="alc-pf-search-btn" class="button button-primary">Zoeken</button>
+				<button type="button" id="alc-pf-search-btn" class="button button-primary"><?php esc_html_e( 'Zoeken', 'tbmm' ); ?></button>
 			</div>
 		</div>
 
@@ -1252,24 +1323,22 @@ class TradeTrackerTab {
 			var elSearchBtn = document.getElementById('alc-pf-search-btn');
 			var elResults   = document.getElementById('alc-pf-results');
 
-			var currentPage  = 1;
-			var lastFeedId   = 0;
-			var lastSearch   = '';
-			var lastPerPage  = 25;
+			var currentPage = 1;
+			var lastFeedId  = 0;
+			var lastSearch  = '';
+			var lastPerPage = 25;
 
-			// Filter feeds dropdown when campaign changes
 			elCampaign.addEventListener('change', function() {
 				var selectedCamp = elCampaign.value;
 				var prevFeed     = elFeed.value;
 				var opts         = elFeed.querySelectorAll('option');
 
 				opts.forEach(function(opt) {
-					if (opt.value === '0') return; // keep "Alle productfeeds"
+					if (opt.value === '0') return;
 					var campAttr = opt.getAttribute('data-campaign');
 					opt.style.display = (!selectedCamp || campAttr === selectedCamp) ? '' : 'none';
 				});
 
-				// Reset to "Alle" if selected feed is from a different campaign
 				if (prevFeed && prevFeed !== '0') {
 					var selOpt = elFeed.querySelector('option[value="' + prevFeed + '"]');
 					if (selOpt && selOpt.style.display === 'none') {
@@ -1278,7 +1347,6 @@ class TradeTrackerTab {
 				}
 			});
 
-			// Allow Enter key in search field
 			elSearch.addEventListener('keydown', function(e) {
 				if (e.key === 'Enter') { currentPage = 1; doSearch(); }
 			});
@@ -1293,9 +1361,8 @@ class TradeTrackerTab {
 				var search  = elSearch.value.trim();
 				var perPage = parseInt(elPerPage.value, 10);
 
-				// Without a specific feed selected, at least a campaign or keyword is required
 				if (feedId === '0' && !elCampaign.value && !search) {
-					elResults.innerHTML = '<p class="alc-pf-status">Selecteer een campagne of voer een zoekwoord in.</p>';
+					elResults.innerHTML = '<p class="alc-pf-status"><?php echo esc_js( __( 'Selecteer een campagne of voer een zoekwoord in.', 'tbmm' ) ); ?></p>';
 					return;
 				}
 
@@ -1305,21 +1372,21 @@ class TradeTrackerTab {
 				lastPerPage = perPage;
 
 				elSearchBtn.disabled    = true;
-				elSearchBtn.textContent = 'Laden…';
-				elResults.innerHTML     = '<p class="alc-pf-status">Producten ophalen…</p>';
+				elSearchBtn.textContent = '<?php echo esc_js( __( 'Laden…', 'tbmm' ) ); ?>';
+				elResults.innerHTML     = '<p class="alc-pf-status"><?php echo esc_js( __( 'Producten ophalen…', 'tbmm' ) ); ?></p>';
 
 				fetchProducts(feedId, search, perPage, currentPage, elCampaign.value, function(resp) {
 					elSearchBtn.disabled    = false;
-					elSearchBtn.textContent = 'Zoeken';
+					elSearchBtn.textContent = '<?php echo esc_js( __( 'Zoeken', 'tbmm' ) ); ?>';
 
 					if (!resp.success) {
-						elResults.innerHTML = '<p class="alc-pf-status" style="color:#d63638;">' + escHtml(resp.data.message || 'Fout bij ophalen.') + '</p>';
+						elResults.innerHTML = '<p class="alc-pf-status" style="color:#d63638;">' + escHtml(resp.data.message || '<?php echo esc_js( __( 'Fout bij ophalen.', 'tbmm' ) ); ?>') + '</p>';
 						return;
 					}
 
 					var data = resp.data;
 					if (!data.products || data.products.length === 0) {
-						elResults.innerHTML = '<p class="alc-pf-status">Geen producten gevonden.</p>';
+						elResults.innerHTML = '<p class="alc-pf-status"><?php echo esc_js( __( 'Geen producten gevonden.', 'tbmm' ) ); ?></p>';
 						return;
 					}
 
@@ -1329,14 +1396,14 @@ class TradeTrackerTab {
 					if (data.all_feeds && data.total_found > data.products.length) {
 						var note = document.createElement('p');
 						note.style.cssText = 'font-size:12px; color:#646970; margin-top:8px;';
-						note.textContent = data.total_found + ' resultaten gevonden — selecteer een specifieke feed voor meer resultaten.';
+						note.textContent = data.total_found + ' <?php echo esc_js( __( 'resultaten gevonden — selecteer een specifieke feed voor meer resultaten.', 'tbmm' ) ); ?>';
 						elResults.appendChild(note);
 					}
 
 					if (data.has_more) {
 						var moreWrap = document.createElement('div');
 						moreWrap.className = 'alc-pf-more';
-						moreWrap.innerHTML = '<button type="button" class="button" id="alc-pf-more-btn">Volgende ' + escHtml(perPage) + ' laden →</button>';
+						moreWrap.innerHTML = '<button type="button" class="button" id="alc-pf-more-btn"><?php echo esc_js( __( 'Volgende', 'tbmm' ) ); ?> ' + escHtml(perPage) + ' <?php echo esc_js( __( 'laden →', 'tbmm' ) ); ?></button>';
 						elResults.appendChild(moreWrap);
 						document.getElementById('alc-pf-more-btn').addEventListener('click', function() {
 							currentPage++;
@@ -1348,7 +1415,7 @@ class TradeTrackerTab {
 
 			function loadMore() {
 				var moreBtn = document.getElementById('alc-pf-more-btn');
-				if (moreBtn) { moreBtn.disabled = true; moreBtn.textContent = 'Laden…'; }
+				if (moreBtn) { moreBtn.disabled = true; moreBtn.textContent = '<?php echo esc_js( __( 'Laden…', 'tbmm' ) ); ?>'; }
 
 				fetchProducts(lastFeedId, lastSearch, lastPerPage, currentPage, elCampaign.value, function(resp) {
 					if (moreBtn && moreBtn.parentNode) moreBtn.parentNode.remove();
@@ -1368,7 +1435,7 @@ class TradeTrackerTab {
 					if (data.has_more) {
 						var moreWrap2 = document.createElement('div');
 						moreWrap2.className = 'alc-pf-more';
-						moreWrap2.innerHTML = '<button type="button" class="button" id="alc-pf-more-btn">Volgende ' + escHtml(lastPerPage) + ' laden →</button>';
+						moreWrap2.innerHTML = '<button type="button" class="button" id="alc-pf-more-btn"><?php echo esc_js( __( 'Volgende', 'tbmm' ) ); ?> ' + escHtml(lastPerPage) + ' <?php echo esc_js( __( 'laden →', 'tbmm' ) ); ?></button>';
 						elResults.appendChild(moreWrap2);
 						document.getElementById('alc-pf-more-btn').addEventListener('click', function() {
 							currentPage++;
@@ -1392,18 +1459,18 @@ class TradeTrackerTab {
 					.then(function(r) { return r.json(); })
 					.then(callback)
 					.catch(function() {
-						callback({ success: false, data: { message: 'Verbindingsfout.' } });
+						callback({ success: false, data: { message: '<?php echo esc_js( __( 'Verbindingsfout.', 'tbmm' ) ); ?>' } });
 					});
 			}
 
 			function buildTable(products, showFeedCol) {
 				return '<table class="alc-pf-table">'
 					+ '<thead><tr>'
-					+ '<th class="alc-pf-photo-col">Foto</th>'
-					+ '<th>Naam &amp; beschrijving</th>'
-					+ (showFeedCol ? '<th class="alc-pf-campaign-col">Feed</th>' : '<th class="alc-pf-campaign-col">Categorie</th>')
-					+ '<th class="alc-pf-price-col">Prijs</th>'
-					+ '<th class="alc-pf-action-col">Actie</th>'
+					+ '<th class="alc-pf-photo-col"><?php echo esc_js( __( 'Foto', 'tbmm' ) ); ?></th>'
+					+ '<th><?php echo esc_js( __( 'Naam & beschrijving', 'tbmm' ) ); ?></th>'
+					+ (showFeedCol ? '<th class="alc-pf-campaign-col"><?php echo esc_js( __( 'Feed', 'tbmm' ) ); ?></th>' : '<th class="alc-pf-campaign-col"><?php echo esc_js( __( 'Categorie', 'tbmm' ) ); ?></th>')
+					+ '<th class="alc-pf-price-col"><?php echo esc_js( __( 'Prijs', 'tbmm' ) ); ?></th>'
+					+ '<th class="alc-pf-action-col"><?php echo esc_js( __( 'Actie', 'tbmm' ) ); ?></th>'
 					+ '</tr></thead>'
 					+ '<tbody>' + buildRows(products, showFeedCol) + '</tbody>'
 					+ '</table>';
@@ -1413,11 +1480,11 @@ class TradeTrackerTab {
 				return products.map(function(p) {
 					var img = p.image
 						? '<img src="' + escAttr(p.image) + '" alt="" loading="lazy" />'
-						: '<div class="alc-pf-no-img">Geen foto</div>';
+						: '<div class="alc-pf-no-img"><?php echo esc_js( __( 'Geen foto', 'tbmm' ) ); ?></div>';
 
 					var price  = p.price ? '€&nbsp;' + escHtml(p.price) : '—';
 					var action = p.url
-						? '<a href="' + escAttr(p.url) + '" target="_blank" rel="noopener" class="button button-small">↗ Bekijk</a>'
+						? '<a href="' + escAttr(p.url) + '" target="_blank" rel="noopener" class="button button-small">↗ <?php echo esc_js( __( 'Bekijk', 'tbmm' ) ); ?></a>'
 						: '—';
 					var midCol = showFeedCol ? escHtml(p.feed_name) : escHtml(p.category);
 
@@ -1463,21 +1530,22 @@ class TradeTrackerTab {
 		</style>
 
 		<?php if ( empty( $links ) ) : ?>
-		<p style="color:#646970; font-size:13px;">Geen actieve FONQ.nl links gevonden in ThirstyAffiliates.</p>
+		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen actieve FONQ.nl links gevonden in ThirstyAffiliates.', 'tbmm' ); ?></p>
 		<?php return; endif; ?>
 
 		<p class="alc-ta-summary">
-			<strong><?php echo esc_html( count( $links ) ); ?></strong> FONQ.nl links gevonden in ThirstyAffiliates.
+			<strong><?php echo esc_html( count( $links ) ); ?></strong>
+			<?php esc_html_e( 'FONQ.nl links gevonden in ThirstyAffiliates.', 'tbmm' ); ?>
 		</p>
 
 		<table class="alc-ta-table">
 			<thead>
 				<tr>
 					<th class="alc-rank-cell">#</th>
-					<th>Link naam</th>
-					<th>Destination URL</th>
-					<th style="width:130px;">Bewerk</th>
-					<th style="width:160px;">Zoek in artikelen</th>
+					<th><?php esc_html_e( 'Link naam', 'tbmm' ); ?></th>
+					<th><?php esc_html_e( 'Destination URL', 'tbmm' ); ?></th>
+					<th style="width:130px;"><?php esc_html_e( 'Bewerk', 'tbmm' ); ?></th>
+					<th style="width:160px;"><?php esc_html_e( 'Zoek in artikelen', 'tbmm' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -1507,13 +1575,13 @@ class TradeTrackerTab {
 				</td>
 				<td>
 					<a href="<?php echo esc_url( $edit_url ); ?>" target="_blank"
-					   class="button button-small">✎ Bewerk in TA</a>
+					   class="button button-small">✎ <?php esc_html_e( 'Bewerk in TA', 'tbmm' ); ?></a>
 				</td>
 				<td>
 					<button class="button button-small alc-fonq-find-btn"
 					        data-slug="<?php echo esc_attr( $slug ); ?>"
 					        data-row="<?php echo esc_attr( $i ); ?>">
-						Zoek in artikelen
+						<?php esc_html_e( 'Zoek in artikelen', 'tbmm' ); ?>
 					</button>
 				</td>
 			</tr>
@@ -1539,12 +1607,12 @@ class TradeTrackerTab {
 
 					if (arRow.style.display !== 'none') {
 						arRow.style.display = 'none';
-						btn.textContent = 'Zoek in artikelen';
+						btn.textContent = <?php echo wp_json_encode( __( 'Zoek in artikelen', 'tbmm' ) ); ?>;
 						return;
 					}
 
 					btn.disabled    = true;
-					btn.textContent = 'Zoeken…';
+					btn.textContent = <?php echo wp_json_encode( __( 'Zoeken…', 'tbmm' ) ); ?>;
 
 					var data = new FormData();
 					data.append('action', 'tbmm_orphan_find_articles');
@@ -1565,16 +1633,16 @@ class TradeTrackerTab {
 								});
 								html += '</ul>';
 								cell.innerHTML  = html;
-								btn.textContent = 'Verberg ▲';
+								btn.textContent = <?php echo wp_json_encode( __( 'Verberg ▲', 'tbmm' ) ); ?>;
 							} else {
-								cell.innerHTML  = '<em style="font-size:12px; color:#646970;">Niet gevonden in gepubliceerde artikelen.</em>';
-								btn.textContent = 'Verberg ▲';
+								cell.innerHTML  = '<em style="font-size:12px; color:#646970;"><?php echo esc_js( __( 'Niet gevonden in gepubliceerde artikelen.', 'tbmm' ) ); ?></em>';
+								btn.textContent = <?php echo wp_json_encode( __( 'Verberg ▲', 'tbmm' ) ); ?>;
 							}
 							arRow.style.display = '';
 						})
 						.catch(function() {
 							btn.disabled    = false;
-							btn.textContent = 'Zoek in artikelen';
+							btn.textContent = <?php echo wp_json_encode( __( 'Zoek in artikelen', 'tbmm' ) ); ?>;
 						});
 				});
 			});
