@@ -6,10 +6,12 @@ class SettingsTab {
 
 	private BolTab          $bol_tab;
 	private TradeTrackerTab $tt_tab;
+	private AwinTab         $awin_tab;
 
-	public function __construct( BolTab $bol_tab, TradeTrackerTab $tt_tab ) {
-		$this->bol_tab = $bol_tab;
-		$this->tt_tab  = $tt_tab;
+	public function __construct( BolTab $bol_tab, TradeTrackerTab $tt_tab, AwinTab $awin_tab ) {
+		$this->bol_tab  = $bol_tab;
+		$this->tt_tab   = $tt_tab;
+		$this->awin_tab = $awin_tab;
 	}
 
 	public function render(): void {
@@ -28,6 +30,13 @@ class SettingsTab {
 				__( 'TradeTracker', 'tbmm' ),
 				__( 'Klant-ID en toegangssleutel voor de TradeTracker Publisher API. Te vinden in je TradeTracker dashboard onder Account → API.', 'tbmm' ),
 				function() { $this->tt_tab->render_settings(); }
+			); ?>
+
+			<?php $this->render_section(
+				'🔗',
+				__( 'Awin', 'tbmm' ),
+				__( 'API-token en Publisher ID voor de Awin Publisher API. Te vinden via Awin → rechtsboven menu → API Credentials.', 'tbmm' ),
+				function() { $this->awin_tab->render_settings(); }
 			); ?>
 
 		</div>

@@ -3,6 +3,7 @@
 namespace TuinenBalkon\TBMoneyManager;
 
 use TuinenBalkon\TBMoneyManager\Admin\AjaxHandlerService;
+use TuinenBalkon\TBMoneyManager\Admin\AwinTab;
 use TuinenBalkon\TBMoneyManager\Admin\BolTab;
 use TuinenBalkon\TBMoneyManager\Admin\GoogleTab;
 use TuinenBalkon\TBMoneyManager\Admin\DashboardWidget;
@@ -63,9 +64,10 @@ class Plugin {
 		$tt_tab           = new TradeTrackerTab( $tt_service, $ta_service, $orphaned_scanner );
 		$ta_tab           = new TATab( $ta_service, $orphaned_scanner, $scan_cache, $link_scanner, $unmanaged );
 		$bol_tab          = new BolTab();
+		$awin_tab         = new AwinTab();
 		$google_tab       = new GoogleTab( new SiteKitBridge(), $ta_service );
-		$settings_tab     = new SettingsTab( $bol_tab, $tt_tab );
-		$scan_page        = new ScanPage( $tt_tab, $ta_tab, $bol_tab, $google_tab, $settings_tab );
+		$settings_tab     = new SettingsTab( $bol_tab, $tt_tab, $awin_tab );
+		$scan_page        = new ScanPage( $tt_tab, $ta_tab, $bol_tab, $google_tab, $awin_tab, $settings_tab );
 		new MenuService( $scan_page );
 		new AjaxHandlerService( $link_scanner, $orphaned_scanner, $scan_cache, $ta_service, $tt_service, $unmanaged );
 

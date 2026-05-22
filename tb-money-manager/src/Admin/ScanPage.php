@@ -5,16 +5,18 @@ namespace TuinenBalkon\TBMoneyManager\Admin;
 class ScanPage {
 
 	private TradeTrackerTab $tt_tab;
-	private TATab $ta_tab;
-	private BolTab $bol_tab;
-	private GoogleTab $google_tab;
-	private SettingsTab $settings_tab;
+	private TATab           $ta_tab;
+	private BolTab          $bol_tab;
+	private GoogleTab       $google_tab;
+	private AwinTab         $awin_tab;
+	private SettingsTab     $settings_tab;
 
-	public function __construct( TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, GoogleTab $google_tab, SettingsTab $settings_tab ) {
+	public function __construct( TradeTrackerTab $tt_tab, TATab $ta_tab, BolTab $bol_tab, GoogleTab $google_tab, AwinTab $awin_tab, SettingsTab $settings_tab ) {
 		$this->tt_tab       = $tt_tab;
 		$this->ta_tab       = $ta_tab;
 		$this->bol_tab      = $bol_tab;
 		$this->google_tab   = $google_tab;
+		$this->awin_tab     = $awin_tab;
 		$this->settings_tab = $settings_tab;
 	}
 
@@ -38,6 +40,7 @@ class ScanPage {
 		$main_tabs = array(
 			'bol'          => __( 'Bol.com', 'tbmm' ),
 			'tradetracker' => __( 'TradeTracker', 'tbmm' ),
+			'awin'         => __( 'Awin', 'tbmm' ),
 			'google'       => __( 'Google', 'tbmm' ),
 			'ta'           => __( 'ThirstyAffiliates', 'tbmm' ),
 		);
@@ -86,6 +89,8 @@ class ScanPage {
 
 			<?php if ( $current_tab === 'tradetracker' ) : ?>
 				<?php $this->tt_tab->render(); ?>
+			<?php elseif ( $current_tab === 'awin' ) : ?>
+				<?php $this->awin_tab->render(); ?>
 			<?php elseif ( $current_tab === 'ta' ) : ?>
 				<?php $this->ta_tab->render(); ?>
 			<?php elseif ( $current_tab === 'google' ) : ?>
