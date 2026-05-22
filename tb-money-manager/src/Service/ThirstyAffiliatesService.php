@@ -107,6 +107,35 @@ class ThirstyAffiliatesService {
 	}
 
 	/**
+	 * Telt het aantal unieke /aanbeveling/-links per post.
+	 *
+	 * @param  int[] $post_ids
+	 * @return array<int,int>  post_id => count
+	 */
+	public function count_ta_links_per_post( array $post_ids ): array {
+		global $wpdb;
+
+		if ( empty( $post_ids ) ) {
+			return [];
+		}
+
+		$placeholders = implode( ',', array_map( 'intval', $post_ids ) );
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT ID, post_content FROM {$wpdb->posts} WHERE ID IN ({$placeholders})"
+		);
+		// phpcs:enable
+
+		$counts = array_fill_keys( array_map( 'intval', $post_ids ), 0 );
+		foreach ( $rows as $row ) {
+			preg_match_all( '~/aanbeveling/([^"\'<>\s/?#]+)~i', $row->post_content, $matches );
+			$counts[ (int) $row->ID ] = count( array_unique( $matches[1] ) );
+		}
+
+		return $counts;
+	}
+
+	/**
 	 * Geeft het totaal aantal kliks in een jaar terug.
 	 */
 	public function get_total_clicks_for_year( int $year ): int {

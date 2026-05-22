@@ -63,7 +63,7 @@ class Plugin {
 		$tt_tab           = new TradeTrackerTab( $tt_service, $ta_service, $orphaned_scanner );
 		$ta_tab           = new TATab( $ta_service, $orphaned_scanner, $scan_cache, $link_scanner, $unmanaged );
 		$bol_tab          = new BolTab();
-		$google_tab       = new GoogleTab( new SiteKitBridge() );
+		$google_tab       = new GoogleTab( new SiteKitBridge(), $ta_service );
 		$settings_tab     = new SettingsTab( $bol_tab, $tt_tab );
 		$scan_page        = new ScanPage( $tt_tab, $ta_tab, $bol_tab, $google_tab, $settings_tab );
 		new MenuService( $scan_page );

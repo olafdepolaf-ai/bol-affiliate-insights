@@ -3,13 +3,16 @@
 namespace TuinenBalkon\TBMoneyManager\Admin;
 
 use TuinenBalkon\TBMoneyManager\Google\SiteKitBridge;
+use TuinenBalkon\TBMoneyManager\Service\ThirstyAffiliatesService;
 
 class GoogleTab {
 
-	private SiteKitBridge $bridge;
+	private SiteKitBridge            $bridge;
+	private ThirstyAffiliatesService $ta_service;
 
-	public function __construct( SiteKitBridge $bridge ) {
-		$this->bridge = $bridge;
+	public function __construct( SiteKitBridge $bridge, ThirstyAffiliatesService $ta_service ) {
+		$this->bridge     = $bridge;
+		$this->ta_service = $ta_service;
 		add_action( 'admin_post_tbmm_google_clear_cache', array( $this, 'handle_clear_cache' ) );
 	}
 
@@ -19,7 +22,7 @@ class GoogleTab {
 		$gsc_period = sanitize_key( $_GET['gsc_period'] ?? '' );
 		if ( $subtab === 'adsense' ) {
 			$this->bridge->clear_adsense_cache();
-		} elseif ( $subtab === 'search_console' ) {
+		} elseif ( $subtab === 'search_console' || $subtab === 'kansen' ) {
 			$this->bridge->clear_gsc_cache();
 		} else {
 			$this->bridge->clear_all_cache();
@@ -39,6 +42,7 @@ class GoogleTab {
 		$subtabs = array(
 			'search_console' => __( 'Search Console', 'tbmm' ),
 			'adsense'        => __( 'AdSense', 'tbmm' ),
+			'kansen'         => __( 'Kansen', 'tbmm' ),
 		);
 		?>
 		<div style="max-width:960px;">
@@ -73,6 +77,8 @@ class GoogleTab {
 
 				<?php if ( $subtab === 'adsense' ) : ?>
 					<?php $this->render_adsense_subtab(); ?>
+				<?php elseif ( $subtab === 'kansen' ) : ?>
+					<?php $this->render_kansen_subtab(); ?>
 				<?php else : ?>
 					<?php $this->render_search_console_subtab(); ?>
 				<?php endif; ?>
@@ -325,6 +331,182 @@ class GoogleTab {
 			.tbmm-trend-pct   { font-size:15px; }
 			.tbmm-metric-vs   { font-size:11px; color:#949494; margin-top:2px; }
 		</style>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Kansen subtab — top GSC-pagina's gekoppeld aan affiliate link-dichtheid
+	// -------------------------------------------------------------------------
+
+	private function render_kansen_subtab(): void {
+		if ( ! $this->bridge->is_search_console_connected() ) {
+			echo '<div class="notice notice-warning inline"><p>';
+			echo '<strong>' . esc_html__( 'Search Console is niet verbonden in Site Kit.', 'tbmm' ) . '</strong> ';
+			printf(
+				/* translators: %s = link to Site Kit dashboard */
+				__( 'Ga naar %s en activeer de Search Console module.', 'tbmm' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=googlesitekit-dashboard' ) ) . '">' . esc_html__( 'Site Kit → Dashboard', 'tbmm' ) . '</a>'
+			);
+			echo '</p></div>';
+			return;
+		}
+
+		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=google&subtab=kansen' );
+		$end      = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
+		$periods  = array(
+			'last_7_days'    => array( 'start' => gmdate( 'Y-m-d', strtotime( '-7 days' ) ),    'end' => $end, 'label' => __( 'Laatste 7 dagen', 'tbmm' ) ),
+			'last_30_days'   => array( 'start' => gmdate( 'Y-m-d', strtotime( '-30 days' ) ),   'end' => $end, 'label' => __( 'Laatste 30 dagen', 'tbmm' ) ),
+			'last_90_days'   => array( 'start' => gmdate( 'Y-m-d', strtotime( '-90 days' ) ),   'end' => $end, 'label' => __( 'Laatste 90 dagen', 'tbmm' ) ),
+			'last_12_months' => array( 'start' => gmdate( 'Y-m-d', strtotime( '-12 months' ) ), 'end' => $end, 'label' => __( 'Laatste 12 maanden', 'tbmm' ) ),
+		);
+
+		$selected_period = sanitize_key( $_GET['gsc_period'] ?? 'last_30_days' );
+		if ( ! isset( $periods[ $selected_period ] ) ) {
+			$selected_period = 'last_30_days';
+		}
+
+		$start_date   = $periods[ $selected_period ]['start'];
+		$end_date     = $periods[ $selected_period ]['end'];
+		$period_label = $periods[ $selected_period ]['label'];
+
+		$result    = $this->bridge->get_gsc_top_pages( $start_date, $end_date, 50 );
+		$clear_url = add_query_arg( 'gsc_period', $selected_period, $this->make_clear_url( 'kansen' ) );
+		?>
+
+		<p style="font-size:13px; color:#3c434a; max-width:760px; margin-bottom:14px;">
+			<?php
+			echo wp_kses(
+				__( 'Top 50 pagina\'s uit Search Console gekoppeld aan het aantal <strong>ThirstyAffiliates-links</strong> in het artikel. Pagina\'s met veel organisch verkeer maar weinig of geen affiliate links zijn kansen om meer commissie te verdienen.', 'tbmm' ),
+				array( 'strong' => array() )
+			);
+			?>
+		</p>
+
+		<div style="display:flex; align-items:center; gap:16px; margin-bottom:10px;">
+			<div style="display:flex; gap:4px; flex-wrap:wrap;">
+				<?php foreach ( $periods as $slug => $info ) : ?>
+					<a href="<?php echo esc_url( $base_url . '&gsc_period=' . $slug ); ?>"
+					   class="button button-small"
+					   style="<?php echo $slug === $selected_period ? 'font-weight:600; background:#2271b1; color:#fff; border-color:#2271b1;' : ''; ?>">
+						<?php echo esc_html( $info['label'] ); ?>
+					</a>
+				<?php endforeach; ?>
+			</div>
+			<a href="<?php echo esc_url( $clear_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Cache wissen', 'tbmm' ); ?></a>
+		</div>
+
+		<?php if ( is_wp_error( $result ) ) : ?>
+			<div class="notice notice-error inline"><p><strong><?php esc_html_e( 'Fout:', 'tbmm' ); ?></strong> <?php echo esc_html( $result->get_error_message() ); ?></p></div>
+		<?php return; endif;
+
+		if ( empty( $result ) ) : ?>
+			<p><?php esc_html_e( 'Geen GSC-data beschikbaar voor deze periode.', 'tbmm' ); ?></p>
+		<?php return; endif;
+
+		// Resolve page URLs naar WP post IDs en laad TA link-tellingen in één batch.
+		$page_rows = [];
+		$post_ids  = [];
+		foreach ( $result as $row ) {
+			$url     = $this->gsc_extract_page( $row );
+			$post_id = $url ? url_to_postid( $url ) : 0;
+			$page_rows[] = array(
+				'url'        => $url,
+				'post_id'    => $post_id,
+				'clicks'     => (int) $this->gsc_get( $row, 'getClicks', 'clicks' ),
+				'impressions'=> (int) $this->gsc_get( $row, 'getImpressions', 'impressions' ),
+				'position'   => round( (float) $this->gsc_get( $row, 'getPosition', 'position' ), 1 ),
+			);
+			if ( $post_id ) {
+				$post_ids[] = $post_id;
+			}
+		}
+
+		$ta_counts = $this->ta_service->count_ta_links_per_post( array_unique( $post_ids ) );
+		?>
+
+		<style>
+			.tbmm-kansen-tbl { border-collapse:collapse; width:100%; }
+			.tbmm-kansen-tbl th, .tbmm-kansen-tbl td { padding:8px 12px; border:1px solid #e0e0e0; font-size:13px; text-align:left; vertical-align:middle; }
+			.tbmm-kansen-tbl th { background:#f6f7f7; font-weight:600; white-space:nowrap; }
+			.tbmm-kansen-tbl td.num { text-align:right; font-variant-numeric:tabular-nums; }
+			.tbmm-kansen-tbl tr:nth-child(even) { background:#fafafa; }
+			.tbmm-link-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+			.tbmm-link-red    { background:#d63638; }
+			.tbmm-link-orange { background:#dba617; }
+			.tbmm-link-green  { background:#00a32a; }
+			.tbmm-link-count  { font-weight:700; font-size:14px; }
+			.tbmm-no-post { color:#999; font-size:12px; }
+		</style>
+
+		<table class="tbmm-kansen-tbl">
+			<thead>
+				<tr>
+					<th style="width:32px;">#</th>
+					<th><?php esc_html_e( 'Pagina', 'tbmm' ); ?></th>
+					<th style="width:80px;" class="num"><?php esc_html_e( 'Klikken', 'tbmm' ); ?></th>
+					<th style="width:100px;" class="num"><?php esc_html_e( 'Vertoningen', 'tbmm' ); ?></th>
+					<th style="width:80px;" class="num"><?php esc_html_e( 'Positie', 'tbmm' ); ?></th>
+					<th style="width:100px; text-align:center;"><?php esc_html_e( 'Aff. links', 'tbmm' ); ?></th>
+					<th style="width:80px;"></th>
+				</tr>
+			</thead>
+			<tbody>
+			<?php foreach ( $page_rows as $i => $r ) :
+				$post_id  = $r['post_id'];
+				$ta_count = isset( $ta_counts[ $post_id ] ) ? $ta_counts[ $post_id ] : ( $post_id ? 0 : null );
+				$display  = $r['url'] ? preg_replace( '#^https?://[^/]+#', '', $r['url'] ) : '—';
+
+				if ( $ta_count === null ) {
+					$dot_class  = '';
+					$count_html = '<span class="tbmm-no-post">—</span>';
+				} elseif ( $ta_count === 0 ) {
+					$dot_class  = 'tbmm-link-red';
+					$count_html = '<span class="tbmm-link-count" style="color:#d63638;">0</span>';
+				} elseif ( $ta_count <= 2 ) {
+					$dot_class  = 'tbmm-link-orange';
+					$count_html = '<span class="tbmm-link-count" style="color:#dba617;">' . $ta_count . '</span>';
+				} else {
+					$dot_class  = 'tbmm-link-green';
+					$count_html = '<span class="tbmm-link-count" style="color:#00a32a;">' . $ta_count . '</span>';
+				}
+
+				$edit_url = $post_id ? admin_url( 'post.php?post=' . $post_id . '&action=edit' ) : '';
+			?>
+			<tr>
+				<td style="color:#999; font-size:12px;"><?php echo esc_html( $i + 1 ); ?></td>
+				<td>
+					<?php if ( $dot_class ) : ?>
+					<span class="tbmm-link-dot <?php echo esc_attr( $dot_class ); ?>"></span>
+					<?php endif; ?>
+					<?php if ( $r['url'] ) : ?>
+					<a href="<?php echo esc_url( $r['url'] ); ?>" target="_blank" rel="noopener" style="text-decoration:none;">
+						<?php echo esc_html( $display ?: '/' ); ?>
+					</a>
+					<?php else : ?>
+					<span style="color:#999;">—</span>
+					<?php endif; ?>
+				</td>
+				<td class="num"><?php echo esc_html( number_format_i18n( $r['clicks'] ) ); ?></td>
+				<td class="num"><?php echo esc_html( number_format_i18n( $r['impressions'] ) ); ?></td>
+				<td class="num"><?php echo esc_html( $r['position'] ); ?></td>
+				<td style="text-align:center;"><?php echo $count_html; // phpcs:ignore WordPress.Security.EscapeOutput ?></td>
+				<td style="text-align:center;">
+					<?php if ( $edit_url ) : ?>
+					<a href="<?php echo esc_url( $edit_url ); ?>" target="_blank" class="button button-small" title="<?php esc_attr_e( 'Bewerk artikel', 'tbmm' ); ?>">✎</a>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<div style="margin-top:12px; font-size:12px; color:#646970; display:flex; gap:20px;">
+			<span><span class="tbmm-link-dot tbmm-link-red" style="display:inline-block;"></span> <?php esc_html_e( '0 links — kans', 'tbmm' ); ?></span>
+			<span><span class="tbmm-link-dot tbmm-link-orange" style="display:inline-block;"></span> <?php esc_html_e( '1–2 links — kan beter', 'tbmm' ); ?></span>
+			<span><span class="tbmm-link-dot tbmm-link-green" style="display:inline-block;"></span> <?php esc_html_e( '3+ links — goed', 'tbmm' ); ?></span>
+			<span style="color:#bbb;">— <?php esc_html_e( 'geen artikel gevonden', 'tbmm' ); ?></span>
+		</div>
+		<p style="font-size:12px; color:#646970; margin-top:6px;"><?php esc_html_e( 'GSC-data gecached voor 6 uur. TA link-tellingen zijn realtime.', 'tbmm' ); ?></p>
 		<?php
 	}
 
