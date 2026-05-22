@@ -46,13 +46,6 @@ class TATab {
 		$page_url = admin_url( 'admin.php?page=tb-money-manager&tab=ta' );
 		?>
 		<style>
-			.alc-subtab-nav { display:flex; gap:0; border-bottom:1px solid #ccd0d4; margin-bottom:20px; }
-			.alc-subtab-link { padding:8px 16px; text-decoration:none; color:#3c434a; border:1px solid transparent;
-				border-bottom:none; border-radius:4px 4px 0 0; font-size:13px; }
-			.alc-subtab-link:hover { color:#2271b1; background:#f0f0f1; }
-			.alc-subtab-active { background:#fff; border-color:#ccd0d4; color:#1d2327; font-weight:600;
-				margin-bottom:-1px; padding-bottom:9px; }
-
 			.alc-ta-table { border-collapse:collapse; width:100%; margin-top:4px; }
 			.alc-ta-table th, .alc-ta-table td { padding:8px 12px; border:1px solid #e0e0e0; font-size:13px;
 				text-align:left; vertical-align:middle; }
@@ -78,14 +71,16 @@ class TATab {
 				font-size:13px; border-radius:0 4px 4px 0; margin-top:8px; }
 		</style>
 
-		<nav class="alc-subtab-nav">
+		<div class="tbmm-subnav-wrap">
+		<nav class="tbmm-subnav">
 			<?php foreach ( $subtabs as $slug => $label ) : ?>
 			<a href="<?php echo esc_url( $page_url . '&subtab=' . $slug ); ?>"
-			   class="alc-subtab-link <?php echo $current_subtab === $slug ? 'alc-subtab-active' : ''; ?>">
+			   class="<?php echo $current_subtab === $slug ? 'tbmm-subnav-active' : ''; ?>">
 				<?php echo esc_html( $label ); ?>
 			</a>
 			<?php endforeach; ?>
 		</nav>
+		</div>
 
 		<?php
 		if ( $current_subtab === 'orphaned-links' ) {

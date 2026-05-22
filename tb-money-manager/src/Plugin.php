@@ -72,7 +72,7 @@ class Plugin {
 		add_filter(
 			'plugin_action_links_' . plugin_basename( TBMM_FILE ),
 			function( array $links ): array {
-				$links[] = '<a href="' . admin_url( 'admin.php?page=tb-money-manager' ) . '">Instellingen</a>';
+				$links[] = '<a href="' . admin_url( 'admin.php?page=tb-money-manager' ) . '">' . esc_html__( 'Instellingen', 'tbmm' ) . '</a>';
 				return $links;
 			}
 		);

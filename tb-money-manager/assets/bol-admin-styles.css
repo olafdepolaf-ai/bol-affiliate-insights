@@ -1,3 +1,53 @@
+/* ── Scrollbare subtab-navigatie (gedeeld door alle tabs) ──────────── */
+.tbmm-subnav-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 20px;
+}
+.tbmm-subnav-wrap::-webkit-scrollbar { display: none; }
+
+.tbmm-subnav {
+    display: flex;
+    align-items: flex-end;
+    border-bottom: 1px solid #c3c4c7;
+    gap: 2px;
+    min-width: max-content;
+    padding-bottom: 0;
+}
+.tbmm-subnav a {
+    display: inline-block;
+    padding: 6px 14px;
+    text-decoration: none;
+    font-size: 13px;
+    color: #2271b1;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    margin-bottom: -1px;
+    white-space: nowrap;
+}
+.tbmm-subnav a:hover { background: #f0f0f1; color: #135e96; }
+.tbmm-subnav a.tbmm-subnav-active {
+    background: #fff;
+    border-color: #c3c4c7;
+    color: #1d2327;
+    font-weight: 600;
+}
+.tbmm-subnav-spacer { flex: 1 1 8px; min-width: 8px; }
+.tbmm-subnav a.tbmm-subnav-settings {
+    color: #646970;
+    font-size: 12px;
+    border-color: transparent !important;
+}
+.tbmm-subnav a.tbmm-subnav-settings:hover { color: #135e96; background: #f0f0f1; }
+.tbmm-subnav a.tbmm-subnav-settings.tbmm-subnav-active {
+    color: #1d2327;
+    background: #fff;
+    border-color: #c3c4c7 !important;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+
 /* Dashboard Period Selector */
 .dashboard-period-selector a.current,
 .dashboard-period-selector a.active { /* 'active' class might be added by WP on current page link */

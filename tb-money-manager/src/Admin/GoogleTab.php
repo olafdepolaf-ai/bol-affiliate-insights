@@ -66,13 +66,15 @@ class GoogleTab {
 				</div>
 			<?php else : ?>
 
-				<div class="alc-subtab-nav" style="display:flex; align-items:flex-end; gap:4px; margin-bottom:20px; border-bottom:1px solid #c3c4c7; padding-bottom:0;">
+				<div class="tbmm-subnav-wrap">
+				<nav class="tbmm-subnav">
 					<?php foreach ( $subtabs as $slug => $label ) : ?>
 						<a href="<?php echo esc_url( $base_url . '&subtab=' . $slug ); ?>"
-						   style="display:inline-block; padding:6px 14px; text-decoration:none; font-size:13px; color:#2271b1; border:1px solid transparent; border-bottom:none; border-radius:3px 3px 0 0; margin-bottom:-1px; <?php echo $subtab === $slug ? 'background:#fff; border-color:#c3c4c7; color:#1d2327; font-weight:600;' : ''; ?>">
+						   class="<?php echo $subtab === $slug ? 'tbmm-subnav-active' : ''; ?>">
 							<?php echo esc_html( $label ); ?>
 						</a>
 					<?php endforeach; ?>
+				</nav>
 				</div>
 
 				<?php if ( $subtab === 'adsense' ) : ?>
