@@ -45,31 +45,6 @@ class TATab {
 
 		$page_url = admin_url( 'admin.php?page=tb-money-manager&tab=ta' );
 		?>
-		<style>
-			.alc-ta-table { border-collapse:collapse; width:100%; margin-top:4px; }
-			.alc-ta-table th, .alc-ta-table td { padding:8px 12px; border:1px solid #e0e0e0; font-size:13px;
-				text-align:left; vertical-align:middle; }
-			.alc-ta-table th { background:#f6f7f7; font-weight:600; }
-			.alc-ta-table tr:nth-child(even) { background:#fafafa; }
-			.alc-ta-table td.alc-clicks-cell { text-align:right; font-variant-numeric:tabular-nums; }
-			.alc-ta-table td.alc-rank-cell { text-align:center; color:#646970; width:40px; }
-			.alc-ta-zero { color:#b0b0b0; }
-
-			.alc-ta-bar-wrap { display:inline-block; background:#e8edf0; border-radius:3px;
-				height:10px; width:80px; vertical-align:middle; margin-left:8px; overflow:hidden; }
-			.alc-ta-bar { background:#2271b1; height:100%; border-radius:3px; }
-
-			.alc-ta-pagination { display:flex; align-items:center; gap:6px; margin-top:14px; flex-wrap:wrap; }
-			.alc-ta-pagination a, .alc-ta-pagination span { padding:5px 10px; border:1px solid #ccd0d4;
-				border-radius:3px; font-size:13px; text-decoration:none; color:#2271b1; background:#fff; }
-			.alc-ta-pagination .current-page { background:#2271b1; color:#fff; border-color:#2271b1; font-weight:700; }
-			.alc-ta-pagination .dots { border:none; background:none; color:#646970; padding:5px 4px; }
-
-			.alc-ta-summary { font-size:13px; color:#646970; margin-bottom:12px; }
-
-			.alc-ta-no-table { background:#fff8e5; border-left:4px solid #f0b849; padding:12px 16px;
-				font-size:13px; border-radius:0 4px 4px 0; margin-top:8px; }
-		</style>
 
 		<div class="tbmm-subnav-wrap">
 		<nav class="tbmm-subnav">
@@ -103,11 +78,6 @@ class TATab {
 		$redir_data = $this->orphaned_scanner->get_redirection_404s( $selected_period );
 		$nonce      = wp_create_nonce( 'tbmm_orphan_nonce' );
 		?>
-		<style>
-			.alc-articles-row td { padding:6px 12px !important; }
-			.alc-articles-list { margin:4px 0 0; padding:0; list-style:none; }
-			.alc-articles-list li { margin-bottom:3px; font-size:12px; }
-		</style>
 
 		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
 			<?php
@@ -155,7 +125,7 @@ class TATab {
 		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen /aanbeveling/ 404-hits gevonden voor deze periode.', 'tbmm' ); ?></p>
 
 		<?php else : ?>
-		<table class="alc-ta-table">
+		<table class="tbmm-table alc-ta-table">
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'URL', 'tbmm' ); ?></th>
@@ -259,11 +229,6 @@ class TATab {
 		$cached = $this->scan_cache->get( 'orphaned_aanbeveling' );
 		$nonce  = wp_create_nonce( 'tbmm_orphan_nonce' );
 		?>
-		<style>
-			.alc-scan-meta { font-size:13px; color:#646970; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
-			.alc-orphan-progress-wrap { background:#e0e0e0; border-radius:4px; height:10px; max-width:500px; overflow:hidden; }
-			.alc-orphan-bar { background:#2271b1; height:100%; width:0%; transition:width 0.25s; border-radius:4px; }
-		</style>
 
 		<p style="font-size:13px; color:#3c434a; max-width:700px; margin-bottom:14px;">
 			<?php
@@ -296,7 +261,7 @@ class TATab {
 		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen orphaned /aanbeveling/ links gevonden.', 'tbmm' ); ?></p>
 
 		<?php else : ?>
-		<table class="alc-ta-table">
+		<table class="tbmm-table alc-ta-table">
 			<thead>
 				<tr>
 					<th class="alc-rank-cell">#</th>
@@ -335,8 +300,8 @@ class TATab {
 		<?php endif; ?>
 
 		<div id="alc-orphan-progress" style="display:none; margin-top:16px;">
-			<div class="alc-orphan-progress-wrap">
-				<div id="alc-orphan-bar" class="alc-orphan-bar"></div>
+			<div class="tbmm-progress">
+				<div id="alc-orphan-bar" class="tbmm-progress-fill"></div>
 			</div>
 			<p id="alc-orphan-label" style="font-size:13px; color:#646970; margin-top:6px;"></p>
 		</div>
@@ -488,19 +453,19 @@ class TATab {
 			?>
 		</p>
 
-		<div class="alc-stats-box">
-			<div class="alc-stats-numbers">
-				<div class="alc-stat">
-					<span class="alc-stat-number"><?php echo esc_html( $stats['total'] ); ?></span>
-					<span class="alc-stat-label"><?php esc_html_e( 'Totaal links', 'tbmm' ); ?></span>
+		<div class="tbmm-stats-box">
+			<div class="tbmm-stats-numbers">
+				<div class="tbmm-stat">
+					<span class="tbmm-stat-number"><?php echo esc_html( $stats['total'] ); ?></span>
+					<span class="tbmm-stat-label"><?php esc_html_e( 'Totaal links', 'tbmm' ); ?></span>
 				</div>
-				<div class="alc-stat alc-stat-skip">
-					<span class="alc-stat-number"><?php echo esc_html( $stats['bol_count'] ); ?></span>
-					<span class="alc-stat-label"><?php esc_html_e( 'Bol.com (overgeslagen)', 'tbmm' ); ?></span>
+				<div class="tbmm-stat tbmm-stat-skip">
+					<span class="tbmm-stat-number"><?php echo esc_html( $stats['bol_count'] ); ?></span>
+					<span class="tbmm-stat-label"><?php esc_html_e( 'Bol.com (overgeslagen)', 'tbmm' ); ?></span>
 				</div>
-				<div class="alc-stat alc-stat-scan">
-					<span class="alc-stat-number"><?php echo esc_html( $stats['scan_count'] ); ?></span>
-					<span class="alc-stat-label"><?php esc_html_e( 'Te scannen', 'tbmm' ); ?></span>
+				<div class="tbmm-stat tbmm-stat-scan">
+					<span class="tbmm-stat-number"><?php echo esc_html( $stats['scan_count'] ); ?></span>
+					<span class="tbmm-stat-label"><?php esc_html_e( 'Te scannen', 'tbmm' ); ?></span>
 				</div>
 			</div>
 
@@ -534,36 +499,11 @@ class TATab {
 		<?php endif; ?>
 
 		<div id="alc-progress" style="display:none; margin-top:20px;">
-			<div class="alc-progress-bar-wrap"><div id="alc-progress-bar" class="alc-progress-bar"></div></div>
+			<div class="tbmm-progress"><div id="alc-progress-bar" class="tbmm-progress-fill"></div></div>
 			<p id="alc-progress-label"></p>
 		</div>
 		<div id="alc-results" style="margin-top:20px;"></div>
 
-		<style>
-			.alc-stats-box { background:#fff; border:1px solid #ccd0d4; border-radius:4px; padding:16px 20px; max-width:680px; }
-			.alc-stats-numbers { display:flex; gap:32px; margin-bottom:16px; }
-			.alc-stat { display:flex; flex-direction:column; }
-			.alc-stat-number { font-size:28px; font-weight:700; line-height:1; }
-			.alc-stat-label { font-size:12px; color:#646970; margin-top:4px; }
-			.alc-stat-skip .alc-stat-number { color:#646970; }
-			.alc-stat-scan .alc-stat-number { color:#2271b1; }
-			.alc-domain-table { border-collapse:collapse; width:100%; }
-			.alc-domain-table th, .alc-domain-table td { padding:5px 10px; border:1px solid #e0e0e0; font-size:13px; }
-			.alc-domain-table th { background:#f6f7f7; font-weight:600; }
-			.alc-domain-skip td { color:#999; font-style:italic; }
-			.alc-progress-bar-wrap { background:#e0e0e0; border-radius:4px; height:10px; width:100%; max-width:500px; overflow:hidden; }
-			.alc-progress-bar { background:#2271b1; height:100%; width:0%; transition:width 0.2s; border-radius:4px; }
-			#alc-progress-label { color:#646970; font-size:13px; margin-top:6px; }
-			#alc-results table { border-collapse:collapse; width:100%; margin-top:10px; }
-			#alc-results th, #alc-results td { padding:8px 12px; border:1px solid #ccd0d4; text-align:left; vertical-align:top; }
-			#alc-results th { background:#f0f0f1; font-weight:600; }
-			#alc-results tr:nth-child(even) { background:#f9f9f9; }
-			.alc-status-404 { color:#d63638; font-weight:bold; }
-			.alc-status-5xx { color:#996800; font-weight:bold; }
-			.alc-status-0   { color:#888; font-weight:bold; }
-			.alc-post-list  { margin:0; padding:0; list-style:none; }
-			.alc-post-list li { margin-bottom:2px; }
-		</style>
 
 		<script>
 		(function() {
@@ -672,19 +612,6 @@ class TATab {
 		) . '</p>';
 
 		?>
-		<style>
-			.tbmm-type-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
-			.tbmm-badge-bol_tracked    { background:#dbeafe; color:#1d4ed8; }
-			.tbmm-badge-tradetracker   { background:#fef9c3; color:#92400e; }
-			.tbmm-badge-bol_direct     { background:#fee2e2; color:#991b1b; }
-			.tbmm-badge-amazon_tracked { background:#ffedd5; color:#9a3412; }
-			.tbmm-badge-amazon_direct  { background:#b32d2e; color:#fff; font-weight:700; }
-			.tbmm-match-yes { color:#00a32a; font-weight:600; }
-			.tbmm-match-no  { color:#b32d2e; }
-			.tbmm-url-cell  { font-size:11px; word-break:break-all; max-width:280px; color:#444; }
-			.tbmm-patterns-box { background:#f6f7f7; border:1px solid #c3c4c7; border-radius:4px; padding:14px 18px; margin-bottom:16px; }
-			.tbmm-patterns-box label { margin-right:20px; font-size:13px; }
-		</style>
 
 		<div class="tbmm-patterns-box">
 			<strong style="display:block;margin-bottom:8px;"><?php esc_html_e( 'Zoekpatronen (actief bij volgende scan):', 'tbmm' ); ?></strong>
@@ -718,8 +645,8 @@ class TATab {
 				</span>
 			</div>
 			<div id="tbmm-scan-progress-wrap" style="display:none;margin-top:10px;">
-				<div style="background:#e0e0e0;border-radius:3px;height:10px;width:100%;max-width:500px;overflow:hidden;">
-					<div id="tbmm-scan-bar" style="background:#2271b1;height:100%;width:0%;transition:width 0.2s;"></div>
+				<div class="tbmm-progress">
+					<div id="tbmm-scan-bar" class="tbmm-progress-fill"></div>
 				</div>
 				<p id="tbmm-scan-label" style="font-size:13px;color:#646970;margin-top:6px;"></p>
 			</div>

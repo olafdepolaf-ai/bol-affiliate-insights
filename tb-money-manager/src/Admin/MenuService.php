@@ -16,18 +16,15 @@ class MenuService {
 		if ( 'toplevel_page_tb-money-manager' !== $hook ) {
 			return;
 		}
-		if ( ( $_GET['tab'] ?? '' ) !== 'bol' ) {
-			return;
-		}
 
 		$assets_url  = plugins_url( 'assets/', TBMM_FILE );
 		$assets_path = TBMM_PATH . 'assets/';
 
 		wp_enqueue_style(
-			'alc-bol-admin-styles',
-			$assets_url . 'bol-admin-styles.css',
+			'tbmm-admin',
+			$assets_url . 'tbmm-admin.css',
 			array(),
-			filemtime( $assets_path . 'bol-admin-styles.css' )
+			filemtime( $assets_path . 'tbmm-admin.css' )
 		);
 
 		wp_register_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), null, true );

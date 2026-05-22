@@ -329,16 +329,7 @@ class TradeTrackerTab {
 		$totals = array_fill_keys( array_keys( $cols ), 0.0 );
 		?>
 
-		<style>
-			.alc-report th, .alc-report td { padding:7px 12px; border:1px solid #e0e0e0; text-align:right; white-space:nowrap; }
-			.alc-report th { background:#f6f7f7; font-weight:600; }
-			.alc-report td:first-child, .alc-report th:first-child { text-align:left; }
-			.alc-report tr.alc-future td { color:#bbb; }
-			.alc-report tr.alc-total td { background:#f0f6fc; font-weight:700; border-top:2px solid #2271b1; }
-			.alc-report td.alc-zero { color:#bbb; }
-		</style>
-
-		<table class="widefat alc-report" style="max-width:900px; border-collapse:collapse;">
+		<table class="tbmm-table alc-report widefat" style="max-width:900px;">
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Maand', 'tbmm' ); ?></th>
@@ -450,22 +441,9 @@ class TradeTrackerTab {
 			?>
 		</p>
 
-		<style>
-			.alc-toplinks { border-collapse:collapse; width:100%; max-width:720px; }
-			.alc-toplinks th, .alc-toplinks td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
-			.alc-toplinks th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
-			.alc-toplinks td.alc-tl-count { text-align:right; font-weight:700; font-size:15px; color:#2271b1; white-space:nowrap; }
-			.alc-toplinks td.alc-tl-ref { font-family:monospace; font-size:12px; }
-			.alc-toplinks td.alc-tl-link { text-align:center; width:32px; }
-			.alc-toplinks td.alc-tl-link a { color:#2271b1; text-decoration:none; font-size:15px; }
-			.alc-toplinks td.alc-tl-link a:hover { color:#135e96; }
-			.alc-tl-bar-wrap { background:#e8f0fb; border-radius:3px; height:6px; min-width:40px; max-width:160px; margin-top:4px; }
-			.alc-tl-bar { background:#2271b1; height:6px; border-radius:3px; }
-		</style>
-
 		<?php $max_count = ! empty( $page_groups ) ? $page_groups[0]['count'] : 1; ?>
 
-		<table class="alc-toplinks">
+		<table class="tbmm-table alc-toplinks">
 			<thead>
 				<tr>
 					<th>#</th>
@@ -500,7 +478,7 @@ class TradeTrackerTab {
 					<td class="alc-tl-ref"><?php echo esc_html( $group['reference'] !== '' ? $group['reference'] : '—' ); ?></td>
 					<td class="alc-tl-count">
 						<?php echo esc_html( $group['count'] ); ?>
-						<div class="alc-tl-bar-wrap"><div class="alc-tl-bar" style="width:<?php echo esc_attr( $bar_pct ); ?>%"></div></div>
+						<div class="tbmm-bar"><div class="tbmm-bar-fill" style="width:<?php echo esc_attr( $bar_pct ); ?>%"></div></div>
 					</td>
 					<td class="alc-tl-link">
 						<?php if ( $link_url ) : ?>
@@ -515,7 +493,7 @@ class TradeTrackerTab {
 		</table>
 
 		<?php if ( $total_pages > 1 ) : ?>
-		<div class="alc-pagination" style="margin-top:12px;">
+		<div class="tbmm-pagination">
 			<?php if ( $current_page > 1 ) : ?>
 			<a href="<?php echo esc_url( $paged_url . '&refpaged=' . ( $current_page - 1 ) ); ?>">‹ <?php esc_html_e( 'Vorige', 'tbmm' ); ?></a>
 			<?php endif; ?>
@@ -611,21 +589,6 @@ class TradeTrackerTab {
 		$page_clicks  = array_slice( $clicks, $offset, $per_page );
 		?>
 
-		<style>
-			.alc-clicks-tbl { border-collapse:collapse; width:100%; max-width:1100px; }
-			.alc-clicks-tbl th, .alc-clicks-tbl td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
-			.alc-clicks-tbl th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
-			.alc-clicks-tbl td.alc-ref { font-family:monospace; font-size:12px; }
-			.alc-clicks-tbl td.alc-id  { color:#646970; font-size:12px; }
-			.alc-clicks-tbl td.alc-src { max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#646970; }
-
-			.alc-pagination { display:flex; align-items:center; gap:6px; margin-top:16px; flex-wrap:wrap; }
-			.alc-pagination a, .alc-pagination span { display:inline-block; padding:4px 10px; border:1px solid #c3c4c7; border-radius:3px; font-size:13px; text-decoration:none; color:#2271b1; background:#fff; }
-			.alc-pagination span.current { background:#2271b1; color:#fff; border-color:#2271b1; font-weight:600; }
-			.alc-pagination span.dots { border:none; color:#646970; }
-			.alc-pagination a:hover { background:#f0f0f1; }
-			.alc-clicks-meta { color:#646970; font-size:13px; margin-bottom:10px; }
-		</style>
 
 		<?php if ( isset( $_GET['cache_cleared'] ) ) : ?>
 		<div class="notice notice-success is-dismissible" style="margin-bottom:10px;"><p><?php esc_html_e( 'Cache gewist — data wordt opnieuw opgehaald bij TradeTracker.', 'tbmm' ); ?></p></div>
@@ -662,7 +625,7 @@ class TradeTrackerTab {
 			<a href="<?php echo esc_url( $flush_url ); ?>" class="button button-small">↻ <?php esc_html_e( 'Vernieuwen', 'tbmm' ); ?></a>
 		</p>
 
-		<table class="alc-clicks-tbl">
+		<table class="tbmm-table alc-clicks-tbl">
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Datum', 'tbmm' ); ?></th>
@@ -701,7 +664,7 @@ class TradeTrackerTab {
 		</table>
 
 		<?php if ( $total_pages > 1 ) : ?>
-		<div class="alc-pagination">
+		<div class="tbmm-pagination">
 			<?php if ( $current_page > 1 ) : ?>
 			<a href="<?php echo esc_url( $subtab_url . '&paged=' . ( $current_page - 1 ) ); ?>">‹ <?php esc_html_e( 'Vorige', 'tbmm' ); ?></a>
 			<?php endif; ?>
@@ -778,21 +741,6 @@ class TradeTrackerTab {
 		usort( $campaign_list, fn( $a, $b ) => strcmp( $a['name'], $b['name'] ) );
 		?>
 
-		<style>
-			.alc-gen-wrap { max-width:640px; }
-			.alc-gen-wrap label { display:block; font-weight:600; font-size:13px; margin-bottom:4px; }
-			.alc-gen-wrap .alc-gen-field { margin-bottom:18px; }
-			.alc-gen-wrap select, .alc-gen-wrap input[type=text], .alc-gen-wrap input[type=url] { width:100%; max-width:560px; }
-			.alc-gen-url-hint { font-size:12px; margin-top:5px; padding:4px 8px; border-radius:3px; display:none; }
-			.alc-gen-url-hint.success { background:#edfaef; color:#00a32a; border:1px solid #b8e6be; }
-			.alc-gen-url-hint.warning { background:#fcf9e8; color:#996800; border:1px solid #f0d97e; }
-			.alc-gen-result { background:#f0f6fc; border:1px solid #c3d9f0; border-radius:4px; padding:12px 16px; margin-top:20px; display:none; }
-			.alc-gen-result label { font-weight:600; font-size:12px; color:#1d2327; margin-bottom:6px; }
-			.alc-gen-result-url { font-family:monospace; font-size:13px; word-break:break-all; color:#1d2327; }
-			.alc-gen-source { font-size:11px; color:#646970; margin-top:6px; }
-			.alc-gen-copy { margin-top:10px; }
-			.alc-gen-copied { color:#00a32a; font-size:12px; margin-left:8px; display:none; }
-		</style>
 
 		<div class="alc-gen-wrap">
 			<div class="alc-gen-field">
@@ -1102,19 +1050,6 @@ class TradeTrackerTab {
 		$total_count      = array_sum( array_column( $summary, 'count' ) );
 		?>
 
-		<style>
-			.alc-sales-summary { display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
-			.alc-sales-card { background:#fff; border:1px solid #ccd0d4; border-radius:4px; padding:12px 18px; min-width:160px; }
-			.alc-sales-card .alc-card-num { font-size:22px; font-weight:700; }
-			.alc-sales-card .alc-card-sub { font-size:12px; color:#646970; margin-top:2px; }
-			.alc-sales-card.alc-card-total .alc-card-num { color:#2271b1; }
-
-			.alc-sales-tbl { border-collapse:collapse; width:100%; max-width:1000px; }
-			.alc-sales-tbl th, .alc-sales-tbl td { padding:7px 12px; border:1px solid #e0e0e0; font-size:13px; }
-			.alc-sales-tbl th { background:#f6f7f7; font-weight:600; text-align:left; white-space:nowrap; }
-			.alc-sales-tbl td.num { text-align:right; white-space:nowrap; }
-			.alc-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; color:#fff; white-space:nowrap; }
-		</style>
 
 		<div class="alc-sales-summary">
 			<div class="alc-sales-card alc-card-total">
@@ -1144,7 +1079,7 @@ class TradeTrackerTab {
 			<?php endforeach; ?>
 		</div>
 
-		<table class="alc-sales-tbl">
+		<table class="tbmm-table alc-sales-tbl">
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Registratiedatum', 'tbmm' ); ?></th>
@@ -1240,26 +1175,6 @@ class TradeTrackerTab {
 		$nonce = wp_create_nonce( 'tbmm_tt_feed_nonce' );
 		?>
 
-		<style>
-			.alc-pf-filters { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-			.alc-pf-filters label { display:block; font-weight:600; font-size:12px; margin-bottom:3px; color:#1d2327; }
-			.alc-pf-filters select, .alc-pf-filters input[type=text] { font-size:13px; }
-			.alc-pf-results { margin-top:4px; }
-			.alc-pf-table { border-collapse:collapse; width:100%; }
-			.alc-pf-table th { background:#f6f7f7; font-weight:600; font-size:12px; padding:8px 10px; border:1px solid #e0e0e0; text-align:left; white-space:nowrap; }
-			.alc-pf-table td { padding:8px 10px; border:1px solid #e0e0e0; vertical-align:top; font-size:13px; }
-			.alc-pf-photo-col { width:110px; min-width:110px; max-width:110px; text-align:center; }
-			.alc-pf-photo-col img { max-width:100px; max-height:100px; object-fit:contain; border-radius:3px; }
-			.alc-pf-photo-col .alc-pf-no-img { width:100px; height:80px; background:#f0f0f1; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#bbb; margin:0 auto; }
-			.alc-pf-name { font-weight:600; font-size:13px; margin-bottom:3px; }
-			.alc-pf-cat  { font-size:11px; color:#646970; margin-bottom:4px; }
-			.alc-pf-desc { font-size:12px; color:#3c434a; line-height:1.5; }
-			.alc-pf-price-col { width:80px; text-align:right; font-weight:700; white-space:nowrap; }
-			.alc-pf-action-col { width:90px; text-align:center; white-space:nowrap; }
-			.alc-pf-campaign-col { width:140px; font-size:12px; color:#646970; }
-			.alc-pf-status { padding:12px; font-size:13px; color:#646970; }
-			.alc-pf-more { margin-top:12px; }
-		</style>
 
 		<div class="alc-pf-filters">
 			<div>
@@ -1517,11 +1432,6 @@ class TradeTrackerTab {
 		$links = $this->ta_service->get_links_by_destination( 'fonq' );
 		$nonce = wp_create_nonce( 'tbmm_orphan_nonce' );
 		?>
-		<style>
-			.alc-fonq-articles-row td { padding:6px 12px !important; background:#f9f9f9; }
-			.alc-fonq-articles-list  { margin:4px 0 0; padding:0; list-style:none; }
-			.alc-fonq-articles-list li { margin-bottom:3px; font-size:12px; }
-		</style>
 
 		<?php if ( empty( $links ) ) : ?>
 		<p style="color:#646970; font-size:13px;"><?php esc_html_e( 'Geen actieve FONQ.nl links gevonden in ThirstyAffiliates.', 'tbmm' ); ?></p>

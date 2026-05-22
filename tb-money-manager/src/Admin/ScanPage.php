@@ -68,64 +68,7 @@ class ScanPage {
 			<script>setTimeout(function(){ window.location.href = <?php echo wp_json_encode( $update_redirect ); ?>; }, 1200);</script>
 			<?php endif; ?>
 
-			<style>
-				/* ── Scrollbare hoofdnavigatie ─────────────────────────────── */
-				.tbmm-nav-wrap {
-					overflow-x: auto;
-					-webkit-overflow-scrolling: touch;
-					scrollbar-width: none;
-					margin-bottom: 20px;
-				}
-				.tbmm-nav-wrap::-webkit-scrollbar { display: none; }
-
-				.tbmm-nav {
-					display: flex;
-					align-items: flex-end;
-					border-bottom: 2px solid #c3c4c7;
-					min-width: max-content;
-					gap: 2px;
-				}
-
-				.tbmm-nav a {
-					display: inline-block;
-					padding: 8px 16px;
-					text-decoration: none;
-					font-size: 13px;
-					color: #2271b1;
-					border-bottom: 2px solid transparent;
-					margin-bottom: -2px;
-					white-space: nowrap;
-					transition: color .1s, border-color .1s;
-					border-radius: 3px 3px 0 0;
-				}
-				.tbmm-nav a:hover {
-					color: #135e96;
-					border-bottom-color: #72aee6;
-					background: #f0f6fc;
-				}
-				.tbmm-nav a.tbmm-nav-active {
-					color: #1d2327;
-					font-weight: 600;
-					border-bottom-color: #2271b1;
-					background: transparent;
-				}
-
-				/* Instellingen-tab rechts */
-				.tbmm-nav-spacer { flex: 1 1 16px; }
-				.tbmm-nav-settings {
-					color: #646970 !important;
-					font-size: 12px !important;
-					padding: 8px 14px !important;
-					gap: 4px;
-				}
-				.tbmm-nav-settings:hover { color: #135e96 !important; background: #f0f0f1 !important; }
-				.tbmm-nav-settings.tbmm-nav-active {
-					color: #1d2327 !important;
-					font-weight: 600 !important;
-				}
-			</style>
-
-			<div class="tbmm-nav-wrap">
+<div class="tbmm-nav-wrap">
 				<nav class="tbmm-nav" role="navigation">
 					<?php foreach ( $main_tabs as $slug => $label ) : ?>
 					<a href="<?php echo esc_url( $page_url . '&tab=' . $slug ); ?>"

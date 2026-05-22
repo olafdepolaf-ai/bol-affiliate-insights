@@ -311,28 +311,6 @@ class GoogleTab {
 
 	private function render_metric_styles(): void {
 		?>
-		<style>
-			.tbmm-metrics-row { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px; }
-			.tbmm-metric-box {
-				border:1px solid #ccd0d4; border-bottom-width:3px;
-				padding:14px 16px; min-width:130px; flex:1;
-				background:#fff; box-shadow:0 1px 1px rgba(0,0,0,.04);
-				text-align:center; border-bottom-color:#ccd0d4;
-			}
-			.tbmm-metric-box.tbmm-trend-up   { border-bottom-color:#00a32a; }
-			.tbmm-metric-box.tbmm-trend-down  { border-bottom-color:#b32d2e; }
-			.tbmm-metric-label { font-size:12px; color:#646970; margin-bottom:6px; }
-			.tbmm-metric-value { font-size:1.6em; font-weight:600; line-height:1.2; color:#1d2327; }
-			.tbmm-metric-trend {
-				margin-top:8px; font-size:13px; font-weight:600;
-				display:flex; align-items:center; justify-content:center; gap:3px;
-			}
-			.tbmm-metric-trend.up   { color:#00a32a; }
-			.tbmm-metric-trend.down { color:#b32d2e; }
-			.tbmm-trend-arrow { font-size:11px; }
-			.tbmm-trend-pct   { font-size:15px; }
-			.tbmm-metric-vs   { font-size:11px; color:#949494; margin-top:2px; }
-		</style>
 		<?php
 	}
 
@@ -426,21 +404,7 @@ class GoogleTab {
 		$ta_counts = $this->ta_service->count_ta_links_per_post( array_unique( $post_ids ) );
 		?>
 
-		<style>
-			.tbmm-kansen-tbl { border-collapse:collapse; width:100%; }
-			.tbmm-kansen-tbl th, .tbmm-kansen-tbl td { padding:8px 12px; border:1px solid #e0e0e0; font-size:13px; text-align:left; vertical-align:middle; }
-			.tbmm-kansen-tbl th { background:#f6f7f7; font-weight:600; white-space:nowrap; }
-			.tbmm-kansen-tbl td.num { text-align:right; font-variant-numeric:tabular-nums; }
-			.tbmm-kansen-tbl tr:nth-child(even) { background:#fafafa; }
-			.tbmm-link-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
-			.tbmm-link-red    { background:#d63638; }
-			.tbmm-link-orange { background:#dba617; }
-			.tbmm-link-green  { background:#00a32a; }
-			.tbmm-link-count  { font-weight:700; font-size:14px; }
-			.tbmm-no-post { color:#999; font-size:12px; }
-		</style>
-
-		<table class="tbmm-kansen-tbl">
+		<table class="tbmm-table tbmm-kansen-tbl">
 			<thead>
 				<tr>
 					<th style="width:32px;">#</th>
