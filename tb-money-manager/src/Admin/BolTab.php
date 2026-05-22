@@ -58,17 +58,11 @@ class BolTab {
 				<?php echo esc_html( $label ); ?>
 			</a>
 			<?php endforeach; ?>
-			<span class="tbmm-subnav-spacer"></span>
-			<a href="<?php echo esc_url( $base_url . '&subtab=settings' ); ?>"
-			   class="tbmm-subnav-settings <?php echo $subtab === 'settings' ? 'tbmm-subnav-active' : ''; ?>">
-				⚙ <?php esc_html_e( 'Instellingen', 'tbmm' ); ?>
-			</a>
 		</nav>
 		</div>
 
 		<?php
-		$valid_subtabs = array_merge( array_keys( $left_subtabs ), array( 'settings' ) );
-		if ( ! in_array( $subtab, $valid_subtabs, true ) ) {
+		if ( ! array_key_exists( $subtab, $left_subtabs ) ) {
 			$subtab = 'dashboard';
 		}
 		$this->settings_page->render_content( $subtab );

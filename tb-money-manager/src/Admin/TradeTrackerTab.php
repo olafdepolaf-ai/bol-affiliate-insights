@@ -73,11 +73,6 @@ class TradeTrackerTab {
 				<?php echo esc_html( $label ); ?>
 			</a>
 			<?php endforeach; ?>
-			<span class="tbmm-subnav-spacer"></span>
-			<a href="<?php echo esc_url( $base_url . '&subtab=settings' ); ?>"
-			   class="tbmm-subnav-settings <?php echo $subtab === 'settings' ? 'tbmm-subnav-active' : ''; ?>">
-				⚙ <?php esc_html_e( 'Instellingen', 'tbmm' ); ?>
-			</a>
 		</nav>
 		</div>
 
@@ -86,7 +81,6 @@ class TradeTrackerTab {
 			'kliks'         => $this->render_clicks_subtab(),
 			'rapport'       => $this->render_rapport_subtab( $base_url ),
 			'linkgenerator' => $this->render_linkgenerator_subtab(),
-			'settings'      => $this->render_settings_subtab(),
 			'fonq'          => $this->render_fonq_subtab(),
 			'productfeed'   => $this->render_productfeed_subtab(),
 			default         => $this->render_sales_subtab(),
