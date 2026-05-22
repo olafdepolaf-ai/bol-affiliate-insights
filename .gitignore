@@ -14,6 +14,10 @@ CLAUDE.md
 
 # External plugin copies (reference only, not part of this codebase)
 thirstyaffiliates/
+sitekit plugin/
+
+# Lokale planning — niet committen
+TODO.md
 
 # Environment / secrets
 .env
