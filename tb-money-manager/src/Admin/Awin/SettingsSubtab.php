@@ -19,16 +19,16 @@ class SettingsSubtab {
 			update_option( 'tbmm_awin_api_token',    sanitize_text_field( wp_unslash( $_POST['tbmm_awin_api_token']    ?? '' ) ) );
 			update_option( 'tbmm_awin_publisher_id', sanitize_text_field( wp_unslash( $_POST['tbmm_awin_publisher_id'] ?? '' ) ) );
 			$this->service->clear_cache();
+			delete_option( 'tbmm_awin_connection_status' );
 			$notice = '<div class="notice notice-success inline"><p>' . esc_html__( 'Instellingen opgeslagen en cache gewist.', 'tbmm' ) . '</p></div>';
 		}
 
-		if ( isset( $_POST['tbmm_awin_clear_cache'] ) && check_admin_referer( 'tbmm_awin_settings', 'tbmm_awin_nonce' ) ) {
-			$this->service->clear_cache();
-			$notice = '<div class="notice notice-success inline"><p>' . esc_html__( 'Cache gewist.', 'tbmm' ) . '</p></div>';
+		if ( isset( $_POST['tbmm_awin_check'] ) && check_admin_referer( 'tbmm_awin_settings', 'tbmm_awin_nonce' ) ) {
+			$notice = $this->do_connection_check();
 		}
 
-		$token    = $this->service->get_api_token();
-		$pub_id   = $this->service->get_publisher_id();
+		$token     = $this->service->get_api_token();
+		$pub_id    = $this->service->get_publisher_id();
 		$has_creds = ! empty( $token ) && ! empty( $pub_id );
 
 		echo wp_kses_post( $notice );
@@ -56,7 +56,7 @@ class SettingsSubtab {
 			</table>
 			<button type="submit" name="tbmm_awin_save" class="button button-primary"><?php esc_html_e( 'Opslaan', 'tbmm' ); ?></button>
 			<?php if ( $has_creds ) : ?>
-			<button type="submit" name="tbmm_awin_clear_cache" class="button" style="margin-left:8px;"><?php esc_html_e( 'Cache vernieuwen', 'tbmm' ); ?></button>
+			<button type="submit" name="tbmm_awin_check" class="button" style="margin-left:8px;"><?php esc_html_e( 'Verbinding testen', 'tbmm' ); ?></button>
 			<?php endif; ?>
 		</form>
 
@@ -64,34 +64,57 @@ class SettingsSubtab {
 		<p style="margin-top:16px;"><em><?php esc_html_e( 'Vul de API-token en Publisher ID in om verbinding te maken.', 'tbmm' ); ?></em></p>
 		<?php return; endif;
 
-		$this->render_connection_status();
+		$this->render_stored_status();
 	}
 
-	private function render_connection_status(): void {
+	private function do_connection_check(): string {
 		$profile = $this->service->get_profile();
 
 		if ( is_wp_error( $profile ) ) {
-			echo '<div class="notice notice-error inline" style="margin-top:16px;"><p><strong>'
+			delete_option( 'tbmm_awin_connection_status' );
+			return '<div class="notice notice-error inline"><p><strong>'
 				. esc_html__( 'Verbindingsfout:', 'tbmm' )
 				. '</strong> ' . esc_html( $profile->get_error_message() ) . '</p></div>';
+		}
+
+		update_option( 'tbmm_awin_connection_status', [
+			'publisher_id'    => $profile['id'] ?? $this->service->get_publisher_id(),
+			'programme_count' => $profile['programmeCount'] ?? '—',
+			'checked_at'      => time(),
+		], false );
+
+		return '';
+	}
+
+	private function render_stored_status(): void {
+		$status = get_option( 'tbmm_awin_connection_status', false );
+
+		if ( ! $status ) {
+			echo '<p style="margin-top:16px; color:#646970;"><em>'
+				. esc_html__( 'Verbinding nog niet getest. Klik op "Verbinding testen" om te controleren.', 'tbmm' )
+				. '</em></p>';
 			return;
 		}
+
+		$checked_at = isset( $status['checked_at'] )
+			? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $status['checked_at'] )
+			: '—';
 		?>
 		<div style="margin-top:20px; background:#edfaef; border:1px solid #b8e6be; border-radius:4px; padding:12px 16px; max-width:560px;">
 			<p style="margin:0 0 8px; font-weight:600; color:#00a32a;">✓ <?php esc_html_e( 'Verbinding actief', 'tbmm' ); ?></p>
 			<table style="border-collapse:collapse; font-size:13px; width:100%;">
-				<?php
-				$rows = [
-					__( 'Publisher ID', 'tbmm' )    => $profile['id'] ?? $this->service->get_publisher_id(),
-					__( 'Programmes', 'tbmm' )      => $profile['programmeCount'] ?? '—',
-				];
-				foreach ( $rows as $label => $value ) :
-				?>
 				<tr>
-					<td style="padding:3px 0; color:#646970; width:130px;"><?php echo esc_html( $label ); ?></td>
-					<td style="padding:3px 0;"><?php echo esc_html( (string) $value ); ?></td>
+					<td style="padding:3px 0; color:#646970; width:130px;"><?php esc_html_e( 'Publisher ID', 'tbmm' ); ?></td>
+					<td style="padding:3px 0;"><?php echo esc_html( (string) ( $status['publisher_id'] ?? '—' ) ); ?></td>
 				</tr>
-				<?php endforeach; ?>
+				<tr>
+					<td style="padding:3px 0; color:#646970;"><?php esc_html_e( 'Programmes', 'tbmm' ); ?></td>
+					<td style="padding:3px 0;"><?php echo esc_html( (string) ( $status['programme_count'] ?? '—' ) ); ?></td>
+				</tr>
+				<tr>
+					<td style="padding:3px 0; color:#646970;"><?php esc_html_e( 'Gecontroleerd op', 'tbmm' ); ?></td>
+					<td style="padding:3px 0;"><?php echo esc_html( $checked_at ); ?></td>
+				</tr>
 			</table>
 		</div>
 		<?php
