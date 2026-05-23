@@ -82,10 +82,8 @@ class SettingsSubtab {
 			<table style="border-collapse:collapse; font-size:13px; width:100%;">
 				<?php
 				$rows = [
-					__( 'Account', 'tbmm' )    => $profile['accountName'] ?? $profile['name'] ?? '—',
-					__( 'Publisher ID', 'tbmm' )=> $profile['id'] ?? $this->service->get_publisher_id(),
-					__( 'Valuta', 'tbmm' )     => $profile['currencySymbol'] ?? $profile['currency'] ?? '—',
-					__( 'Land', 'tbmm' )       => $profile['primaryRegion'] ?? $profile['country'] ?? '—',
+					__( 'Publisher ID', 'tbmm' )    => $profile['id'] ?? $this->service->get_publisher_id(),
+					__( 'Programmes', 'tbmm' )      => $profile['programmeCount'] ?? '—',
 				];
 				foreach ( $rows as $label => $value ) :
 				?>

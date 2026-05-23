@@ -19,27 +19,23 @@ class AwinService {
 	}
 
 	/** @return array|WP_Error */
-	/** @return array|WP_Error */
+	/**
+	 * Verbindingstest: haalt joined programmes op en geeft een synthetisch profiel terug.
+	 *
+	 * @return array|WP_Error
+	 */
 	public function get_profile() {
 		$pub    = $this->get_publisher_id();
-		$result = $this->request( 'publishers' );
+		$result = $this->request( "publishers/{$pub}/programmes", [ 'relationship' => 'joined' ] );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
-		// /publishers geeft een array terug; zoek de geconfigureerde publisher.
-		if ( isset( $result['id'] ) ) {
-			return $result; // enkelvoudig object (toekomstige API-versie)
-		}
-
-		foreach ( $result as $publisher ) {
-			if ( isset( $publisher['id'] ) && (string) $publisher['id'] === $pub ) {
-				return $publisher;
-			}
-		}
-
-		return ! empty( $result[0] ) ? $result[0] : new \WP_Error( 'not_found', __( 'Publisher ID niet gevonden in Awin-respons.', 'tbmm' ) );
+		return [
+			'id'               => $pub,
+			'programmeCount'   => count( $result ),
+		];
 	}
 
 	/**
