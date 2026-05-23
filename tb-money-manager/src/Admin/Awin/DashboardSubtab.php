@@ -19,33 +19,15 @@ class DashboardSubtab {
 		}
 
 		$current_year  = (int) gmdate( 'Y' );
-		$current_month = (int) gmdate( 'n' );
 		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
-		$selected_month = isset( $_GET['maand'] ) ? (int) $_GET['maand'] : $current_month;
-
-		$selected_year  = max( 2017, min( $current_year, $selected_year ) );
-		$selected_month = max( 1, min( 12, $selected_month ) );
-
-		// Toekomstige maand terugzetten naar huidige.
-		if ( $selected_year === $current_year && $selected_month > $current_month ) {
-			$selected_month = $current_month;
-		}
-
-		$base_url = admin_url( 'admin.php?page=tb-money-manager&tab=awin&subtab=dashboard' );
+		$selected_year = max( 2017, min( $current_year, $selected_year ) );
 		?>
 
 		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="awin" />
 			<input type="hidden" name="subtab" value="dashboard" />
-			<label for="tbmm_awin_jaar" style="font-weight:600;"><?php esc_html_e( 'Periode:', 'tbmm' ); ?></label>
-			<select id="tbmm_awin_maand" name="maand" onchange="this.form.submit()">
-				<?php for ( $m = 1; $m <= 12; $m++ ) : ?>
-				<option value="<?php echo esc_attr( $m ); ?>" <?php selected( $selected_month, $m ); ?>>
-					<?php echo esc_html( date_i18n( 'F', mktime( 0, 0, 0, $m, 1 ) ) ); ?>
-				</option>
-				<?php endfor; ?>
-			</select>
+			<label for="tbmm_awin_jaar" style="font-weight:600;"><?php esc_html_e( 'Jaar:', 'tbmm' ); ?></label>
 			<select id="tbmm_awin_jaar" name="jaar" onchange="this.form.submit()">
 				<?php for ( $y = $current_year; $y >= 2017; $y-- ) : ?>
 				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
@@ -54,7 +36,7 @@ class DashboardSubtab {
 		</form>
 
 		<?php
-		$transactions = $this->service->get_transactions( $selected_year, $selected_month );
+		$transactions = $this->service->get_year_transactions( $selected_year );
 
 		if ( is_wp_error( $transactions ) ) {
 			echo '<div class="notice notice-error inline"><p><strong>'

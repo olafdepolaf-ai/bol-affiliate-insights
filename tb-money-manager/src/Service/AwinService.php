@@ -39,19 +39,22 @@ class AwinService {
 	}
 
 	/**
-	 * Transacties voor een bepaalde maand.
+	 * Transacties voor een heel jaar.
 	 *
 	 * @return array|WP_Error
 	 */
-	public function get_transactions( int $year, int $month ) {
-		$cache_key = "tbmm_awin_tx_{$year}_{$month}";
+	public function get_year_transactions( int $year ) {
+		$cache_key = "tbmm_awin_tx_{$year}";
 		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
 
-		$start = gmdate( 'Y-m-d\TH:i:s', mktime( 0, 0, 0, $month, 1, $year ) );
-		$end   = gmdate( 'Y-m-d\T23:59:59', mktime( 0, 0, 0, $month + 1, 0, $year ) );
+		$current_year = (int) gmdate( 'Y' );
+		$start = gmdate( 'Y-m-d\TH:i:s', mktime( 0, 0, 0, 1, 1, $year ) );
+		$end   = ( $year === $current_year )
+			? gmdate( 'Y-m-d\TH:i:s' )
+			: gmdate( 'Y-m-d\T23:59:59', mktime( 0, 0, 0, 12, 31, $year ) );
 
 		$pub    = $this->get_publisher_id();
 		$result = $this->request( "publishers/{$pub}/transactions/", [
@@ -61,7 +64,7 @@ class AwinService {
 		] );
 
 		if ( ! is_wp_error( $result ) ) {
-			$ttl = ( $year === (int) gmdate( 'Y' ) && $month === (int) gmdate( 'n' ) ) ? 30 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
+			$ttl = ( $year === $current_year ) ? 30 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
 			set_transient( $cache_key, $result, $ttl );
 		}
 
@@ -69,19 +72,22 @@ class AwinService {
 	}
 
 	/**
-	 * Geaggregeerd rapport per adverteerder over een maand.
+	 * Geaggregeerd rapport per adverteerder over een heel jaar.
 	 *
 	 * @return array|WP_Error
 	 */
-	public function get_advertiser_report( int $year, int $month ) {
-		$cache_key = "tbmm_awin_report_{$year}_{$month}";
-		$cached    = get_transient( $cache_key );
+	public function get_advertiser_report( int $year ) {
+		$cache_key    = "tbmm_awin_report_{$year}";
+		$cached       = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
 		}
 
-		$start = gmdate( 'Y-m-d', mktime( 0, 0, 0, $month, 1, $year ) );
-		$end   = gmdate( 'Y-m-d', mktime( 0, 0, 0, $month + 1, 0, $year ) );
+		$current_year = (int) gmdate( 'Y' );
+		$start = gmdate( 'Y-m-d', mktime( 0, 0, 0, 1, 1, $year ) );
+		$end   = ( $year === $current_year )
+			? gmdate( 'Y-m-d' )
+			: gmdate( 'Y-m-d', mktime( 0, 0, 0, 12, 31, $year ) );
 
 		$pub    = $this->get_publisher_id();
 		$result = $this->request( "publishers/{$pub}/reports/advertiser", [
@@ -90,30 +96,20 @@ class AwinService {
 		] );
 
 		if ( ! is_wp_error( $result ) ) {
-			$ttl = ( $year === (int) gmdate( 'Y' ) && $month === (int) gmdate( 'n' ) ) ? 2 * HOUR_IN_SECONDS : DAY_IN_SECONDS;
+			$ttl = ( $year === $current_year ) ? 2 * HOUR_IN_SECONDS : DAY_IN_SECONDS;
 			set_transient( $cache_key, $result, $ttl );
 		}
 
 		return $result;
 	}
 
-	public function get_transactions_fetched_at( int $year, int $month ): int|false {
-		return get_option( "tbmm_awin_tx_fetched_{$year}_{$month}", false );
-	}
-
-	public function clear_cache( ?int $year = null, ?int $month = null ): void {
-		if ( $year && $month ) {
-			delete_transient( "tbmm_awin_tx_{$year}_{$month}" );
-			delete_transient( "tbmm_awin_report_{$year}_{$month}" );
-			return;
-		}
-		// Wis alle Awin-transients voor de afgelopen 3 jaar.
+	public function clear_cache( ?int $year = null ): void {
 		$current_year = (int) gmdate( 'Y' );
-		for ( $y = $current_year - 2; $y <= $current_year; $y++ ) {
-			for ( $m = 1; $m <= 12; $m++ ) {
-				delete_transient( "tbmm_awin_tx_{$y}_{$m}" );
-				delete_transient( "tbmm_awin_report_{$y}_{$m}" );
-			}
+		$from = $year ?? $current_year - 2;
+		$to   = $year ?? $current_year;
+		for ( $y = $from; $y <= $to; $y++ ) {
+			delete_transient( "tbmm_awin_tx_{$y}" );
+			delete_transient( "tbmm_awin_report_{$y}" );
 		}
 	}
 
