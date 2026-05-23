@@ -19,9 +19,27 @@ class AwinService {
 	}
 
 	/** @return array|WP_Error */
+	/** @return array|WP_Error */
 	public function get_profile() {
-		$pub = $this->get_publisher_id();
-		return $this->request( "publishers/{$pub}/profile" );
+		$pub    = $this->get_publisher_id();
+		$result = $this->request( 'publishers' );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// /publishers geeft een array terug; zoek de geconfigureerde publisher.
+		if ( isset( $result['id'] ) ) {
+			return $result; // enkelvoudig object (toekomstige API-versie)
+		}
+
+		foreach ( $result as $publisher ) {
+			if ( isset( $publisher['id'] ) && (string) $publisher['id'] === $pub ) {
+				return $publisher;
+			}
+		}
+
+		return ! empty( $result[0] ) ? $result[0] : new \WP_Error( 'not_found', __( 'Publisher ID niet gevonden in Awin-respons.', 'tbmm' ) );
 	}
 
 	/**
