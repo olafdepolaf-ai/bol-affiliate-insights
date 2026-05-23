@@ -40,11 +40,11 @@ class Plugin {
 
 	public function maybe_upgrade_db(): void {
 		$installed = (int) get_option( 'tbmm_db_version', 0 );
-		if ( $installed >= 3 ) {
+		if ( $installed >= 4 ) {
 			return;
 		}
 		Installer::activate();
-		update_option( 'tbmm_db_version', 3, false );
+		update_option( 'tbmm_db_version', 4, false );
 	}
 
 	public function init_for_admins(): void {

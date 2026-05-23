@@ -10,8 +10,22 @@ class Installer {
 	public static function activate(): void {
 		global $wpdb;
 
-		$table   = $wpdb->prefix . ScanCacheService::TABLE;
 		$charset = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$awin_table = $wpdb->prefix . \TuinenBalkon\TBMoneyManager\Service\AwinService::TABLE;
+		dbDelta( "CREATE TABLE {$awin_table} (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			year         SMALLINT        NOT NULL,
+			month        TINYINT         NOT NULL,
+			transactions LONGTEXT        NOT NULL,
+			fetched_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY year_month (year, month)
+		) {$charset};" );
+
+		$table   = $wpdb->prefix . ScanCacheService::TABLE;
 
 		$sql = "CREATE TABLE {$table} (
 			id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -22,7 +36,6 @@ class Installer {
 			UNIQUE KEY scan_key (scan_key)
 		) {$charset};";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 
 		$unmanaged_table = $wpdb->prefix . UnmanagedLinkScanner::TABLE;
@@ -46,6 +59,8 @@ class Installer {
 
 	public static function uninstall(): void {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . \TuinenBalkon\TBMoneyManager\Service\AwinService::TABLE );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . ScanCacheService::TABLE );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared

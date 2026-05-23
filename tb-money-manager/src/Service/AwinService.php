@@ -4,6 +4,8 @@ namespace TuinenBalkon\TBMoneyManager\Service;
 
 class AwinService {
 
+	public const TABLE = 'tbmm_awin_cache';
+
 	private const API_BASE = 'https://api.awin.com/';
 
 	public function get_api_token(): string {
@@ -18,7 +20,6 @@ class AwinService {
 		return ! empty( $this->get_api_token() ) && ! empty( $this->get_publisher_id() );
 	}
 
-	/** @return array|WP_Error */
 	/**
 	 * Verbindingstest: haalt joined programmes op en geeft een synthetisch profiel terug.
 	 *
@@ -33,28 +34,112 @@ class AwinService {
 		}
 
 		return [
-			'id'               => $pub,
-			'programmeCount'   => count( $result ),
+			'id'             => $pub,
+			'programmeCount' => count( $result ),
 		];
 	}
 
 	/**
-	 * Transacties voor een heel jaar.
+	 * Transacties voor een heel jaar, per maand opgehaald (API-limiet: 31 dagen).
+	 * Verleden maanden worden persistent opgeslagen in de tbmm_awin_cache tabel.
+	 * Huidige maand wordt 30 minuten gecached als transient.
 	 *
 	 * @return array|WP_Error
 	 */
 	public function get_year_transactions( int $year ) {
-		$cache_key = "tbmm_awin_tx_{$year}";
-		$cached    = get_transient( $cache_key );
-		if ( false !== $cached ) {
-			return $cached;
+		$current_year  = (int) gmdate( 'Y' );
+		$current_month = (int) gmdate( 'n' );
+		$last_month    = ( $year === $current_year ) ? $current_month : 12;
+
+		$all = [];
+		for ( $m = 1; $m <= $last_month; $m++ ) {
+			$result = $this->get_month_transactions( $year, $m );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+			$all = array_merge( $all, $result );
 		}
 
+		return $all;
+	}
+
+	/**
+	 * Wist gecachede data voor een jaar (of de afgelopen 3 jaar als $year null is).
+	 */
+	public function clear_cache( ?int $year = null ): void {
+		global $wpdb;
+
+		$table        = $wpdb->prefix . self::TABLE;
 		$current_year = (int) gmdate( 'Y' );
-		$start = gmdate( 'Y-m-d\TH:i:s', mktime( 0, 0, 0, 1, 1, $year ) );
-		$end   = ( $year === $current_year )
-			? gmdate( 'Y-m-d\TH:i:s' )
-			: gmdate( 'Y-m-d\T23:59:59', mktime( 0, 0, 0, 12, 31, $year ) );
+
+		if ( $year ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->delete( $table, [ 'year' => $year ], [ '%d' ] );
+			for ( $m = 1; $m <= 12; $m++ ) {
+				delete_transient( "tbmm_awin_tx_{$year}_{$m}" );
+			}
+			return;
+		}
+
+		for ( $y = $current_year - 2; $y <= $current_year; $y++ ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->delete( $table, [ 'year' => $y ], [ '%d' ] );
+			for ( $m = 1; $m <= 12; $m++ ) {
+				delete_transient( "tbmm_awin_tx_{$y}_{$m}" );
+			}
+		}
+	}
+
+	/**
+	 * Tijdstip waarop een maand voor het laatst is opgehaald, of false.
+	 */
+	public function get_month_fetched_at( int $year, int $month ): int|false {
+		global $wpdb;
+
+		$table = $wpdb->prefix . self::TABLE;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row   = $wpdb->get_row(
+			$wpdb->prepare( "SELECT fetched_at FROM `{$table}` WHERE year = %d AND month = %d", $year, $month )
+		);
+
+		if ( ! $row ) {
+			return false;
+		}
+
+		return (int) strtotime( $row->fetched_at );
+	}
+
+	// -------------------------------------------------------------------------
+
+	/** @return array|WP_Error */
+	private function get_month_transactions( int $year, int $month ) {
+		global $wpdb;
+
+		$current_year  = (int) gmdate( 'Y' );
+		$current_month = (int) gmdate( 'n' );
+		$is_current    = ( $year === $current_year && $month === $current_month );
+
+		// Huidige maand: transient (30 min).
+		if ( $is_current ) {
+			$cached = get_transient( "tbmm_awin_tx_{$year}_{$month}" );
+			if ( false !== $cached ) {
+				return $cached;
+			}
+		} else {
+			// Verleden maand: persistent DB-rij.
+			$table = $wpdb->prefix . self::TABLE;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$row   = $wpdb->get_row(
+				$wpdb->prepare( "SELECT transactions FROM `{$table}` WHERE year = %d AND month = %d", $year, $month )
+			);
+			if ( $row ) {
+				return json_decode( $row->transactions, true ) ?: [];
+			}
+		}
+
+		// Ophalen via API.
+		$start = gmdate( 'Y-m-d\TH:i:s', mktime( 0, 0, 0, $month, 1, $year ) );
+		$end   = gmdate( 'Y-m-d\T23:59:59', mktime( 0, 0, 0, $month + 1, 0, $year ) );
 
 		$pub    = $this->get_publisher_id();
 		$result = $this->request( "publishers/{$pub}/transactions/", [
@@ -63,54 +148,28 @@ class AwinService {
 			'timezone'  => 'Europe/Amsterdam',
 		] );
 
-		if ( ! is_wp_error( $result ) ) {
-			$ttl = ( $year === $current_year ) ? 30 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
-			set_transient( $cache_key, $result, $ttl );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( $is_current ) {
+			set_transient( "tbmm_awin_tx_{$year}_{$month}", $result, 30 * MINUTE_IN_SECONDS );
+		} else {
+			$table = $wpdb->prefix . self::TABLE;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->replace(
+				$table,
+				[
+					'year'         => $year,
+					'month'        => $month,
+					'transactions' => wp_json_encode( $result ),
+					'fetched_at'   => current_time( 'mysql', true ),
+				],
+				[ '%d', '%d', '%s', '%s' ]
+			);
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Geaggregeerd rapport per adverteerder over een heel jaar.
-	 *
-	 * @return array|WP_Error
-	 */
-	public function get_advertiser_report( int $year ) {
-		$cache_key    = "tbmm_awin_report_{$year}";
-		$cached       = get_transient( $cache_key );
-		if ( false !== $cached ) {
-			return $cached;
-		}
-
-		$current_year = (int) gmdate( 'Y' );
-		$start = gmdate( 'Y-m-d', mktime( 0, 0, 0, 1, 1, $year ) );
-		$end   = ( $year === $current_year )
-			? gmdate( 'Y-m-d' )
-			: gmdate( 'Y-m-d', mktime( 0, 0, 0, 12, 31, $year ) );
-
-		$pub    = $this->get_publisher_id();
-		$result = $this->request( "publishers/{$pub}/reports/advertiser", [
-			'startDate' => $start,
-			'endDate'   => $end,
-		] );
-
-		if ( ! is_wp_error( $result ) ) {
-			$ttl = ( $year === $current_year ) ? 2 * HOUR_IN_SECONDS : DAY_IN_SECONDS;
-			set_transient( $cache_key, $result, $ttl );
-		}
-
-		return $result;
-	}
-
-	public function clear_cache( ?int $year = null ): void {
-		$current_year = (int) gmdate( 'Y' );
-		$from = $year ?? $current_year - 2;
-		$to   = $year ?? $current_year;
-		for ( $y = $from; $y <= $to; $y++ ) {
-			delete_transient( "tbmm_awin_tx_{$y}" );
-			delete_transient( "tbmm_awin_report_{$y}" );
-		}
 	}
 
 	/**

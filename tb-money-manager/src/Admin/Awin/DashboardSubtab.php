@@ -21,9 +21,19 @@ class DashboardSubtab {
 		$current_year  = (int) gmdate( 'Y' );
 		$selected_year = isset( $_GET['jaar'] ) ? (int) $_GET['jaar'] : $current_year;
 		$selected_year = max( 2017, min( $current_year, $selected_year ) );
+
+		// Refresh: cache wissen en herladen.
+		if (
+			isset( $_POST['tbmm_awin_refresh'] ) &&
+			check_admin_referer( 'tbmm_awin_dashboard', 'tbmm_awin_nonce' )
+		) {
+			$this->service->clear_cache( $selected_year );
+		}
+
+		wp_enqueue_script( 'chart-js' );
 		?>
 
-		<form method="get" style="margin-bottom:20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+		<form method="get" style="margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
 			<input type="hidden" name="page" value="tb-money-manager" />
 			<input type="hidden" name="tab" value="awin" />
 			<input type="hidden" name="subtab" value="dashboard" />
@@ -33,6 +43,17 @@ class DashboardSubtab {
 				<option value="<?php echo esc_attr( $y ); ?>" <?php selected( $selected_year, $y ); ?>><?php echo esc_html( $y ); ?></option>
 				<?php endfor; ?>
 			</select>
+		</form>
+
+		<form method="post" style="margin-bottom:20px;">
+			<?php wp_nonce_field( 'tbmm_awin_dashboard', 'tbmm_awin_nonce' ); ?>
+			<input type="hidden" name="jaar" value="<?php echo esc_attr( $selected_year ); ?>" />
+			<button type="submit" name="tbmm_awin_refresh" class="button">
+				<?php esc_html_e( 'Data opnieuw ophalen', 'tbmm' ); ?>
+			</button>
+			<span style="margin-left:8px; color:#646970; font-size:12px;">
+				<?php esc_html_e( 'Vervangt gecachede data voor dit jaar (inclusief verleden maanden).', 'tbmm' ); ?>
+			</span>
 		</form>
 
 		<?php
@@ -46,6 +67,7 @@ class DashboardSubtab {
 		}
 
 		$this->render_kpi_cards( $transactions );
+		$this->render_chart( $transactions, $selected_year );
 		$this->render_transactions_table( $transactions );
 	}
 
@@ -106,13 +128,109 @@ class DashboardSubtab {
 		<?php
 	}
 
+	private function render_chart( array $transactions, int $year ): void {
+		$current_year  = (int) gmdate( 'Y' );
+		$current_month = ( $year === $current_year ) ? (int) gmdate( 'n' ) : 12;
+
+		// Aggregeer per maand.
+		$by_month = [];
+		for ( $m = 1; $m <= $current_month; $m++ ) {
+			$by_month[ $m ] = [ 'commission' => 0.0, 'sale' => 0.0, 'count' => 0 ];
+		}
+		foreach ( $transactions as $tx ) {
+			$t     = (object) $tx;
+			$date  = $t->transactionDate ?? $t->date ?? '';
+			$month = $date ? (int) gmdate( 'n', strtotime( $date ) ) : 0;
+			if ( $month < 1 || $month > 12 ) continue;
+			$by_month[ $month ]['commission'] += (float) ( $t->commissionAmount ?? $t->commission ?? 0 );
+			$by_month[ $month ]['sale']       += (float) ( $t->saleAmount ?? 0 );
+			$by_month[ $month ]['count']++;
+		}
+
+		$month_names = [];
+		for ( $m = 1; $m <= $current_month; $m++ ) {
+			$month_names[] = date_i18n( 'M', mktime( 0, 0, 0, $m, 1 ) );
+		}
+
+		$chart_data = [
+			'labels'     => $month_names,
+			'commission' => array_values( array_column( $by_month, 'commission' ) ),
+			'sale'       => array_values( array_column( $by_month, 'sale' ) ),
+			'count'      => array_values( array_column( $by_month, 'count' ) ),
+		];
+		?>
+		<div style="margin:24px 0 8px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+			<label for="tbmm-awin-metric" style="font-weight:600;"><?php esc_html_e( 'Metriek:', 'tbmm' ); ?></label>
+			<select id="tbmm-awin-metric">
+				<option value="commission"><?php esc_html_e( 'Commissie (€)', 'tbmm' ); ?></option>
+				<option value="sale"><?php esc_html_e( 'Omzet (€)', 'tbmm' ); ?></option>
+				<option value="count"><?php esc_html_e( 'Transacties', 'tbmm' ); ?></option>
+			</select>
+		</div>
+		<div style="max-width:760px; margin-bottom:28px;">
+			<canvas id="tbmmAwinChart" height="90"></canvas>
+		</div>
+		<script>
+		(function() {
+			var data  = <?php echo wp_json_encode( $chart_data ); ?>;
+			var colors = { commission: '#2271b1', sale: '#00a32a', count: '#dba617' };
+			var labels = {
+				commission: '<?php echo esc_js( __( 'Commissie (€)', 'tbmm' ) ); ?>',
+				sale:       '<?php echo esc_js( __( 'Omzet (€)', 'tbmm' ) ); ?>',
+				count:      '<?php echo esc_js( __( 'Transacties', 'tbmm' ) ); ?>'
+			};
+			var chart;
+
+			function buildChart(metric) {
+				if (chart) chart.destroy();
+				var ctx = document.getElementById('tbmmAwinChart').getContext('2d');
+				chart = new Chart(ctx, {
+					type: 'bar',
+					data: {
+						labels: data.labels,
+						datasets: [{
+							label: labels[metric],
+							data: data[metric],
+							backgroundColor: colors[metric] + '99',
+							borderColor: colors[metric],
+							borderWidth: 1,
+							borderRadius: 3
+						}]
+					},
+					options: {
+						responsive: true,
+						plugins: { legend: { display: false } },
+						scales: {
+							y: {
+								beginAtZero: true,
+								ticks: {
+									callback: function(v) {
+										return metric === 'count' ? v : '€' + v.toFixed(2).replace('.', ',');
+									}
+								}
+							}
+						}
+					}
+				});
+			}
+
+			document.addEventListener('DOMContentLoaded', function() {
+				buildChart('commission');
+				document.getElementById('tbmm-awin-metric').addEventListener('change', function() {
+					buildChart(this.value);
+				});
+			});
+		})();
+		</script>
+		<?php
+	}
+
 	private function render_transactions_table( array $transactions ): void {
 		if ( empty( $transactions ) ) {
-			echo '<p><em>' . esc_html__( 'Geen transacties gevonden voor deze periode.', 'tbmm' ) . '</em></p>';
+			echo '<p><em>' . esc_html__( 'Geen transacties gevonden voor dit jaar.', 'tbmm' ) . '</em></p>';
 			return;
 		}
 
-		// Sorteren op datum aflopend (nieuwste eerst).
 		usort( $transactions, function( $a, $b ) {
 			$a = (object) $a;
 			$b = (object) $b;
